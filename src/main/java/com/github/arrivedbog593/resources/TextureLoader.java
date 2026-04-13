@@ -139,8 +139,9 @@ public class TextureLoader {
     }
 
     private static void loadReference(DynamicResourcePack pack, GearData data) {
-        if (data.texture.ref == null) {
-            System.err.println("[CustomGear] 'ref' vacío en modo reference: " + data.id);
+        // Requiere al menos ref o refs
+        if (data.texture.ref == null && data.texture.refs == null) {
+            System.err.println("[CustomGear] 'ref' y 'refs' vacíos en modo reference: " + data.id);
             return;
         }
 
@@ -149,8 +150,8 @@ public class TextureLoader {
                 String[] pieces = {"helmet", "chestplate", "leggings", "boots"};
                 for (String piece : pieces) {
                     if (data.pieces == null || !data.pieces.containsKey(piece)) continue;
-                    String refTexture = data.texture.ref + "_" + piece;
-                    generateItemModelWithRef(pack, data.id + "_" + piece, refTexture);
+                    String ref = resolveRef(data.texture, piece);
+                    if (ref != null) generateItemModelWithRef(pack, data.id + "_" + piece, ref);
                 }
             }
             case "tool_set" -> {
@@ -158,46 +159,33 @@ public class TextureLoader {
                 String[] toolTypes = {"pickaxe", "axe", "shovel", "hoe", "sword"};
                 for (String toolType : toolTypes) {
                     if (!data.tools.containsKey(toolType)) continue;
-                    String refTexture = data.texture.ref + "_" + toolType;
-                    generateItemModelWithRef(pack, data.id + "_" + toolType, refTexture);
+                    String ref = resolveRef(data.texture, toolType);
+                    if (ref != null) generateItemModelWithRef(pack, data.id + "_" + toolType, ref);
+                    else System.err.println("[CustomGear] Sin ref para: " + data.id + "_" + toolType);
                 }
             }
-            default -> generateItemModelWithRef(pack, data.id, data.texture.ref);
+            default -> {
+                String ref = data.texture.ref != null ? data.texture.ref : null;
+                if (ref != null) generateItemModelWithRef(pack, data.id, ref);
+            }
         }
     }
 
-
-    private static void loadTextureFromOtherMod(DynamicResourcePack pack, String textureRef) {
-        try {
-            // textureRef es algo como "mekanismtools:refined_obsidian_pickaxe"
-            ResourceLocation texLoc = ResourceLocation.parse(textureRef);
-            String namespace = texLoc.getNamespace();
-            String path = texLoc.getPath();
-
-            // Busca la textura en .minecraft/resourcepacks/ y en mods cargados
-            Path resourcePackPath = Paths.get(".", "resourcepacks");
-            if (Files.exists(resourcePackPath)) {
-                try (var stream = Files.list(resourcePackPath)) {
-                    stream.filter(Files::isDirectory).forEach(packDir -> {
-                        Path texPath = packDir.resolve("assets")
-                                .resolve(namespace)
-                                .resolve("textures")
-                                .resolve("item")
-                                .resolve(path + ".png");
-                        if (Files.exists(texPath)) {
-                            ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(
-                                    namespace, "textures/item/" + path + ".png"
-                            );
-                            pack.addTexture(loc, texPath);
-                            System.out.println("[CustomGear] Textura cargada: " + textureRef);
-                        }
-                    });
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("[CustomGear] No se pudo cargar textura de referencia: " + textureRef);
+    // Resuelve el ref correcto para un tipo de herramienta/pieza
+    private static String resolveRef(GearData.TextureData texture, String toolType) {
+        if (texture.refs != null && texture.refs.containsKey(toolType)) {
+            return texture.refs.get(toolType);
         }
+        if (texture.ref != null) {
+            // Si el ref termina en "/" lo concatena directo, si no agrega "_"
+            if (texture.ref.endsWith("/")) {
+                return texture.ref + toolType;
+            }
+            return texture.ref + "_" + toolType;
+        }
+        return null;
     }
+
 
     private static void generateItemModel(DynamicResourcePack pack, String itemId) {
         String json = """

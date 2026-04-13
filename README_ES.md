@@ -6,15 +6,16 @@
 
 ## Características
 
-- Agrega sets de armadura personalizados con defensa, durabilidad, toughness y resistencia al retroceso por pieza
+- Agrega sets de armadura personalizados con defensa, durabilidad, toughness y resistencia al retroceso por pieza individual
 - Agrega armas y sets de herramientas personalizados (espada, pico, hacha, pala, azadón) con daño, velocidad y velocidad de minado personalizados
-- Efectos por pieza de armadura (ej. el casco da Visión Nocturna al portarlo)
+- Efectos por pieza de armadura al portarla individualmente (ej. el casco da Visión Nocturna)
 - Efectos de bonus de set al usar la armadura completa
-- Efectos al sostener armas y herramientas (ej. la espada da Fuerza al sostenerla)
-- Soporte completo para nombres en múltiples idiomas
-- Texturas personalizadas, o reutiliza texturas de otros mods
+- Efectos al sostener por herramienta (ej. el pico da Prisa Minera, la espada da Fuerza)
+- Soporte completo para nombres en múltiples idiomas con formato personalizable por idioma
+- Texturas personalizadas, o reutiliza texturas de otros mods con sistema de referencia flexible
 - Compatible con JEI
 - Todos los objetos son encantables con encantamientos de vanilla y de otros mods
+- Comando `/customgear reload` para recargar los JSONs sin reiniciar el juego
 
 ---
 
@@ -32,7 +33,7 @@
 
 Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo define un set de armadura o un set de herramientas.
 
-### Set de Armadura
+### Set de Armadura — Ejemplo completo
 
 ```json
 {
@@ -40,11 +41,13 @@ Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo def
   "type": "armor_set",
   "name": {
     "en_us": "My Armor",
-    "es_mx": "Mi Armadura"
+    "es_mx": "Mi Armadura",
+    "ja_jp": "マイアーマー"
   },
   "piece_name_format": {
     "en_us": "{name} {piece}",
-    "es_mx": "{piece} de {name}"
+    "es_mx": "{piece} de {name}",
+    "ja_jp": "{name}の{piece}"
   },
   "piece_names": {
     "en_us": {
@@ -58,6 +61,12 @@ Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo def
       "chestplate": "Pechera",
       "leggings": "Pantalones",
       "boots": "Botas"
+    },
+    "ja_jp": {
+      "helmet": "兜",
+      "chestplate": "胸当て",
+      "leggings": "脚当て",
+      "boots": "靴"
     }
   },
   "pieces": {
@@ -74,13 +83,19 @@ Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo def
     ],
     "chestplate": [
       { "effect": "minecraft:fire_resistance", "amplifier": 0 }
+    ],
+    "leggings": [
+      { "effect": "minecraft:speed", "amplifier": 0 }
+    ],
+    "boots": [
+      { "effect": "minecraft:jump_boost", "amplifier": 0 }
     ]
   },
   "set_bonus": {
     "required_pieces": 4,
     "effects": [
-      { "effect": "minecraft:speed", "amplifier": 1 },
-      { "effect": "minecraft:strength", "amplifier": 0 }
+      { "effect": "minecraft:strength", "amplifier": 1 },
+      { "effect": "minecraft:resistance", "amplifier": 0 }
     ]
   },
   "texture": {
@@ -89,7 +104,7 @@ Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo def
 }
 ```
 
-### Set de Herramientas
+### Set de Herramientas — Ejemplo completo
 
 ```json
 {
@@ -195,14 +210,14 @@ Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo def
 | `pieces` | Map | Define cada pieza. Claves: `helmet`, `chestplate`, `leggings`, `boots` |
 | `pieces.durability` | Int | Durabilidad de esta pieza |
 | `pieces.defense` | Int | Puntos de armadura que provee esta pieza |
-| `pieces.toughness` | Float | Resistencia de armadura. Netherite = 3.0 por pieza |
+| `pieces.toughness` | Float | Resistencia de armadura por pieza. Netherite = 3.0 |
 | `pieces.knockback_resistance` | Float | Resistencia al retroceso. Máximo 1.0 (resistencia total) |
 | `piece_name_format` | Map | Formato del nombre por idioma. Usa `{name}` y `{piece}` como marcadores |
 | `piece_names` | Map | Nombres de cada pieza por idioma |
-| `piece_effects` | Map | Efectos aplicados al portar una pieza específica |
+| `piece_effects` | Map | Efectos aplicados al portar una pieza específica individualmente |
 | `set_bonus` | Object | Efectos aplicados al tener el número requerido de piezas equipadas |
 | `set_bonus.required_pieces` | Int | Número de piezas necesarias para activar el bonus |
-| `set_bonus.effects` | List | Lista de efectos a aplicar |
+| `set_bonus.effects` | List | Lista de efectos a aplicar cuando el set está completo |
 
 ### Campos de herramientas
 
@@ -214,7 +229,7 @@ Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo def
 | `tools.attack_speed` | Float | Velocidad de ataque. Espada estándar = 1.6 |
 | `tools.mining_speed` | Float | Velocidad de minado. Netherite = 9.0, Diamante = 8.0 |
 | `tools.harvest_level` | Int | 0=Madera, 1=Piedra, 2=Hierro, 3=Diamante, 4=Netherite |
-| `tools.held_effects` | List | Efectos aplicados al sostener esta herramienta en la mano |
+| `tools.held_effects` | List | Efectos aplicados al sostener esta herramienta específica en la mano |
 | `tool_name_format` | Map | Formato del nombre por idioma. Usa `{name}` y `{tool}` como marcadores |
 | `tool_names` | Map | Nombres de cada tipo de herramienta por idioma |
 
@@ -225,23 +240,24 @@ Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo def
 | `effect` | String | ID del efecto en formato `namespace:nombre_efecto` (ej. `minecraft:strength`) |
 | `amplifier` | Int | Nivel del efecto menos 1. `0` = Nivel I, `1` = Nivel II, etc. |
 
-### Campo de textura
+### Campos de textura
 
 | Campo | Tipo | Descripción |
 |---|---|---|
 | `texture.mode` | String | `default`, `custom`, o `reference` |
-| `texture.path` | String | Ruta relativa a `.minecraft/customgear/` (para modo `custom`) |
-| `texture.ref` | String | Ubicación de recurso de textura de otro mod (para modo `reference`) |
+| `texture.path` | String | Ruta relativa a `.minecraft/customgear/textures/` (para modo `custom`) |
+| `texture.ref` | String | Textura global de fallback — agrega `_tipo` o `/tipo` automáticamente (para modo `reference`) |
+| `texture.refs` | Map | Textura individual por herramienta/pieza — tiene prioridad sobre `ref` (para modo `reference`) |
 
 ---
 
 ## Modos de textura
 
 ### `default`
-Usa la textura de armadura/herramienta de hierro como placeholder. Ideal para pruebas.
+Usa las texturas de armadura/herramienta de hierro como placeholder. Ideal para pruebas.
 
 ### `custom`
-Usa tus propios archivos PNG colocados en `.minecraft/customgear/textures/`.
+Usa tus propios archivos PNG desde `.minecraft/customgear/textures/`.
 
 Para sets de armadura, necesitas dos archivos de capa:
 ```
@@ -249,18 +265,62 @@ textures/mi_armadura_layer_1.png   ← textura del cuerpo
 textures/mi_armadura_layer_2.png   ← textura de las piernas
 ```
 
-Para herramientas, un PNG por tipo de herramienta:
+Para sets de herramientas, un PNG por herramienta:
 ```
 textures/mis_herramientas_pickaxe.png
+textures/mis_herramientas_axe.png
 textures/mis_herramientas_sword.png
 ```
 
 ### `reference`
-Reutiliza una textura de otro mod ya instalado:
+Reutiliza texturas de otro mod ya instalado. Dos opciones:
+
+**Opción A — Refs individuales (recomendado, más flexible):**
 ```json
 "texture": {
   "mode": "reference",
-  "ref": "otromod:item/alguna_espada"
+  "refs": {
+    "pickaxe": "mekanismtools:item/steel/pickaxe",
+    "axe":     "mekanismtools:item/steel/axe",
+    "shovel":  "mekanismtools:item/steel/shovel",
+    "hoe":     "mekanismtools:item/steel/hoe",
+    "sword":   "mekanismtools:item/steel/sword"
+  }
+}
+```
+
+**Opción B — Ref global con sufijo automático:**
+
+Si el ref termina en `/`, el tipo de herramienta se agrega directamente:
+```json
+"texture": {
+  "mode": "reference",
+  "ref": "otromod:item/material/"
+}
+```
+Genera: `otromod:item/material/pickaxe`, `otromod:item/material/sword`, etc.
+
+Si el ref NO termina en `/`, se agrega un guión bajo:
+```json
+"texture": {
+  "mode": "reference",
+  "ref": "otromod:item/material"
+}
+```
+Genera: `otromod:item/material_pickaxe`, `otromod:item/material_sword`, etc.
+
+Si tanto `ref` como `refs` están presentes, `refs` tiene prioridad por tipo de herramienta.
+
+**Para armaduras en modo reference:**
+```json
+"texture": {
+  "mode": "reference",
+  "refs": {
+    "helmet":     "otromod:item/miarmadura/helmet",
+    "chestplate": "otromod:item/miarmadura/chestplate",
+    "leggings":   "otromod:item/miarmadura/leggings",
+    "boots":      "otromod:item/miarmadura/boots"
+  }
 }
 ```
 
@@ -283,11 +343,23 @@ Reutiliza una textura de otro mod ya instalado:
 | Caída lenta | `minecraft:slow_falling` |
 | Suerte | `minecraft:luck` |
 
+Los efectos de otros mods también funcionan — usa su ID en formato `modid:nombre_efecto`.
+
+---
+
+## Comandos
+
+| Comando | Permiso | Descripción |
+|---|---|---|
+| `/customgear reload` | OP nivel 2 | Recarga todos los archivos JSON y texturas sin reiniciar |
+
 ---
 
 ## Agregar recetas
 
-CustomGear no agrega recetas de crafteo por defecto. Para agregar recetas a tus ítems personalizados, usa [KubeJS](https://www.curseforge.com/minecraft/mc-mods/kubejs) u otro mod similar. Los IDs de tus ítems siguen el patrón `customgear:mi_armadura_helmet`, `customgear:mis_herramientas_sword`, etc.
+CustomGear no agrega recetas de crafteo por defecto. Para agregar recetas, usa [KubeJS](https://www.curseforge.com/minecraft/mc-mods/kubejs) u otro mod similar. Los IDs de tus ítems siguen el patrón:
+- Armadura: `customgear:mi_armadura_helmet`, `customgear:mi_armadura_chestplate`, etc.
+- Herramientas: `customgear:mis_herramientas_pickaxe`, `customgear:mis_herramientas_sword`, etc.
 
 ---
 
@@ -297,7 +369,8 @@ CustomGear no agrega recetas de crafteo por defecto. Para agregar recetas a tus 
 - NeoForge 21.1.x
 - JEI (opcional, recomendado)
 - Compatible con KubeJS para recetas
-- Los encantamientos personalizados de otros mods funcionan automáticamente si el ítem es encantable
+- Los encantamientos de otros mods funcionan automáticamente en ítems encantables
+- Las texturas de cualquier mod instalado pueden referenciarse con el modo `reference`
 
 ---
 

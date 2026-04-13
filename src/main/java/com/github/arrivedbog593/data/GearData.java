@@ -104,5 +104,6 @@ public class GearData {
         public String mode;
         public String path;
         public String ref;
+        public Map<String, String> refs;
     }
 }
