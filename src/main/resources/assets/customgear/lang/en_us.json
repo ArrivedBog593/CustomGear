@@ -1,0 +1,6 @@
+{
+  "itemGroup.customgear": "Custom Gear",
+  "tooltip.customgear.piece_effects": "When worn:",
+  "tooltip.customgear.held_effects": "When held:",
+  "tooltip.customgear.set_bonus": "Set Bonus (%s pieces):"
+}

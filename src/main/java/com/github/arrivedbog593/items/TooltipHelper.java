@@ -1,0 +1,100 @@
+package com.github.arrivedbog593.items;
+
+import com.github.arrivedbog593.data.GearData;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.core.Holder;
+import net.minecraft.ChatFormatting;
+
+import java.util.List;
+
+public class TooltipHelper {
+
+    // Tooltip para efectos al sostener (armas y herramientas)
+    public static void addHeldEffectsTooltip(List<Component> tooltipComponents,
+                                             GearData data) {
+        if (data.heldEffects == null || data.heldEffects.isEmpty()) return;
+
+        tooltipComponents.add(Component.literal(""));
+        tooltipComponents.add(Component.translatable("tooltip.customgear.held_effects")
+                .withStyle(ChatFormatting.GOLD));
+
+        for (GearData.EffectData effectData : data.heldEffects) {
+            String effectName = getEffectName(effectData.effect);
+            String amplifier = toRoman(effectData.amplifier + 1);
+            tooltipComponents.add(Component.literal("• " + effectName + " " + amplifier)
+                    .withStyle(ChatFormatting.GRAY));
+        }
+    }
+
+    // Tooltip para efectos de pieza individual (armadura)
+    public static void addPieceEffectsTooltip(List<Component> tooltipComponents,
+                                              GearData data, String piece) {
+        if (data.pieceEffects == null) return;
+        List<GearData.EffectData> effects = data.pieceEffects.get(piece);
+        if (effects == null || effects.isEmpty()) return;
+
+        tooltipComponents.add(Component.literal(""));
+        tooltipComponents.add(Component.translatable("tooltip.customgear.piece_effects")
+                .withStyle(ChatFormatting.GOLD));
+
+        for (GearData.EffectData effectData : effects) {
+            String effectName = getEffectName(effectData.effect);
+            String amplifier = toRoman(effectData.amplifier + 1);
+            tooltipComponents.add(Component.literal("• " + effectName + " " + amplifier)
+                    .withStyle(ChatFormatting.GRAY));
+        }
+    }
+
+    // Tooltip para set bonus (armadura)
+    public static void addSetBonusTooltip(List<Component> tooltipComponents,
+                                          GearData data) {
+        if (data.setBonus == null || data.setBonus.effects == null) return;
+
+        tooltipComponents.add(Component.literal(""));
+        tooltipComponents.add(Component.translatable(
+                        "tooltip.customgear.set_bonus",
+                        data.setBonus.requiredPieces)
+                .withStyle(ChatFormatting.GOLD));
+
+        for (GearData.EffectData effectData : data.setBonus.effects) {
+            String effectName = getEffectName(effectData.effect);
+            String amplifier = toRoman(effectData.amplifier + 1);
+            tooltipComponents.add(Component.literal("• " + effectName + " " + amplifier)
+                    .withStyle(ChatFormatting.GRAY));
+        }
+    }
+
+    // Obtiene el nombre del efecto desde el registro de Minecraft
+    private static String getEffectName(String effectId) {
+        try {
+            ResourceLocation rl = ResourceLocation.parse(effectId);
+            Holder<MobEffect> holder = BuiltInRegistries.MOB_EFFECT
+                    .getHolder(rl).orElse(null);
+            if (holder != null) {
+                return Component.translatable(
+                        holder.value().getDescriptionId()).getString();
+            }
+        } catch (Exception ignored) {}
+        return effectId;
+    }
+
+    // Convierte número a romano (I, II, III, IV, V...)
+    public static String toRoman(int number) {
+        return switch (number) {
+            case 1  -> "I";
+            case 2  -> "II";
+            case 3  -> "III";
+            case 4  -> "IV";
+            case 5  -> "V";
+            case 6  -> "VI";
+            case 7  -> "VII";
+            case 8  -> "VIII";
+            case 9  -> "IX";
+            case 10 -> "X";
+            default -> String.valueOf(number);
+        };
+    }
+}

@@ -1,0 +1,6 @@
+{
+  "itemGroup.customgear": "Custom Gear",
+  "tooltip.customgear.piece_effects": "Cuando se usa:",
+  "tooltip.customgear.held_effects": "Cuando se sostiene:",
+  "tooltip.customgear.set_bonus": "Bono de conjunto (%s piezas):"
+}
