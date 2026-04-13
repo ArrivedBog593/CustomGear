@@ -1,6 +1,8 @@
 package com.github.arrivedbog593;
 
+import com.github.arrivedbog593.commands.CustomGearCommandHandler;
 import com.github.arrivedbog593.data.GearData;
+import com.github.arrivedbog593.events.ClientResourceLoadHandler;
 import com.github.arrivedbog593.loader.GearParser;
 import com.github.arrivedbog593.loader.GearRegistry;
 import com.github.arrivedbog593.resources.DynamicResourcePack;
@@ -12,8 +14,11 @@ import net.minecraft.server.packs.PackSelectionConfig;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.repository.KnownPack;
 import net.minecraft.server.packs.repository.Pack;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddPackFindersEvent;
 import net.minecraft.server.packs.repository.PackSource;
 import org.jetbrains.annotations.NotNull;
@@ -56,6 +61,11 @@ public class CustomGearMod {
 
         // 5. Registra el pack
         modEventBus.addListener(this::onAddPackFinders);
+        NeoForge.EVENT_BUS.register(CustomGearCommandHandler.class);
+
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            ClientResourceLoadHandler.register();
+        }
     }
 
     private void onAddPackFinders(AddPackFindersEvent event) {

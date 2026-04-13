@@ -95,4 +95,8 @@ public class DynamicResourcePack extends AbstractPackResources {
 
     @Override
     public void close() {}
+
+    public void clear() {
+        resources.clear();
+    }
 }

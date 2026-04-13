@@ -143,13 +143,14 @@ public class TextureLoader {
             System.err.println("[CustomGear] 'ref' vacío en modo reference: " + data.id);
             return;
         }
+
         switch (data.type) {
             case "armor_set" -> {
                 String[] pieces = {"helmet", "chestplate", "leggings", "boots"};
                 for (String piece : pieces) {
                     if (data.pieces == null || !data.pieces.containsKey(piece)) continue;
-                    generateItemModelWithRef(pack, data.id + "_" + piece,
-                            data.texture.ref + "_" + piece);
+                    String refTexture = data.texture.ref + "_" + piece;
+                    generateItemModelWithRef(pack, data.id + "_" + piece, refTexture);
                 }
             }
             case "tool_set" -> {
@@ -157,11 +158,44 @@ public class TextureLoader {
                 String[] toolTypes = {"pickaxe", "axe", "shovel", "hoe", "sword"};
                 for (String toolType : toolTypes) {
                     if (!data.tools.containsKey(toolType)) continue;
-                    generateItemModelWithRef(pack, data.id + "_" + toolType,
-                            data.texture.ref + "_" + toolType);
+                    String refTexture = data.texture.ref + "_" + toolType;
+                    generateItemModelWithRef(pack, data.id + "_" + toolType, refTexture);
                 }
             }
             default -> generateItemModelWithRef(pack, data.id, data.texture.ref);
+        }
+    }
+
+
+    private static void loadTextureFromOtherMod(DynamicResourcePack pack, String textureRef) {
+        try {
+            // textureRef es algo como "mekanismtools:refined_obsidian_pickaxe"
+            ResourceLocation texLoc = ResourceLocation.parse(textureRef);
+            String namespace = texLoc.getNamespace();
+            String path = texLoc.getPath();
+
+            // Busca la textura en .minecraft/resourcepacks/ y en mods cargados
+            Path resourcePackPath = Paths.get(".", "resourcepacks");
+            if (Files.exists(resourcePackPath)) {
+                try (var stream = Files.list(resourcePackPath)) {
+                    stream.filter(Files::isDirectory).forEach(packDir -> {
+                        Path texPath = packDir.resolve("assets")
+                                .resolve(namespace)
+                                .resolve("textures")
+                                .resolve("item")
+                                .resolve(path + ".png");
+                        if (Files.exists(texPath)) {
+                            ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(
+                                    namespace, "textures/item/" + path + ".png"
+                            );
+                            pack.addTexture(loc, texPath);
+                            System.out.println("[CustomGear] Textura cargada: " + textureRef);
+                        }
+                    });
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[CustomGear] No se pudo cargar textura de referencia: " + textureRef);
         }
     }
 
