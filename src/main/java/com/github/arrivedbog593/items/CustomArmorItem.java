@@ -1,11 +1,14 @@
 package com.github.arrivedbog593.items;
 
 import com.github.arrivedbog593.data.GearData;
+import com.github.arrivedbog593.loader.GearRegistry;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.Item;
-import net.minecraft.core.Holder;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import org.jetbrains.annotations.NotNull;
@@ -15,7 +18,7 @@ import java.util.Map;
 
 public class CustomArmorItem extends ArmorItem {
 
-    private final GearData gearData;
+    private final GearData initialGearData;
     private final String piece;
 
     public CustomArmorItem(GearData data, String piece) {
@@ -25,8 +28,28 @@ public class CustomArmorItem extends ArmorItem {
                 new Item.Properties()
                         .durability(data.pieces.get(piece).durability)
         );
-        this.gearData = data;
+        this.initialGearData = data;
         this.piece = piece;
+    }
+
+    private GearData getGearData() {
+        ResourceLocation itemLocation = BuiltInRegistries.ITEM.getKey(this);
+        if (GearRegistry.GEAR_MAP.containsKey(itemLocation)) {
+            return GearRegistry.GEAR_MAP.get(itemLocation);
+        }
+        return initialGearData;
+    }
+
+    public GearData getGearDataDirect() { return getGearData(); }
+
+    @Override
+    public int getMaxDamage(@NotNull ItemStack stack) {
+        GearData data = getGearData();
+        if (data.pieces != null && data.pieces.containsKey(piece)) {
+            int dur = data.pieces.get(piece).durability;
+            return dur > 0 ? dur : super.getMaxDamage(stack);
+        }
+        return super.getMaxDamage(stack);
     }
 
     private static Holder<ArmorMaterial> buildMaterial(GearData data, String piece) {
@@ -35,9 +58,7 @@ public class CustomArmorItem extends ArmorItem {
         float toughness = (float) pieceData.toughness;
         float knockbackResistance = (float) pieceData.knockback_resistance;
 
-        // En 1.21.x ArmorMaterial es un record, se construye así:
         ArmorMaterial material = new ArmorMaterial(
-                // defensa por slot
                 Map.of(
                         ArmorItem.Type.HELMET,     piece.equals("helmet")     ? defense : 0,
                         ArmorItem.Type.CHESTPLATE, piece.equals("chestplate") ? defense : 0,
@@ -46,8 +67,8 @@ public class CustomArmorItem extends ArmorItem {
                 ),
                 data.enchantability,
                 SoundEvents.ARMOR_EQUIP_IRON,
-                () -> Ingredient.EMPTY,   // sin reparación por item por ahora
-                List.of(),                // no overlay de textura vanilla
+                () -> Ingredient.EMPTY,
+                List.of(),
                 toughness,
                 knockbackResistance
         );
@@ -65,10 +86,7 @@ public class CustomArmorItem extends ArmorItem {
         };
     }
 
-    // Getters por si los necesitas en el SetBonusHandler
-    public GearData getGearData() { return gearData; }
     public String getPiece() { return piece; }
-
 
     @Override
     public @NotNull net.minecraft.network.chat.Component getName(@NotNull ItemStack stack) {
@@ -78,31 +96,29 @@ public class CustomArmorItem extends ArmorItem {
                     .getLanguageManager().getSelected();
         } catch (Exception ignored) {}
 
-        // Obtener nombre del set en el idioma correcto
+        GearData data = getGearData();
+
         String setName = "Unknown";
-        if (gearData.name != null) {
-            setName = gearData.name.getOrDefault(lang,
-                    gearData.name.getOrDefault("en_us", "Unknown"));
+        if (data.name != null) {
+            setName = data.name.getOrDefault(lang,
+                    data.name.getOrDefault("en_us", "Unknown"));
         }
 
-        // Obtener nombre de la pieza en el idioma correcto
         String pieceName = getDefaultPieceName(piece, lang);
-        if (gearData.pieceNames != null) {
-            Map<String, String> piecesForLang = gearData.pieceNames.getOrDefault(lang,
-                    gearData.pieceNames.get("en_us"));
+        if (data.pieceNames != null) {
+            Map<String, String> piecesForLang = data.pieceNames.getOrDefault(lang,
+                    data.pieceNames.get("en_us"));
             if (piecesForLang != null && piecesForLang.containsKey(piece)) {
                 pieceName = piecesForLang.get(piece);
             }
         }
 
-        // Obtener formato en el idioma correcto
-        String format = "{piece} {name}"; // fallback inglés
-        if (gearData.pieceNameFormat != null) {
-            format = gearData.pieceNameFormat.getOrDefault(lang,
-                    gearData.pieceNameFormat.getOrDefault("en_us", "{piece} {name}"));
+        String format = "{piece} {name}";
+        if (data.pieceNameFormat != null) {
+            format = data.pieceNameFormat.getOrDefault(lang,
+                    data.pieceNameFormat.getOrDefault("en_us", "{piece} {name}"));
         }
 
-        // Construir nombre final
         String fullName = format
                 .replace("{name}", setName)
                 .replace("{piece}", pieceName);
@@ -110,7 +126,6 @@ public class CustomArmorItem extends ArmorItem {
         return net.minecraft.network.chat.Component.literal(fullName);
     }
 
-    // Valores por defecto en inglés si no se define piece_names en el JSON
     private String getDefaultPieceName(String piece, String lang) {
         if (lang.startsWith("es")) {
             return switch (piece) {
@@ -136,7 +151,8 @@ public class CustomArmorItem extends ArmorItem {
                                 @NotNull List<net.minecraft.network.chat.Component> tooltipComponents,
                                 @NotNull net.minecraft.world.item.TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
-        TooltipHelper.addPieceEffectsTooltip(tooltipComponents, gearData, piece);
-        TooltipHelper.addSetBonusTooltip(tooltipComponents, gearData);
+        GearData data = getGearData();
+        TooltipHelper.addPieceEffectsTooltip(tooltipComponents, data, piece);
+        TooltipHelper.addSetBonusTooltip(tooltipComponents, data);
     }
 }

@@ -36,7 +36,7 @@ public class SetBonusHandler {
 
         for (ItemStack stack : player.getArmorSlots()) {
             if (stack.getItem() instanceof CustomArmorItem armorItem) {
-                GearData data = armorItem.getGearData();
+                GearData data = armorItem.getGearDataDirect();
                 String piece = armorItem.getPiece();
 
                 // Para set bonus

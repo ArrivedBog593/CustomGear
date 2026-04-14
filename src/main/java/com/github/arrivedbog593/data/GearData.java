@@ -22,10 +22,6 @@ public class GearData {
 
     // Armadura
     public Map<String, PieceData> pieces;
-    public float toughness;
-
-    @SerializedName("knockback_resistance")
-    public float knockbackResistance;
 
     @SerializedName("piece_effects")
     public Map<String, List<EffectData>> pieceEffects;

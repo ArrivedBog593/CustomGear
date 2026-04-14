@@ -4,7 +4,10 @@ import com.github.arrivedbog593.data.GearData;
 import com.github.arrivedbog593.items.CustomSwordItem;
 import com.github.arrivedbog593.items.CustomTier;
 import com.github.arrivedbog593.items.TooltipHelper;
+import com.github.arrivedbog593.loader.GearRegistry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ShovelItem;
@@ -14,7 +17,7 @@ import java.util.List;
 
 public class CustomShovelItem extends ShovelItem {
 
-    private final GearData gearData;
+    private final GearData initialGearData;
 
     public CustomShovelItem(GearData data) {
         super(
@@ -26,10 +29,22 @@ public class CustomShovelItem extends ShovelItem {
                                 data.attackDamage,
                                 data.attackSpeed))
         );
-        this.gearData = data;
+        this.initialGearData = data;
     }
 
-    public GearData getGearData() { return gearData; }
+    private GearData getGearData() {
+        ResourceLocation itemLocation = BuiltInRegistries.ITEM.getKey(this);
+        if (GearRegistry.GEAR_MAP.containsKey(itemLocation)) {
+            return GearRegistry.GEAR_MAP.get(itemLocation);
+        }
+        return initialGearData;
+    }
+
+    @Override
+    public int getMaxDamage(@NotNull ItemStack stack) {
+        GearData data = getGearData();
+        return data.durability > 0 ? data.durability : super.getMaxDamage(stack);
+    }
 
     @Override
     public @NotNull net.minecraft.network.chat.Component getName(@NotNull ItemStack stack) {
@@ -39,7 +54,7 @@ public class CustomShovelItem extends ShovelItem {
                     .getLanguageManager().getSelected();
         } catch (Exception ignored) {}
         return net.minecraft.network.chat.Component.literal(
-                CustomSwordItem.buildName(gearData, lang, "shovel"));
+                CustomSwordItem.buildName(getGearData(), lang, "shovel"));
     }
 
     @Override
@@ -48,6 +63,6 @@ public class CustomShovelItem extends ShovelItem {
                                 @NotNull List<Component> tooltipComponents,
                                 @NotNull net.minecraft.world.item.TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
-        TooltipHelper.addHeldEffectsTooltip(tooltipComponents, gearData);
+        TooltipHelper.addHeldEffectsTooltip(tooltipComponents, getGearData());
     }
 }

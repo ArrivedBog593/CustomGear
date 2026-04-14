@@ -1,7 +1,9 @@
 package com.github.arrivedbog593.items;
 
 import com.github.arrivedbog593.data.GearData;
-import net.minecraft.network.chat.Component;
+import com.github.arrivedbog593.loader.GearRegistry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SwordItem;
@@ -13,7 +15,7 @@ import java.util.Map;
 
 public class CustomSwordItem extends SwordItem {
 
-    private final GearData gearData;
+    private final GearData initialGearData;
 
     public CustomSwordItem(GearData data) {
         super(
@@ -26,10 +28,22 @@ public class CustomSwordItem extends SwordItem {
                                 data.attackSpeed
                         ))
         );
-        this.gearData = data;
+        this.initialGearData = data;
     }
 
-    public GearData getGearData() { return gearData; }
+    private GearData getGearData() {
+        ResourceLocation itemLocation = BuiltInRegistries.ITEM.getKey(this);
+        if (GearRegistry.GEAR_MAP.containsKey(itemLocation)) {
+            return GearRegistry.GEAR_MAP.get(itemLocation);
+        }
+        return initialGearData;
+    }
+
+    @Override
+    public int getMaxDamage(@NotNull ItemStack stack) {
+        GearData data = getGearData();
+        return data.durability > 0 ? data.durability : super.getMaxDamage(stack);
+    }
 
     @Override
     public @NotNull net.minecraft.network.chat.Component getName(@NotNull ItemStack stack) {
@@ -40,7 +54,7 @@ public class CustomSwordItem extends SwordItem {
         } catch (Exception ignored) {}
 
         return net.minecraft.network.chat.Component.literal(
-                buildName(gearData, lang, "sword"));
+                buildName(getGearData(), lang, "sword"));
     }
 
     public static String buildName(GearData data, String lang, String toolType) {
@@ -48,7 +62,6 @@ public class CustomSwordItem extends SwordItem {
                 ? data.name.getOrDefault(lang, data.name.getOrDefault("en_us", "Unknown"))
                 : "Unknown";
 
-        // Si tiene toolNameFormat es un tool_set, usa ese sistema
         if (data.toolNameFormat != null || data.toolNames != null) {
             String toolName = getDefaultToolName(toolType, lang);
             if (data.toolNames != null) {
@@ -68,7 +81,6 @@ public class CustomSwordItem extends SwordItem {
             return format.replace("{name}", setName).replace("{tool}", toolName);
         }
 
-        // Espada individual — nombre directo
         return setName;
     }
 
@@ -96,9 +108,9 @@ public class CustomSwordItem extends SwordItem {
     @Override
     public void appendHoverText(@NotNull ItemStack stack,
                                 @NotNull Item.TooltipContext context,
-                                @NotNull List<Component> tooltipComponents,
+                                @NotNull List<net.minecraft.network.chat.Component> tooltipComponents,
                                 @NotNull net.minecraft.world.item.TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
-        TooltipHelper.addHeldEffectsTooltip(tooltipComponents, gearData);
+        TooltipHelper.addHeldEffectsTooltip(tooltipComponents, getGearData());
     }
 }

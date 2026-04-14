@@ -73,7 +73,7 @@ public class HeldEffectHandler {
     private static void checkAndApply(Player player, ItemStack stack) {
         if (stack.isEmpty()) return;
 
-        List<GearData.EffectData> effects = getHeldEffects(player, stack);
+        List<GearData.EffectData> effects = getHeldEffects(stack);
         if (effects == null || effects.isEmpty()) return;
 
         for (GearData.EffectData effectData : effects) {
@@ -113,7 +113,7 @@ public class HeldEffectHandler {
         return BuiltInRegistries.ITEM.getKey(stack.getItem());
     }
 
-    private static List<GearData.EffectData> getHeldEffects(Player player, ItemStack stack) {
+    private static List<GearData.EffectData> getHeldEffects(ItemStack stack) {
         if (stack.isEmpty()) return null;
 
         Item item = stack.getItem();
@@ -121,9 +121,7 @@ public class HeldEffectHandler {
         GearData data = GearRegistry.GEAR_MAP.get(id);
 
         if (data != null) {
-            if (item instanceof CustomArmorItem armor) {
-                if (data.pieceEffects != null)
-                    return data.pieceEffects.get(armor.getPiece());
+            if (item instanceof CustomArmorItem) {
                 return null;
             }
             return data.heldEffects;
