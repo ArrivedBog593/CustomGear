@@ -81,8 +81,7 @@ public class DynamicResourcePack extends AbstractPackResources {
 
     @Override
     @SuppressWarnings("unchecked")
-    public @Nullable <T> T getMetadataSection(@NotNull MetadataSectionSerializer<T> deserializer)
-            throws IOException {
+    public @Nullable <T> T getMetadataSection(@NotNull MetadataSectionSerializer<T> deserializer) {
         if (deserializer == PackMetadataSection.TYPE) {
             return (T) new PackMetadataSection(
                     Component.literal("CustomGear Dynamic Resources"),
@@ -99,4 +98,16 @@ public class DynamicResourcePack extends AbstractPackResources {
     public void clear() {
         resources.clear();
     }
+
+    public void addReferenceTexture(ResourceLocation location, ResourceLocation referenceLocation) {
+        String json = String.format("""
+        {
+          "textures": {
+            "layer": "%s"
+          }
+        }""", referenceLocation.toString());
+
+        addRaw(location, json.getBytes());
+    }
+
 }

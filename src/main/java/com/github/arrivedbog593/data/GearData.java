@@ -101,5 +101,7 @@ public class GearData {
         public String path;
         public String ref;
         public Map<String, String> refs;
+        @SerializedName("armor_layers")
+        public Map<String, String> armorLayers;
     }
 }

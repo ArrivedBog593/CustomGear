@@ -382,6 +382,23 @@ Reutiliza texturas de otro mod ya instalado. Dos opciones:
 }
 ```
 
+**Para armaduras en modo reference:**
+```json
+"texture": {
+  "mode": "reference",
+  "refs": {
+    "helmet":     "othermod:item/myarmor/helmet",
+    "chestplate": "othermod:item/myarmor/chestplate",
+    "leggings":   "othermod:item/myarmor/leggings",
+    "boots":      "othermod:item/myarmor/boots"
+  },
+  "armor_layers": {
+    "layer_1": "othermod:textures/models/armor/myarmor_layer_1",
+    "layer_2": "othermod:textures/models/armor/myarmor_layer_2"
+  }
+}
+```
+
 **Opción B — Ref global con sufijo automático:**
 
 Si el ref termina en `/`, el tipo de herramienta se agrega directamente:

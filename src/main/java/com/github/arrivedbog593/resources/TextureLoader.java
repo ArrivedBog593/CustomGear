@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 
 public class TextureLoader {
 
@@ -88,10 +89,21 @@ public class TextureLoader {
             case "armor_set" -> {
                 loadArmorLayer(pack, data, 1);
                 loadArmorLayer(pack, data, 2);
+
+                // ← FALTA ESTO (cargar texturas de items)
                 String[] pieces = {"helmet", "chestplate", "leggings", "boots"};
                 for (String piece : pieces) {
                     if (data.pieces == null || !data.pieces.containsKey(piece)) continue;
-                    generateItemModel(pack, data.id + "_" + piece);
+                    String itemId = data.id + "_" + piece;
+                    Path texPath = GEAR_FOLDER.resolve(data.texture.path + "_" + piece + ".png");
+                    if (!Files.exists(texPath)) {
+                        System.err.println("[CustomGear] Textura no encontrada: " + texPath);
+                        continue;
+                    }
+                    ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(
+                            "customgear", "textures/item/" + itemId + ".png");
+                    pack.addTexture(loc, texPath);
+                    generateItemModel(pack, itemId);
                 }
             }
             case "tool_set" -> {
@@ -147,6 +159,10 @@ public class TextureLoader {
 
         switch (data.type) {
             case "armor_set" -> {
+                if (data.texture.armorLayers != null) {
+                    loadArmorLayersReference(pack, data);
+                }
+
                 String[] pieces = {"helmet", "chestplate", "leggings", "boots"};
                 for (String piece : pieces) {
                     if (data.pieces == null || !data.pieces.containsKey(piece)) continue;
@@ -154,6 +170,7 @@ public class TextureLoader {
                     if (ref != null) generateItemModelWithRef(pack, data.id + "_" + piece, ref);
                 }
             }
+
             case "tool_set" -> {
                 if (data.tools == null) return;
                 String[] toolTypes = {"pickaxe", "axe", "shovel", "hoe", "sword"};
@@ -357,4 +374,21 @@ public class TextureLoader {
         return data.name.getOrDefault(lang,
                 data.name.getOrDefault("en_us", "Unknown"));
     }
+
+    private static void loadArmorLayersReference(DynamicResourcePack pack, GearData data) {
+        if (data.texture.armorLayers == null) return;
+
+        for (Map.Entry<String, String> entry : data.texture.armorLayers.entrySet()) {
+            String layerName = entry.getKey();  // "layer_1", "layer_2"
+            String ref = entry.getValue();      // "othermod:textures/models/armor/..."
+
+            ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(
+                    "customgear",
+                    "textures/models/armor/" + data.id + "_" + layerName + ".png");
+
+            ResourceLocation refLoc = ResourceLocation.parse(ref + ".png");
+            pack.addReferenceTexture(loc, refLoc);
+        }
+    }
+
 }

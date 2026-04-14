@@ -6,39 +6,16 @@ Todas las notas de cambios importantes para el proyecto CustomGear.
 
 ### ✨ Mejoras
 
-#### Soporte Multi-Idioma Mejorado
-- **Se mejoró:** El sistema de nombres de items ahora prioriza nombres específicos para mejor soporte multi-idioma
-- Ahora soporta idiomas complejos como chino, ruso, japonés y otros con alfabetos no latinos sin problemas
+- **Soporte Multi-Idioma:** El sistema de nombres de items ahora soporta mejor idiomas complejos (chino, ruso, japonés, etc.)
+- **Texturas de Armadura en Modo Referencia:** Los sets de armadura ahora pueden referenciar capas de otros mods usando el campo `armor_layers`
+- **Actualizaciones en la Documentación:** README actualizado con ejemplos multi-idioma y soporte para capas de armadura en modo referencia
 
-### 🔄 Cambios Técnicos
+### 🔧 Cambios Técnicos
 
-#### Sistema de Nombres de Objetos
-- `CustomSwordItem.java` - Se actualizó el método `buildName()` para priorizar nombres específicos de `toolNames` sobre `toolNameFormat`
-- `CustomArmorItem.java` - Se actualizó el método `getName()` para priorizar nombres específicos de `pieceNames` sobre `pieceNameFormat`
-- **Orden de prioridad:** Nombres específicos → Formato con placeholders → Fallback al nombre del set
-- Proporciona mejor control y flexibilidad para idiomas no latinos
-
-### 📚 Actualizaciones de Documentación
-
-#### README.md
-- Se reorganizó "Armor Set — Full Example" para mostrar los `piece_names` específicos como el enfoque recomendado
-- Se reorganizó "Tool Set — Full Example" para mostrar los `tool_names` específicos como el enfoque recomendado
-- Se agregaron secciones de "Alternativa Avanzada" explicando el uso de formatos con placeholders
-- Se agregaron notas de aclaración sobre el sistema de prioridad de nombres
-- Se mejoraron los ejemplos multi-idioma (chino, español, inglés, japonés)
-
-#### README_ES.md
-- Se actualizó con cambios idénticos para coincidir con la estructura de la documentación en inglés
-
-### 📝 Prioridad del Sistema de Nombres
-
-**Recomendado (Nuevo Método Principal):**
-- Usar `piece_names` / `tool_names` específicos para cada item en cada idioma
-- Funciona perfectamente con cualquier idioma, incluyendo aquellos con reglas gramaticales complejas
-
-**Alternativa Avanzada (Fallback):**
-- Usar `piece_name_format` / `tool_name_format` con placeholders `{name}` y `{piece}`/`{tool}`
-- Todavía soportado pero solo recomendado para idiomas simples basados en el alfabeto latino
+- `CustomSwordItem.java` & `CustomArmorItem.java` - Priorizar nombres específicos de items sobre los placeholders de formato
+- `TextureLoader.java` - Se agregó soporte para capas de armadura en modo referencia
+- `GearData.java` - Se agregó el campo `armor_layers` para configuración de text
+- `DynamicResourcePack.java` - Se agregó el método `addReferenceTexture()`
 
 ---
 
