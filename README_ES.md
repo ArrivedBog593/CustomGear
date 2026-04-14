@@ -35,38 +35,35 @@ Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo def
 
 ### Set de Armadura — Ejemplo completo
 
+**Para el mejor soporte multilingüe (especialmente para idiomas no latinos como chino, ruso, japonés), use nombres específicos de piezas:**
+
 ```json
 {
-  "id": "mi_armadura",
+  "id": "my_armor",
   "type": "armor_set",
   "name": {
     "en_us": "My Armor",
     "es_mx": "Mi Armadura",
     "ja_jp": "マイアーマー"
   },
-  "piece_name_format": {
-    "en_us": "{name} {piece}",
-    "es_mx": "{piece} de {name}",
-    "ja_jp": "{name}の{piece}"
-  },
   "piece_names": {
     "en_us": {
-      "helmet": "Helmet",
-      "chestplate": "Chestplate",
-      "leggings": "Leggings",
-      "boots": "Boots"
+      "helmet": "My Armor Helmet",
+      "chestplate": "My Armor Chestplate",
+      "leggings": "My Armor Leggings",
+      "boots": "My Armor Boots"
     },
     "es_mx": {
-      "helmet": "Casco",
-      "chestplate": "Pechera",
-      "leggings": "Pantalones",
-      "boots": "Botas"
+      "helmet": "Casco de Mi Armadura",
+      "chestplate": "Pechera de Mi Armadura",
+      "leggings": "Pantalones de Mi Armadura",
+      "boots": "Botas de Mi Armadura"
     },
     "ja_jp": {
-      "helmet": "兜",
-      "chestplate": "胸当て",
-      "leggings": "脚当て",
-      "boots": "靴"
+      "helmet": "マイアーマーヘルメット",
+      "chestplate": "マイアーマーチェストプレート",
+      "leggings": "マイアーマーレギンス",
+      "boots": "マイアーマーブーツ"
     }
   },
   "pieces": {
@@ -104,34 +101,88 @@ Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo def
 }
 ```
 
-### Set de Herramientas — Ejemplo completo
+Alternativa Avanzada (Formato del Nombre de la Pieza):
+Si prefieres usar marcadores de posición y deseas reutilizar el nombre del conjunto en todas las piezas:
 
 ```json
 {
-  "id": "mis_herramientas",
+  "id": "my_armor",
+  "type": "armor_set",
+  "name": {
+    "en_us": "My Armor",
+    "es_mx": "Mi Armadura",
+    "ja_jp": "マイアーマー"
+  },
+  "piece_name_format": {
+    "en_us": "{name} {piece}",
+    "es_mx": "{piece} de {name}",
+    "ja_jp": "{name}の{piece}"
+  },
+  "piece_names": {
+    "en_us": {
+      "helmet": "Helmet",
+      "chestplate": "Chestplate",
+      "leggings": "Leggings",
+      "boots": "Boots"
+    },
+    "es_mx": {
+      "helmet": "Casco",
+      "chestplate": "Pechera",
+      "leggings": "Pantalones",
+      "boots": "Botas"
+    },
+    "ja_jp": {
+      "helmet": "兜",
+      "chestplate": "胸当て",
+      "leggings": "脚当て",
+      "boots": "靴"
+    }
+  },
+  "pieces": { "..."},
+  "enchantable": true,
+  "enchantability": 15,
+  "piece_effects": { "..." },
+  "set_bonus": { "..." },
+  "texture": { "mode": "default" }
+}
+```
+
+Nota: Si tanto piece_names (específico) como piece_name_format (marcador de posición) están presentes, piece_names tiene prioridad, proporcionando un mejor control para el soporte multilingüe complejo.
+
+### Set de Herramientas — Ejemplo completo
+
+**Para el mejor soporte multilingüe (especialmente para idiomas no latinos como chino, ruso, japonés), use nombres de herramientas específicos:**
+
+```json
+{
+  "id": "my_tools",
   "type": "tool_set",
   "name": {
     "en_us": "My Tools",
-    "es_mx": "Mis Herramientas"
-  },
-  "tool_name_format": {
-    "en_us": "{name} {tool}",
-    "es_mx": "{tool} de {name}"
+    "es_mx": "Mis Herramientas",
+    "ja_jp": "マイツール"
   },
   "tool_names": {
     "en_us": {
-      "pickaxe": "Pickaxe",
-      "axe": "Axe",
-      "shovel": "Shovel",
-      "hoe": "Hoe",
-      "sword": "Sword"
+      "pickaxe": "My Pickaxe",
+      "axe": "My Axe",
+      "shovel": "My Shovel",
+      "hoe": "My Hoe",
+      "sword": "My Sword"
     },
     "es_mx": {
-      "pickaxe": "Pico",
-      "axe": "Hacha",
-      "shovel": "Pala",
-      "hoe": "Azadón",
-      "sword": "Espada"
+      "pickaxe": "Mi Pico",
+      "axe": "Mi Hacha",
+      "shovel": "Mi Pala",
+      "hoe": "Mi Azada",
+      "sword": "Mi Espada"
+    },
+    "ja_jp": {
+      "pickaxe": "マイピッケル",
+      "axe": "マイ斧",
+      "shovel": "マイシャベル",
+      "hoe": "マイ鍬",
+      "sword": "マイソード"
     }
   },
   "tools": {
@@ -188,6 +239,48 @@ Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo def
   }
 }
 ```
+
+Alternativa Avanzada (Formato del Nombre de la Herramienta):
+Si prefieres usar marcadores de posición y quieres reutilizar el nombre del conjunto en todas las herramientas:
+
+```json
+{
+  "id": "my_tools",
+  "type": "tool_set",
+  "name": {
+    "en_us": "My Tools",
+    "es_mx": "Mis Herramientas"
+  },
+  "tool_name_format": {
+    "en_us": "{name} {tool}",
+    "es_mx": "{tool} de {name}"
+  },
+  "tool_names": {
+    "en_us": {
+      "pickaxe": "Pickaxe",
+      "axe": "Axe",
+      "shovel": "Shovel",
+      "hoe": "Hoe",
+      "sword": "Sword"
+    },
+    "es_mx": {
+      "pickaxe": "Pico",
+      "axe": "Hacha",
+      "shovel": "Pala",
+      "hoe": "Azadón",
+      "sword": "Espada"
+    }
+  },
+  "tools": { "..." },
+  "enchantable": true,
+  "enchantability": 22,
+  "texture": {
+    "mode": "default"
+  }
+}
+```
+
+Nota: Si tanto tool_names (específico) como tool_name_format (marcador de posición) están presentes, tool_names tiene prioridad, proporcionando un mejor control para el soporte multilingüe complejo.
 
 ---
 

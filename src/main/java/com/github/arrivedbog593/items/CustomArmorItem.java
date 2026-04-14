@@ -104,26 +104,26 @@ public class CustomArmorItem extends ArmorItem {
                     data.name.getOrDefault("en_us", "Unknown"));
         }
 
-        String pieceName = getDefaultPieceName(piece, lang);
         if (data.pieceNames != null) {
             Map<String, String> piecesForLang = data.pieceNames.getOrDefault(lang,
                     data.pieceNames.get("en_us"));
             if (piecesForLang != null && piecesForLang.containsKey(piece)) {
-                pieceName = piecesForLang.get(piece);
+                String pieceName = piecesForLang.get(piece);
+                // Si solo hay el nombre de la pieza, retorna con el nombre del set
+                return net.minecraft.network.chat.Component.literal(
+                        setName + " " + pieceName);  // Mejor para multiidioma
             }
         }
 
-        String format = "{piece} {name}";
+        String pieceName = getDefaultPieceName(piece, lang);
         if (data.pieceNameFormat != null) {
-            format = data.pieceNameFormat.getOrDefault(lang,
+            String format = data.pieceNameFormat.getOrDefault(lang,
                     data.pieceNameFormat.getOrDefault("en_us", "{piece} {name}"));
+            return net.minecraft.network.chat.Component.literal(
+                    format.replace("{name}", setName).replace("{piece}", pieceName));
         }
 
-        String fullName = format
-                .replace("{name}", setName)
-                .replace("{piece}", pieceName);
-
-        return net.minecraft.network.chat.Component.literal(fullName);
+        return net.minecraft.network.chat.Component.literal(setName + " " + pieceName);
     }
 
     private String getDefaultPieceName(String piece, String lang) {

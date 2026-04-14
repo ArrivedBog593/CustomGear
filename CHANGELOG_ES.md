@@ -2,6 +2,46 @@
 
 Todas las notas de cambios importantes para el proyecto CustomGear.
 
+## [1.0.2] - 2026-04-13
+
+### ✨ Mejoras
+
+#### Soporte Multi-Idioma Mejorado
+- **Se mejoró:** El sistema de nombres de items ahora prioriza nombres específicos para mejor soporte multi-idioma
+- Ahora soporta idiomas complejos como chino, ruso, japonés y otros con alfabetos no latinos sin problemas
+
+### 🔄 Cambios Técnicos
+
+#### Sistema de Nombres de Objetos
+- `CustomSwordItem.java` - Se actualizó el método `buildName()` para priorizar nombres específicos de `toolNames` sobre `toolNameFormat`
+- `CustomArmorItem.java` - Se actualizó el método `getName()` para priorizar nombres específicos de `pieceNames` sobre `pieceNameFormat`
+- **Orden de prioridad:** Nombres específicos → Formato con placeholders → Fallback al nombre del set
+- Proporciona mejor control y flexibilidad para idiomas no latinos
+
+### 📚 Actualizaciones de Documentación
+
+#### README.md
+- Se reorganizó "Armor Set — Full Example" para mostrar los `piece_names` específicos como el enfoque recomendado
+- Se reorganizó "Tool Set — Full Example" para mostrar los `tool_names` específicos como el enfoque recomendado
+- Se agregaron secciones de "Alternativa Avanzada" explicando el uso de formatos con placeholders
+- Se agregaron notas de aclaración sobre el sistema de prioridad de nombres
+- Se mejoraron los ejemplos multi-idioma (chino, español, inglés, japonés)
+
+#### README_ES.md
+- Se actualizó con cambios idénticos para coincidir con la estructura de la documentación en inglés
+
+### 📝 Prioridad del Sistema de Nombres
+
+**Recomendado (Nuevo Método Principal):**
+- Usar `piece_names` / `tool_names` específicos para cada item en cada idioma
+- Funciona perfectamente con cualquier idioma, incluyendo aquellos con reglas gramaticales complejas
+
+**Alternativa Avanzada (Fallback):**
+- Usar `piece_name_format` / `tool_name_format` con placeholders `{name}` y `{piece}`/`{tool}`
+- Todavía soportado pero solo recomendado para idiomas simples basados en el alfabeto latino
+
+---
+
 ## [1.0.1] - 2026-04-13
 
 ### ✨ Mejoras
@@ -13,30 +53,30 @@ Todas las notas de cambios importantes para el proyecto CustomGear.
 ### 🔄 Cambios Técnicos
 
 #### Items (Herramientas y Armaduras)
-- Implementado sistema dinámico de búsqueda de datos desde `GEAR_MAP`
+- Se implementó sistema dinámico de búsqueda de datos desde `GEAR_MAP`
 - Todos los items ahora buscan sus datos actualizados en cada acceso en lugar de usar copias locales cacheadas
-- Sobrescrito método `getMaxDamage(ItemStack)` para actualizar durabilidad en runtime
+- Se sobreescribió el método `getMaxDamage(ItemStack)` para actualizar durabilidad en runtime
 
 **Archivos modificados:**
-- `CustomSwordItem.java` - Agregado `getGearData()` y `getMaxDamage()`
-- `CustomPickaxeItem.java` - Agregado `getGearData()` y `getMaxDamage()`
-- `CustomAxeItem.java` - Agregado `getGearData()` y `getMaxDamage()`
-- `CustomShovelItem.java` - Agregado `getGearData()` y `getMaxDamage()`
-- `CustomHoeItem.java` - Agregado `getGearData()` y `getMaxDamage()`
-- `CustomArmorItem.java` - Agregado `getGearData()` y `getMaxDamage()`
+- `CustomSwordItem.java` - Se agregó `getGearData()` y `getMaxDamage()`
+- `CustomPickaxeItem.java` - Se agregó `getGearData()` y `getMaxDamage()`
+- `CustomAxeItem.java` - Se agregó `getGearData()` y `getMaxDamage()`
+- `CustomShovelItem.java` - Se agregó `getGearData()` y `getMaxDamage()`
+- `CustomHoeItem.java` - Se agregó `getGearData()` y `getMaxDamage()`
+- `CustomArmorItem.java` - Se agregó `getGearData()` y `getMaxDamage()`
 
 #### Comando Reload
-- `CustomGearCommandHandler.java` - Implementado método `updateGearRegistry()` que actualiza `GEAR_MAP` y `TOOL_TYPE_MAP`
+- `CustomGearCommandHandler.java` - Se implementó el método `updateGearRegistry()` que actualiza `GEAR_MAP` y `TOOL_TYPE_MAP`
 - Los datos de los items ahora se recargan completamente sin necesidad de reiniciar el cliente
 
 #### Event Handlers
-- `SetBonusHandler.java` - Actualizado para usar `getGearDataDirect()` de los items
+- `SetBonusHandler.java` - Se actualizó para usar `getGearDataDirect()` de los items
 
 ### 🧹 Limpieza de Código
 
 #### GearData.java
-- ❌ Removida variable sin usar: `public float toughness;`
-- ❌ Removida variable sin usar: `public float knockbackResistance;`
+- ❌ Se removió variable sin usar: `public float toughness;`
+- ❌ Se removió variable sin usar: `public float knockbackResistance;`
 - ✅ Las propiedades equivalentes siguen disponibles dentro de `PieceData` (donde sí se usan)
 
 #### DynamicResourcePack.java

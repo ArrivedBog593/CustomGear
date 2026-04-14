@@ -62,22 +62,18 @@ public class CustomSwordItem extends SwordItem {
                 ? data.name.getOrDefault(lang, data.name.getOrDefault("en_us", "Unknown"))
                 : "Unknown";
 
-        if (data.toolNameFormat != null || data.toolNames != null) {
+        if (data.toolNames != null) {
+            Map<String, String> namesForLang = data.toolNames.getOrDefault(lang,
+                    data.toolNames.get("en_us"));
+            if (namesForLang != null && namesForLang.containsKey(toolType)) {
+                return namesForLang.get(toolType);  // Retorna inmediatamente
+            }
+        }
+
+        if (data.toolNameFormat != null) {
             String toolName = getDefaultToolName(toolType, lang);
-            if (data.toolNames != null) {
-                Map<String, String> namesForLang = data.toolNames.getOrDefault(lang,
-                        data.toolNames.get("en_us"));
-                if (namesForLang != null && namesForLang.containsKey(toolType)) {
-                    toolName = namesForLang.get(toolType);
-                }
-            }
-
-            String format = "{name} {tool}";
-            if (data.toolNameFormat != null) {
-                format = data.toolNameFormat.getOrDefault(lang,
-                        data.toolNameFormat.getOrDefault("en_us", "{name} {tool}"));
-            }
-
+            String format = data.toolNameFormat.getOrDefault(lang,
+                    data.toolNameFormat.getOrDefault("en_us", "{name} {tool}"));
             return format.replace("{name}", setName).replace("{tool}", toolName);
         }
 
