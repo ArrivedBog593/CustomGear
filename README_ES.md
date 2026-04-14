@@ -15,7 +15,7 @@
 - Texturas personalizadas, o reutiliza texturas de otros mods con sistema de referencia flexible
 - Compatible con JEI
 - Todos los objetos son encantables con encantamientos de vanilla y de otros mods
-- Comando `/customgear reload` para recargar los JSONs sin reiniciar el juego
+- Comando `/customgear reload` para recargar los JSON sin reiniciar el juego
 
 ---
 
@@ -195,59 +195,59 @@ Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo def
 
 ### Campos comunes
 
-| Campo | Tipo | Descripción |
-|---|---|---|
-| `id` | String | Identificador único. Solo letras minúsculas, números y guiones bajos. |
-| `type` | String | `armor_set` o `tool_set` |
-| `name` | Map | Nombre del ítem por código de idioma (ej. `en_us`, `es_mx`, `ja_jp`) |
-| `enchantable` | Boolean | Si el ítem puede ser encantado |
-| `enchantability` | Int | Mayor = mejores encantamientos. Hierro = 9, Oro = 25, Diamante = 10 |
+| Campo            | Tipo    | Descripción                                                           |
+|------------------|---------|-----------------------------------------------------------------------|
+| `id`             | String  | Identificador único. Solo letras minúsculas, números y guiones bajos. |
+| `type`           | String  | `armor_set` o `tool_set`                                              |
+| `name`           | Map     | Nombre del ítem por código de idioma (ej. `en_us`, `es_mx`, `ja_jp`)  |
+| `enchantable`    | Boolean | Si el ítem puede ser encantado                                        |
+| `enchantability` | Int     | Mayor = mejores encantamientos. Hierro = 9, Oro = 25, Diamante = 10   |
 
 ### Campos de armadura
 
-| Campo | Tipo | Descripción |
-|---|---|---|
-| `pieces` | Map | Define cada pieza. Claves: `helmet`, `chestplate`, `leggings`, `boots` |
-| `pieces.durability` | Int | Durabilidad de esta pieza |
-| `pieces.defense` | Int | Puntos de armadura que provee esta pieza |
-| `pieces.toughness` | Float | Resistencia de armadura por pieza. Netherite = 3.0 |
-| `pieces.knockback_resistance` | Float | Resistencia al retroceso. Máximo 1.0 (resistencia total) |
-| `piece_name_format` | Map | Formato del nombre por idioma. Usa `{name}` y `{piece}` como marcadores |
-| `piece_names` | Map | Nombres de cada pieza por idioma |
-| `piece_effects` | Map | Efectos aplicados al portar una pieza específica individualmente |
-| `set_bonus` | Object | Efectos aplicados al tener el número requerido de piezas equipadas |
-| `set_bonus.required_pieces` | Int | Número de piezas necesarias para activar el bonus |
-| `set_bonus.effects` | List | Lista de efectos a aplicar cuando el set está completo |
+| Campo                         | Tipo   | Descripción                                                             |
+|-------------------------------|--------|-------------------------------------------------------------------------|
+| `pieces`                      | Map    | Define cada pieza. Claves: `helmet`, `chestplate`, `leggings`, `boots`  |
+| `pieces.durability`           | Int    | Durabilidad de esta pieza                                               |
+| `pieces.defense`              | Int    | Puntos de armadura que provee esta pieza                                |
+| `pieces.toughness`            | Float  | Resistencia de armadura por pieza. Netherite = 3.0                      |
+| `pieces.knockback_resistance` | Float  | Resistencia al retroceso. Máximo 1.0 (resistencia total)                |
+| `piece_name_format`           | Map    | Formato del nombre por idioma. Usa `{name}` y `{piece}` como marcadores |
+| `piece_names`                 | Map    | Nombres de cada pieza por idioma                                        |
+| `piece_effects`               | Map    | Efectos aplicados al portar una pieza específica individualmente        |
+| `set_bonus`                   | Object | Efectos aplicados al tener el número requerido de piezas equipadas      |
+| `set_bonus.required_pieces`   | Int    | Número de piezas necesarias para activar el bonus                       |
+| `set_bonus.effects`           | List   | Lista de efectos a aplicar cuando el set está completo                  |
 
 ### Campos de herramientas
 
-| Campo | Tipo | Descripción |
-|---|---|---|
-| `tools` | Map | Define cada herramienta. Claves: `pickaxe`, `axe`, `shovel`, `hoe`, `sword` |
-| `tools.durability` | Int | Durabilidad de esta herramienta |
-| `tools.attack_damage` | Float | Daño de ataque adicional |
-| `tools.attack_speed` | Float | Velocidad de ataque. Espada estándar = 1.6 |
-| `tools.mining_speed` | Float | Velocidad de minado. Netherite = 9.0, Diamante = 8.0 |
-| `tools.harvest_level` | Int | 0=Madera, 1=Piedra, 2=Hierro, 3=Diamante, 4=Netherite |
-| `tools.held_effects` | List | Efectos aplicados al sostener esta herramienta específica en la mano |
-| `tool_name_format` | Map | Formato del nombre por idioma. Usa `{name}` y `{tool}` como marcadores |
-| `tool_names` | Map | Nombres de cada tipo de herramienta por idioma |
+| Campo                 | Tipo  | Descripción                                                                 |
+|-----------------------|-------|-----------------------------------------------------------------------------|
+| `tools`               | Map   | Define cada herramienta. Claves: `pickaxe`, `axe`, `shovel`, `hoe`, `sword` |
+| `tools.durability`    | Int   | Durabilidad de esta herramienta                                             |
+| `tools.attack_damage` | Float | Daño de ataque adicional                                                    |
+| `tools.attack_speed`  | Float | Velocidad de ataque. Espada estándar = 1.6                                  |
+| `tools.mining_speed`  | Float | Velocidad de minado. Netherite = 9.0, Diamante = 8.0                        |
+| `tools.harvest_level` | Int   | 0=Madera, 1=Piedra, 2=Hierro, 3=Diamante, 4=Netherite                       |
+| `tools.held_effects`  | List  | Efectos aplicados al sostener esta herramienta específica en la mano        |
+| `tool_name_format`    | Map   | Formato del nombre por idioma. Usa `{name}` y `{tool}` como marcadores      |
+| `tool_names`          | Map   | Nombres de cada tipo de herramienta por idioma                              |
 
 ### Objeto de efecto
 
-| Campo | Tipo | Descripción |
-|---|---|---|
-| `effect` | String | ID del efecto en formato `namespace:nombre_efecto` (ej. `minecraft:strength`) |
-| `amplifier` | Int | Nivel del efecto menos 1. `0` = Nivel I, `1` = Nivel II, etc. |
+| Campo       | Tipo   | Descripción                                                                   |
+|-------------|--------|-------------------------------------------------------------------------------|
+| `effect`    | String | ID del efecto en formato `namespace:nombre_efecto` (ej. `minecraft:strength`) |
+| `amplifier` | Int    | Nivel del efecto menos 1. `0` = Nivel I, `1` = Nivel II, etc.                 |
 
 ### Campos de textura
 
-| Campo | Tipo | Descripción |
-|---|---|---|
-| `texture.mode` | String | `default`, `custom`, o `reference` |
-| `texture.path` | String | Ruta relativa a `.minecraft/customgear/textures/` (para modo `custom`) |
-| `texture.ref` | String | Textura global de fallback — agrega `_tipo` o `/tipo` automáticamente (para modo `reference`) |
-| `texture.refs` | Map | Textura individual por herramienta/pieza — tiene prioridad sobre `ref` (para modo `reference`) |
+| Campo          | Tipo   | Descripción                                                                                    |
+|----------------|--------|------------------------------------------------------------------------------------------------|
+| `texture.mode` | String | `default`, `custom`, o `reference`                                                             |
+| `texture.path` | String | Ruta relativa a `.minecraft/customgear/textures/` (para modo `custom`)                         |
+| `texture.ref`  | String | Textura global de fallback — agrega `_tipo` o `/tipo` automáticamente (para modo `reference`)  |
+| `texture.refs` | Map    | Textura individual por herramienta/pieza — tiene prioridad sobre `ref` (para modo `reference`) |
 
 ---
 
@@ -326,22 +326,22 @@ Si tanto `ref` como `refs` están presentes, `refs` tiene prioridad por tipo de 
 
 ---
 
-## IDs de efectos comunes de vanilla
+## ID de efectos comunes de vanilla
 
-| Efecto | ID |
-|---|---|
-| Velocidad | `minecraft:speed` |
-| Prisa minera | `minecraft:haste` |
-| Fuerza | `minecraft:strength` |
-| Salto | `minecraft:jump_boost` |
-| Regeneración | `minecraft:regeneration` |
-| Resistencia | `minecraft:resistance` |
+| Efecto               | ID                          |
+|----------------------|-----------------------------|
+| Velocidad            | `minecraft:speed`           |
+| Prisa minera         | `minecraft:haste`           |
+| Fuerza               | `minecraft:strength`        |
+| Salto                | `minecraft:jump_boost`      |
+| Regeneración         | `minecraft:regeneration`    |
+| Resistencia          | `minecraft:resistance`      |
 | Resistencia al fuego | `minecraft:fire_resistance` |
-| Visión nocturna | `minecraft:night_vision` |
+| Visión nocturna      | `minecraft:night_vision`    |
 | Respiración acuática | `minecraft:water_breathing` |
-| Invisibilidad | `minecraft:invisibility` |
-| Caída lenta | `minecraft:slow_falling` |
-| Suerte | `minecraft:luck` |
+| Invisibilidad        | `minecraft:invisibility`    |
+| Caída lenta          | `minecraft:slow_falling`    |
+| Suerte               | `minecraft:luck`            |
 
 Los efectos de otros mods también funcionan — usa su ID en formato `modid:nombre_efecto`.
 
@@ -349,15 +349,15 @@ Los efectos de otros mods también funcionan — usa su ID en formato `modid:nom
 
 ## Comandos
 
-| Comando | Permiso | Descripción |
-|---|---|---|
+| Comando              | Permiso    | Descripción                                              |
+|----------------------|------------|----------------------------------------------------------|
 | `/customgear reload` | OP nivel 2 | Recarga todos los archivos JSON y texturas sin reiniciar |
 
 ---
 
 ## Agregar recetas
 
-CustomGear no agrega recetas de crafteo por defecto. Para agregar recetas, usa [KubeJS](https://www.curseforge.com/minecraft/mc-mods/kubejs) u otro mod similar. Los IDs de tus ítems siguen el patrón:
+CustomGear no agrega recetas de fabricación por defecto. Para agregar recetas, usa [KubeJS](https://www.curseforge.com/minecraft/mc-mods/kubejs) u otro mod similar. Los ID de tus ítems siguen el patrón:
 - Armadura: `customgear:mi_armadura_helmet`, `customgear:mi_armadura_chestplate`, etc.
 - Herramientas: `customgear:mis_herramientas_pickaxe`, `customgear:mis_herramientas_sword`, etc.
 

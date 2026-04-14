@@ -8,11 +8,11 @@
 
 - Add custom armor sets with per-piece defense, durability, toughness, and knockback resistance
 - Add custom weapons and tool sets (sword, pickaxe, axe, shovel, hoe) with custom damage, speed, and mining speed
-- Per-piece armor effects (e.g. helmet gives Night Vision when worn individually)
+- Per-piece armor effects (e.g., helmet gives Night Vision when worn individually)
 - Set bonus effects when wearing the full armor set
-- Held effects per tool (e.g. pickaxe gives Haste, sword gives Strength)
-- Full multi-language support for item names with customizable format per language
-- Custom textures, or reuse textures from other mods with flexible reference system
+- Held effects per tool (e.g., pickaxe gives Haste, sword gives Strength)
+- Full multi-language support for item names with a customizable format per language
+- Custom textures or reuse textures from other mods with a flexible reference system
 - Compatible with JEI
 - All items are enchantable with vanilla and modded enchantments
 - `/customgear reload` command to reload JSONs without restarting the game
@@ -195,59 +195,59 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one armor s
 
 ### Common Fields
 
-| Field | Type | Description |
-|---|---|---|
-| `id` | String | Unique identifier. Lowercase letters, numbers, and underscores only. |
-| `type` | String | `armor_set` or `tool_set` |
-| `name` | Map | Item name per language code (e.g. `en_us`, `es_mx`, `ja_jp`) |
-| `enchantable` | Boolean | Whether the item can be enchanted |
-| `enchantability` | Int | Higher = better enchantments. Iron = 9, Gold = 25, Diamond = 10 |
+| Field            | Type    | Description                                                          |
+|------------------|---------|----------------------------------------------------------------------|
+| `id`             | String  | Unique identifier. Lowercase letters, numbers, and underscores only. |
+| `type`           | String  | `armor_set` or `tool_set`                                            |
+| `name`           | Map     | Item name per language code (e.g. `en_us`, `es_mx`, `ja_jp`)         |
+| `enchantable`    | Boolean | Whether the item can be enchanted                                    |
+| `enchantability` | Int     | Higher = better enchantments. Iron = 9, Gold = 25, Diamond = 10      |
 
 ### Armor Fields
 
-| Field | Type | Description |
-|---|---|---|
-| `pieces` | Map | Defines each armor piece. Keys: `helmet`, `chestplate`, `leggings`, `boots` |
-| `pieces.durability` | Int | Durability of this piece |
-| `pieces.defense` | Int | Armor points this piece provides |
-| `pieces.toughness` | Float | Armor toughness per piece. Netherite = 3.0 |
-| `pieces.knockback_resistance` | Float | Knockback resistance. Max is 1.0 (full resistance) |
-| `piece_name_format` | Map | Format string per language. Use `{name}` and `{piece}` as placeholders |
-| `piece_names` | Map | Names for each piece per language |
-| `piece_effects` | Map | Effects applied when a specific piece is worn individually |
-| `set_bonus` | Object | Effects applied when the required number of pieces are worn |
-| `set_bonus.required_pieces` | Int | Number of pieces needed to activate the bonus |
-| `set_bonus.effects` | List | List of effects to apply when set is complete |
+| Field                         | Type   | Description                                                                 |
+|-------------------------------|--------|-----------------------------------------------------------------------------|
+| `pieces`                      | Map    | Defines each armor piece. Keys: `helmet`, `chestplate`, `leggings`, `boots` |
+| `pieces.durability`           | Int    | Durability of this piece                                                    |
+| `pieces.defense`              | Int    | Armor points this piece provides                                            |
+| `pieces.toughness`            | Float  | Armor toughness per piece. Netherite = 3.0                                  |
+| `pieces.knockback_resistance` | Float  | Knockback resistance. Max is 1.0 (full resistance)                          |
+| `piece_name_format`           | Map    | Format string per language. Use `{name}` and `{piece}` as placeholders      |
+| `piece_names`                 | Map    | Names for each piece per language                                           |
+| `piece_effects`               | Map    | Effects applied when a specific piece is worn individually                  |
+| `set_bonus`                   | Object | Effects applied when the required number of pieces are worn                 |
+| `set_bonus.required_pieces`   | Int    | Number of pieces needed to activate the bonus                               |
+| `set_bonus.effects`           | List   | List of effects to apply when set is complete                               |
 
 ### Tool Fields
 
-| Field | Type | Description |
-|---|---|---|
-| `tools` | Map | Defines each tool. Keys: `pickaxe`, `axe`, `shovel`, `hoe`, `sword` |
-| `tools.durability` | Int | Durability of this tool |
-| `tools.attack_damage` | Float | Bonus attack damage |
-| `tools.attack_speed` | Float | Attack speed. Standard sword = 1.6 |
-| `tools.mining_speed` | Float | Mining speed. Netherite = 9.0, Diamond = 8.0 |
-| `tools.harvest_level` | Int | 0=Wood, 1=Stone, 2=Iron, 3=Diamond, 4=Netherite |
-| `tools.held_effects` | List | Effects applied when this specific tool is held in hand |
-| `tool_name_format` | Map | Format string per language. Use `{name}` and `{tool}` as placeholders |
-| `tool_names` | Map | Names for each tool type per language |
+| Field                 | Type  | Description                                                           |
+|-----------------------|-------|-----------------------------------------------------------------------|
+| `tools`               | Map   | Defines each tool. Keys: `pickaxe`, `axe`, `shovel`, `hoe`, `sword`   |
+| `tools.durability`    | Int   | Durability of this tool                                               |
+| `tools.attack_damage` | Float | Bonus attack damage                                                   |
+| `tools.attack_speed`  | Float | Attack speed. Standard sword = 1.6                                    |
+| `tools.mining_speed`  | Float | Mining speed. Netherite = 9.0, Diamond = 8.0                          |
+| `tools.harvest_level` | Int   | 0=Wood, 1=Stone, 2=Iron, 3=Diamond, 4=Netherite                       |
+| `tools.held_effects`  | List  | Effects applied when this specific tool is held in hand               |
+| `tool_name_format`    | Map   | Format string per language. Use `{name}` and `{tool}` as placeholders |
+| `tool_names`          | Map   | Names for each tool type per language                                 |
 
 ### Effect Object
 
-| Field | Type | Description |
-|---|---|---|
-| `effect` | String | Effect ID in `namespace:effect_name` format (e.g. `minecraft:strength`) |
-| `amplifier` | Int | Effect level minus 1. `0` = Level I, `1` = Level II, etc. |
+| Field       | Type   | Description                                                             |
+|-------------|--------|-------------------------------------------------------------------------|
+| `effect`    | String | Effect ID in `namespace:effect_name` format (e.g. `minecraft:strength`) |
+| `amplifier` | Int    | Effect level minus 1. `0` = Level I, `1` = Level II, etc.               |
 
 ### Texture Fields
 
-| Field | Type | Description |
-|---|---|---|
-| `texture.mode` | String | `default`, `custom`, or `reference` |
-| `texture.path` | String | Path relative to `.minecraft/customgear/textures/` (for `custom` mode) |
-| `texture.ref` | String | Global texture fallback — appends `_tooltype` or `/tooltype` automatically (for `reference` mode) |
-| `texture.refs` | Map | Individual texture path per tool/piece — takes priority over `ref` (for `reference` mode) |
+| Field          | Type   | Description                                                                                       |
+|----------------|--------|---------------------------------------------------------------------------------------------------|
+| `texture.mode` | String | `default`, `custom`, or `reference`                                                               |
+| `texture.path` | String | Path relative to `.minecraft/customgear/textures/` (for `custom` mode)                            |
+| `texture.ref`  | String | Global texture fallback — appends `_tooltype` or `/tooltype` automatically (for `reference` mode) |
+| `texture.refs` | Map    | Individual texture path per tool/piece — takes priority over `ref` (for `reference` mode)         |
 
 ---
 
@@ -328,20 +328,20 @@ If both `ref` and `refs` are present, `refs` takes priority per tool type.
 
 ## Effect IDs — Common Vanilla Effects
 
-| Effect | ID |
-|---|---|
-| Speed | `minecraft:speed` |
-| Haste | `minecraft:haste` |
-| Strength | `minecraft:strength` |
-| Jump Boost | `minecraft:jump_boost` |
-| Regeneration | `minecraft:regeneration` |
-| Resistance | `minecraft:resistance` |
+| Effect          | ID                          |
+|-----------------|-----------------------------|
+| Speed           | `minecraft:speed`           |
+| Haste           | `minecraft:haste`           |
+| Strength        | `minecraft:strength`        |
+| Jump Boost      | `minecraft:jump_boost`      |
+| Regeneration    | `minecraft:regeneration`    |
+| Resistance      | `minecraft:resistance`      |
 | Fire Resistance | `minecraft:fire_resistance` |
-| Night Vision | `minecraft:night_vision` |
+| Night Vision    | `minecraft:night_vision`    |
 | Water Breathing | `minecraft:water_breathing` |
-| Invisibility | `minecraft:invisibility` |
-| Slow Falling | `minecraft:slow_falling` |
-| Luck | `minecraft:luck` |
+| Invisibility    | `minecraft:invisibility`    |
+| Slow Falling    | `minecraft:slow_falling`    |
+| Luck            | `minecraft:luck`            |
 
 Effects from other mods also work — use their ID in `modid:effect_name` format.
 
@@ -349,8 +349,8 @@ Effects from other mods also work — use their ID in `modid:effect_name` format
 
 ## Commands
 
-| Command | Permission | Description |
-|---|---|---|
+| Command              | Permission | Description                                            |
+|----------------------|------------|--------------------------------------------------------|
 | `/customgear reload` | OP level 2 | Reloads all JSON files and textures without restarting |
 
 ---
