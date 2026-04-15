@@ -30,18 +30,21 @@ public class GearParser {
             }
         }
 
-        try (var stream = Files.list(folder)) {
-            stream.filter(p -> p.toString().endsWith(".json"))
+        try {
+            Files.walk(folder)
+                    .filter(p -> p.toString().endsWith(".json"))
                     .forEach(path -> {
                         try {
                             String json = Files.readString(path);
                             GearData data = GSON.fromJson(json, GearData.class);
                             if (validate(data, path)) {
                                 result.add(data);
-                                LOGGER.info("[CustomGear] Cargado: {}", data.id);
+                                LOGGER.info("[CustomGear] Cargado: {} ({})", data.id,
+                                        folder.relativize(path));
                             }
                         } catch (Exception e) {
-                            LOGGER.error("[CustomGear] Error leyendo {}: {}", path.getFileName(), e.getMessage());
+                            LOGGER.error("[CustomGear] Error leyendo {}: {}",
+                                    path.getFileName(), e.getMessage());
                         }
                     });
         } catch (IOException e) {

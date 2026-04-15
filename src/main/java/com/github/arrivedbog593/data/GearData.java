@@ -99,7 +99,6 @@ public class GearData {
     public static class TextureData {
         public String mode;
         public String path;
-        public String ref;
         public Map<String, String> refs;
         @SerializedName("armor_layers")
         public Map<String, String> armorLayers;
