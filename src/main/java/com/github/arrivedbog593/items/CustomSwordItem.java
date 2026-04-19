@@ -58,47 +58,18 @@ public class CustomSwordItem extends SwordItem {
     }
 
     public static String buildName(GearData data, String lang, String toolType) {
-        String setName = data.name != null
-                ? data.name.getOrDefault(lang, data.name.getOrDefault("en_us", "Unknown"))
-                : "Unknown";
-
-        if (data.toolNames != null) {
-            Map<String, String> namesForLang = data.toolNames.getOrDefault(lang,
-                    data.toolNames.get("en_us"));
-            if (namesForLang != null && namesForLang.containsKey(toolType)) {
-                return namesForLang.get(toolType);  // Retorna inmediatamente
-            }
+        if (data.toolNames == null) {
+            return "Unknown";
         }
 
-        if (data.toolNameFormat != null) {
-            String toolName = getDefaultToolName(toolType, lang);
-            String format = data.toolNameFormat.getOrDefault(lang,
-                    data.toolNameFormat.getOrDefault("en_us", "{name} {tool}"));
-            return format.replace("{name}", setName).replace("{tool}", toolName);
+        Map<String, String> namesForLang = data.toolNames.getOrDefault(lang,
+                data.toolNames.get("en_us"));
+
+        if (namesForLang != null && namesForLang.containsKey(toolType)) {
+            return namesForLang.get(toolType);
         }
 
-        return setName;
-    }
-
-    private static String getDefaultToolName(String type, String lang) {
-        if (lang.startsWith("es")) {
-            return switch (type) {
-                case "sword"   -> "Espada";
-                case "pickaxe" -> "Pico";
-                case "axe"     -> "Hacha";
-                case "shovel"  -> "Pala";
-                case "hoe"     -> "Azadón";
-                default        -> type;
-            };
-        }
-        return switch (type) {
-            case "sword"   -> "Sword";
-            case "pickaxe" -> "Pickaxe";
-            case "axe"     -> "Axe";
-            case "shovel"  -> "Shovel";
-            case "hoe"     -> "Hoe";
-            default        -> type;
-        };
+        return "Unknown";
     }
 
     @Override

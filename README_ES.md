@@ -35,8 +35,6 @@ Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo def
 
 ### Set de Armadura — Ejemplo completo
 
-**Para el mejor soporte multilingüe (especialmente para idiomas no latinos como chino, ruso, japonés), use nombres específicos de piezas:**
-
 ```json
 {
   "id": "my_armor",
@@ -96,62 +94,22 @@ Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo def
     ]
   },
   "texture": {
-    "mode": "default"
+    "mode": "custom",
+    "armor_layers": {
+      "layer_1": "models/my_armor/layer_1.png",
+      "layer_2": "models/my_armor/layer_2.png"
+    },
+    "refs": {
+      "helmet": "item/armor/helmet.png",
+      "chestplate": "item/armor/chestplate.png",
+      "leggings": "item/armor/leggings.png",
+      "boots": "item/armor/boots.png"
+    }
   }
 }
 ```
 
-Alternativa Avanzada (Formato del Nombre de la Pieza):
-Si prefieres usar marcadores de posición y deseas reutilizar el nombre del conjunto en todas las piezas:
-
-```json
-{
-  "id": "my_armor",
-  "type": "armor_set",
-  "name": {
-    "en_us": "My Armor",
-    "es_mx": "Mi Armadura",
-    "ja_jp": "マイアーマー"
-  },
-  "piece_name_format": {
-    "en_us": "{name} {piece}",
-    "es_mx": "{piece} de {name}",
-    "ja_jp": "{name}の{piece}"
-  },
-  "piece_names": {
-    "en_us": {
-      "helmet": "Helmet",
-      "chestplate": "Chestplate",
-      "leggings": "Leggings",
-      "boots": "Boots"
-    },
-    "es_mx": {
-      "helmet": "Casco",
-      "chestplate": "Pechera",
-      "leggings": "Pantalones",
-      "boots": "Botas"
-    },
-    "ja_jp": {
-      "helmet": "兜",
-      "chestplate": "胸当て",
-      "leggings": "脚当て",
-      "boots": "靴"
-    }
-  },
-  "pieces": { "..."},
-  "enchantable": true,
-  "enchantability": 15,
-  "piece_effects": { "..." },
-  "set_bonus": { "..." },
-  "texture": { "mode": "default" }
-}
-```
-
-Nota: Si tanto piece_names (específico) como piece_name_format (marcador de posición) están presentes, piece_names tiene prioridad, proporcionando un mejor control para el soporte multilingüe complejo.
-
 ### Set de Herramientas — Ejemplo completo
-
-**Para el mejor soporte multilingüe (especialmente para idiomas no latinos como chino, ruso, japonés), use nombres de herramientas específicos:**
 
 ```json
 {
@@ -235,52 +193,17 @@ Nota: Si tanto piece_names (específico) como piece_name_format (marcador de pos
   "enchantable": true,
   "enchantability": 22,
   "texture": {
-    "mode": "default"
-  }
-}
-```
-
-Alternativa Avanzada (Formato del Nombre de la Herramienta):
-Si prefieres usar marcadores de posición y quieres reutilizar el nombre del conjunto en todas las herramientas:
-
-```json
-{
-  "id": "my_tools",
-  "type": "tool_set",
-  "name": {
-    "en_us": "My Tools",
-    "es_mx": "Mis Herramientas"
-  },
-  "tool_name_format": {
-    "en_us": "{name} {tool}",
-    "es_mx": "{tool} de {name}"
-  },
-  "tool_names": {
-    "en_us": {
-      "pickaxe": "Pickaxe",
-      "axe": "Axe",
-      "shovel": "Shovel",
-      "hoe": "Hoe",
-      "sword": "Sword"
-    },
-    "es_mx": {
-      "pickaxe": "Pico",
-      "axe": "Hacha",
-      "shovel": "Pala",
-      "hoe": "Azadón",
-      "sword": "Espada"
+    "mode": "custom",
+    "refs": {
+      "pickaxe": "item/tools/pickaxe.png",
+      "axe": "item/tools/axe.png",
+      "shovel": "item/tools/shovel.png",
+      "hoe": "item/tools/hoe.png",
+      "sword": "item/tools/sword.png"
     }
-  },
-  "tools": { "..." },
-  "enchantable": true,
-  "enchantability": 22,
-  "texture": {
-    "mode": "default"
   }
 }
 ```
-
-Nota: Si tanto tool_names (específico) como tool_name_format (marcador de posición) están presentes, tool_names tiene prioridad, proporcionando un mejor control para el soporte multilingüe complejo.
 
 ---
 
@@ -347,28 +270,84 @@ Nota: Si tanto tool_names (específico) como tool_name_format (marcador de posic
 ## Modos de textura
 
 ### `default`
-Usa las texturas de armadura/herramienta de hierro como placeholder. Ideal para pruebas.
+Usa las texturas de armadura/herramientas de hierro como marcadores de posición. Bueno para pruebas.
+```json
+"texture": {
+"mode": "default"
+}
+```
 
 ### `custom`
-Usa tus propios archivos PNG desde `.minecraft/customgear/textures/`.
+Usa tus propios archivos PNG desde .minecraft/customgear/. Todas las rutas son relativas a .minecraft/customgear/.
 
-Para sets de armadura, necesitas dos archivos de capa:
-```
-textures/mi_armadura_layer_1.png   ← textura del cuerpo
-textures/mi_armadura_layer_2.png   ← textura de las piernas
+**Para sets de armadura, debes proporcionar:**
+- armor_layers: Texturas de las capas del modelo de armadura
+- refs: Rutas individuales para cada pieza de armadura
+```json
+"texture": {
+"mode": "custom",
+"armor_layers": {
+"layer_1": "models/my_armor/layer_1.png",
+"layer_2": "models/my_armor/layer_2.png"
+},
+"refs": {
+"helmet": "item/armor/helmet.png",
+"chestplate": "item/armor/chestplate.png",
+"leggings": "item/armor/leggings.png",
+"boots": "item/armor/boots.png"
+}
+}
 ```
 
-Para sets de herramientas, un PNG por herramienta:
+**Para sets de herramientas, un PNG por herramienta:**
+- refs: Rutas individuales para cada herramienta
+```json
+"texture": {
+"mode": "custom",
+"refs": {
+"pickaxe": "item/tools/pickaxe.png",
+"axe": "item/tools/axe.png",
+"shovel": "item/tools/shovel.png",
+"hoe": "item/tools/hoe.png",
+"sword": "item/tools/sword.png"
+}
+}
 ```
-textures/mis_herramientas_pickaxe.png
-textures/mis_herramientas_axe.png
-textures/mis_herramientas_sword.png
+
+**Ejemplo de estructura de archivos:**
+```.minecraft/customgear/
+├── models/
+│   └── my_armor/
+│       ├── layer_1.png
+│       └── layer_2.png
+├── item/
+│   ├── armor/
+│   │   ├── helmet.png
+│   │   ├── chestplate.png
+│   │   ├── leggings.png
+│   │   └── boots.png
+│   └── tools/
+│       ├── pickaxe.png
+│       ├── axe.png
+│       ├── shovel.png
+│       ├── hoe.png
+│       └── sword.png
+├── armor1.json
+├── tool1.json
+├── json/
+│   ├── armor2.json
+│   ├── armors/
+│   │   └── armor3.json
+│   └── tools/
+│       └── tool2.json    
 ```
+
+Los archivos JSON pueden organizarse en subcarpetas según sea necesario, y las rutas de las texturas siempre son relativas a `.minecraft/customgear/`.
 
 ### `reference`
 Reutiliza texturas de otro mod ya instalado. Dos opciones:
 
-**Opción A — Refs individuales (recomendado, más flexible):**
+**Para sets de herramientas:**
 ```json
 "texture": {
   "mode": "reference",
@@ -382,7 +361,7 @@ Reutiliza texturas de otro mod ya instalado. Dos opciones:
 }
 ```
 
-**Para armaduras en modo reference:**
+**Para sets de armaduras:**
 ```json
 "texture": {
   "mode": "reference",
@@ -399,40 +378,7 @@ Reutiliza texturas de otro mod ya instalado. Dos opciones:
 }
 ```
 
-**Opción B — Ref global con sufijo automático:**
-
-Si el ref termina en `/`, el tipo de herramienta se agrega directamente:
-```json
-"texture": {
-  "mode": "reference",
-  "ref": "otromod:item/material/"
-}
-```
-Genera: `otromod:item/material/pickaxe`, `otromod:item/material/sword`, etc.
-
-Si el ref NO termina en `/`, se agrega un guión bajo:
-```json
-"texture": {
-  "mode": "reference",
-  "ref": "otromod:item/material"
-}
-```
-Genera: `otromod:item/material_pickaxe`, `otromod:item/material_sword`, etc.
-
-Si tanto `ref` como `refs` están presentes, `refs` tiene prioridad por tipo de herramienta.
-
-**Para armaduras en modo reference:**
-```json
-"texture": {
-  "mode": "reference",
-  "refs": {
-    "helmet":     "otromod:item/miarmadura/helmet",
-    "chestplate": "otromod:item/miarmadura/chestplate",
-    "leggings":   "otromod:item/miarmadura/leggings",
-    "boots":      "otromod:item/miarmadura/boots"
-  }
-}
-```
+Nota: Todas las refs deben definirse explícitamente. Tanto refs como armor_layers (para armaduras) son obligatorios.
 
 ---
 

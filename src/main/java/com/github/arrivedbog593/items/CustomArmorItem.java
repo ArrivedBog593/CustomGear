@@ -98,51 +98,19 @@ public class CustomArmorItem extends ArmorItem {
 
         GearData data = getGearData();
 
-        String setName = "Unknown";
-        if (data.name != null) {
-            setName = data.name.getOrDefault(lang,
-                    data.name.getOrDefault("en_us", "Unknown"));
+        if (data == null || data.pieceNames == null) {
+            return super.getName(stack);
         }
 
-        if (data.pieceNames != null) {
-            Map<String, String> piecesForLang = data.pieceNames.getOrDefault(lang,
-                    data.pieceNames.get("en_us"));
-            if (piecesForLang != null && piecesForLang.containsKey(piece)) {
-                String pieceName = piecesForLang.get(piece);
-                // Si solo hay el nombre de la pieza, retorna con el nombre del set
-                return net.minecraft.network.chat.Component.literal(
-                        setName + " " + pieceName);  // Mejor para multiidioma
-            }
+        Map<String, String> namesForLang = data.pieceNames.getOrDefault(lang,
+                data.pieceNames.get("en_us"));
+
+        if (namesForLang != null && namesForLang.containsKey(piece)) {
+            String pieceName = namesForLang.get(piece);
+            return net.minecraft.network.chat.Component.literal(pieceName);
         }
 
-        String pieceName = getDefaultPieceName(piece, lang);
-        if (data.pieceNameFormat != null) {
-            String format = data.pieceNameFormat.getOrDefault(lang,
-                    data.pieceNameFormat.getOrDefault("en_us", "{piece} {name}"));
-            return net.minecraft.network.chat.Component.literal(
-                    format.replace("{name}", setName).replace("{piece}", pieceName));
-        }
-
-        return net.minecraft.network.chat.Component.literal(setName + " " + pieceName);
-    }
-
-    private String getDefaultPieceName(String piece, String lang) {
-        if (lang.startsWith("es")) {
-            return switch (piece) {
-                case "helmet"     -> "Casco";
-                case "chestplate" -> "Pechera";
-                case "leggings"   -> "Pantalones";
-                case "boots"      -> "Botas";
-                default           -> piece;
-            };
-        }
-        return switch (piece) {
-            case "helmet"     -> "Helmet";
-            case "chestplate" -> "Chestplate";
-            case "leggings"   -> "Leggings";
-            case "boots"      -> "Boots";
-            default           -> piece;
-        };
+        return super.getName(stack);
     }
 
     @Override

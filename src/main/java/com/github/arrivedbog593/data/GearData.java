@@ -10,9 +10,6 @@ public class GearData {
     public String type;
     public Map<String, String> name;
 
-    @SerializedName("piece_name_format")
-    public Map<String, String> pieceNameFormat;
-
     @SerializedName("piece_names")
     public Map<String, Map<String, String>> pieceNames;
 
@@ -47,9 +44,6 @@ public class GearData {
 
     // Tool set
     public Map<String, ToolData> tools;
-
-    @SerializedName("tool_name_format")
-    public Map<String, String> toolNameFormat;
 
     @SerializedName("tool_names")
     public Map<String, Map<String, String>> toolNames;
@@ -98,7 +92,6 @@ public class GearData {
 
     public static class TextureData {
         public String mode;
-        public String path;
         public Map<String, String> refs;
         @SerializedName("armor_layers")
         public Map<String, String> armorLayers;

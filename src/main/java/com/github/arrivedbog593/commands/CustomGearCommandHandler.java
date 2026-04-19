@@ -117,7 +117,6 @@ public class CustomGearCommandHandler {
         derived.id = parent.id + "_" + toolType;
         derived.type = toolType;
         derived.name = parent.name;
-        derived.toolNameFormat = parent.toolNameFormat;
         derived.toolNames = parent.toolNames;
         derived.durability = toolData.durability > 0 ? toolData.durability : parent.durability;
         derived.attackDamage = toolData.attackDamage;

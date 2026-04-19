@@ -86,114 +86,100 @@ public class TextureLoader {
     private static void loadCustom(DynamicResourcePack pack, GearData data) {
         switch (data.type) {
             case "armor_set" -> {
-                if (data.texture.armorLayers != null) {
-                    String layer1 = data.texture.armorLayers.get("layer_1");
-                    String layer2 = data.texture.armorLayers.get("layer_2");
+                if (data.texture.armorLayers == null || data.texture.armorLayers.isEmpty()) {
+                    System.err.println("[CustomGear] 'armor_layers' es obligatorio para armaduras en modo custom: " + data.id);
+                    return;
+                }
 
-                    if (layer1 != null) {
-                        Path texPath = GEAR_FOLDER.resolve(layer1);
-                        if (Files.exists(texPath)) {
-                            ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(
-                                    "customgear",
-                                    "textures/models/armor/" + data.id + "_layer_1.png");
-                            pack.addTexture(loc, texPath);
-                        } else {
-                            System.err.println("[CustomGear] Capa 1 no encontrada: " + texPath);
-                        }
-                    }
-                    if (layer2 != null) {
-                        Path texPath = GEAR_FOLDER.resolve(layer2);
-                        if (Files.exists(texPath)) {
-                            ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(
-                                    "customgear",
-                                    "textures/models/armor/" + data.id + "_layer_2.png");
-                            pack.addTexture(loc, texPath);
-                        } else {
-                            System.err.println("[CustomGear] Capa 2 no encontrada: " + texPath);
-                        }
+                String layer1 = data.texture.armorLayers.get("layer_1");
+                String layer2 = data.texture.armorLayers.get("layer_2");
+
+                if (layer1 != null) {
+                    Path texPath = GEAR_FOLDER.resolve(layer1);
+                    if (Files.exists(texPath)) {
+                        ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(
+                                "customgear",
+                                "textures/models/armor/" + data.id + "_layer_1.png");
+                        pack.addTexture(loc, texPath);
+                    } else {
+                        System.err.println("[CustomGear] Capa 1 no encontrada: " + texPath);
                     }
                 } else {
-                    loadArmorLayer(pack, data, 1);
-                    loadArmorLayer(pack, data, 2);
+                    System.err.println("[CustomGear] 'layer_1' no definido en armor_layers para: " + data.id);
+                }
+
+                if (layer2 != null) {
+                    Path texPath = GEAR_FOLDER.resolve(layer2);
+                    if (Files.exists(texPath)) {
+                        ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(
+                                "customgear",
+                                "textures/models/armor/" + data.id + "_layer_2.png");
+                        pack.addTexture(loc, texPath);
+                    } else {
+                        System.err.println("[CustomGear] Capa 2 no encontrada: " + texPath);
+                    }
+                } else {
+                    System.err.println("[CustomGear] 'layer_2' no definido en armor_layers para: " + data.id);
+                }
+
+                if (data.texture.refs == null || data.texture.refs.isEmpty()) {
+                    System.err.println("[CustomGear] 'refs' es obligatorio para piezas de armadura en modo custom: " + data.id);
+                    return;
                 }
 
                 String[] pieces = {"helmet", "chestplate", "leggings", "boots"};
                 for (String piece : pieces) {
                     if (data.pieces == null || !data.pieces.containsKey(piece)) continue;
-                    generateItemModel(pack, data.id + "_" + piece);
+                    String ref = data.texture.refs.get(piece);
+                    if (ref != null) {
+                        Path texPath = GEAR_FOLDER.resolve(ref);
+                        if (Files.exists(texPath)) {
+                            ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(
+                                    "customgear", "textures/item/" + data.id + "_" + piece + ".png");
+                            pack.addTexture(loc, texPath);
+                            generateItemModel(pack, data.id + "_" + piece);
+                        } else {
+                            System.err.println("[CustomGear] Textura de pieza no encontrada: " + texPath);
+                        }
+                    } else {
+                        System.err.println("[CustomGear] 'refs' no contiene: " + piece + " para " + data.id);
+                    }
                 }
             }
             case "tool_set" -> {
                 if (data.tools == null) return;
-                // refs individuales por herramienta dentro de custom
-                if (data.texture.refs != null) {
-                    String[] toolTypes = {"pickaxe", "axe", "shovel", "hoe", "sword"};
-                    for (String toolType : toolTypes) {
-                        if (!data.tools.containsKey(toolType)) continue;
-                        String relativePath = data.texture.refs.get(toolType);
-                        if (relativePath == null) continue;
 
-                        String itemId = data.id + "_" + toolType;
-                        Path texPath = GEAR_FOLDER.resolve(relativePath);
-                        if (!Files.exists(texPath)) {
-                            System.err.println("[CustomGear] Textura no encontrada: " + texPath);
-                            continue;
-                        }
-                        ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(
-                                "customgear", "textures/item/" + itemId + ".png");
-                        pack.addTexture(loc, texPath);
-                        generateItemModel(pack, itemId);
-                    }
-                } else if (data.texture.path != null) {
-                    // Fallback: path base + _tooltype.png
-                    String[] toolTypes = {"pickaxe", "axe", "shovel", "hoe", "sword"};
-                    for (String toolType : toolTypes) {
-                        if (!data.tools.containsKey(toolType)) continue;
-                        String itemId = data.id + "_" + toolType;
-                        Path texPath = GEAR_FOLDER.resolve(
-                                data.texture.path + "_" + toolType + ".png");
-                        if (!Files.exists(texPath)) {
-                            System.err.println("[CustomGear] Textura no encontrada: " + texPath);
-                            continue;
-                        }
-                        ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(
-                                "customgear", "textures/item/" + itemId + ".png");
-                        pack.addTexture(loc, texPath);
-                        generateItemModel(pack, itemId);
-                    }
-                }
-            }
-            default -> {
-                if (data.texture.path == null) return;
-                Path texPath = GEAR_FOLDER.resolve(data.texture.path);
-                if (!Files.exists(texPath)) {
-                    System.err.println("[CustomGear] Textura no encontrada: " + texPath);
+                if (data.texture.refs == null || data.texture.refs.isEmpty()) {
+                    System.err.println("[CustomGear] 'refs' es obligatorio para herramientas en modo custom: " + data.id);
                     return;
                 }
-                ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(
-                        "customgear", "textures/item/" + data.id + ".png");
-                pack.addTexture(loc, texPath);
-                generateItemModel(pack, data.id);
+
+                String[] toolTypes = {"pickaxe", "axe", "shovel", "hoe", "sword"};
+                for (String toolType : toolTypes) {
+                    if (!data.tools.containsKey(toolType)) continue;
+                    String ref = data.texture.refs.get(toolType);
+                    if (ref != null) {
+                        Path texPath = GEAR_FOLDER.resolve(ref);
+                        if (Files.exists(texPath)) {
+                            String itemId = data.id + "_" + toolType;
+                            ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(
+                                    "customgear", "textures/item/" + itemId + ".png");
+                            pack.addTexture(loc, texPath);
+                            generateItemModel(pack, itemId);
+                        } else {
+                            System.err.println("[CustomGear] Textura de herramienta no encontrada: " + texPath);
+                        }
+                    } else {
+                        System.err.println("[CustomGear] 'refs' no contiene: " + toolType + " para " + data.id);
+                    }
+                }
             }
         }
-    }
-
-    private static void loadArmorLayer(DynamicResourcePack pack, GearData data, int layer) {
-        String fileName = data.texture.path + "_layer_" + layer + ".png";
-        Path texPath = GEAR_FOLDER.resolve(fileName);
-        if (!Files.exists(texPath)) {
-            System.err.println("[CustomGear] Capa de armadura no encontrada: " + texPath);
-            return;
-        }
-        ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(
-                "customgear",
-                "textures/models/armor/" + data.id + "_layer_" + layer + ".png");
-        pack.addTexture(loc, texPath);
     }
 
     private static void loadReference(DynamicResourcePack pack, GearData data) {
         if (data.texture.refs == null || data.texture.refs.isEmpty()) {
-            System.err.println("[CustomGear] 'refs' vacío en modo reference: " + data.id);
+            System.err.println("[CustomGear] 'refs' es obligatorio en modo reference: " + data.id);
             return;
         }
 
@@ -206,8 +192,18 @@ public class TextureLoader {
                     if (ref != null) {
                         generateItemModelWithRef(pack, data.id + "_" + piece, ref);
                     } else {
-                        System.err.println("[CustomGear] Sin ref para pieza: " + piece
-                                + " en " + data.id);
+                        System.err.println("[CustomGear] 'refs' no contiene: " + piece + " en " + data.id);
+                    }
+                }
+
+                if (data.texture.armorLayers != null && !data.texture.armorLayers.isEmpty()) {
+                    String layer1 = data.texture.armorLayers.get("layer_1");
+                    String layer2 = data.texture.armorLayers.get("layer_2");
+                    if (layer1 != null) {
+                        generateItemModelWithRef(pack, data.id + "_layer_1", layer1);
+                    }
+                    if (layer2 != null) {
+                        generateItemModelWithRef(pack, data.id + "_layer_2", layer2);
                     }
                 }
             }
@@ -219,18 +215,8 @@ public class TextureLoader {
                     if (ref != null) {
                         generateItemModelWithRef(pack, data.id + "_" + toolType, ref);
                     } else {
-                        System.err.println("[CustomGear] Sin ref para herramienta: " + toolType
-                                + " en " + data.id);
+                        System.err.println("[CustomGear] 'refs' no contiene: " + toolType + " en " + data.id);
                     }
-                }
-            }
-            default -> {
-                String ref = data.texture.refs.get(data.type);
-                if (ref == null) ref = data.texture.refs.get("item");
-                if (ref != null) {
-                    generateItemModelWithRef(pack, data.id, ref);
-                } else {
-                    System.err.println("[CustomGear] Sin ref para: " + data.id);
                 }
             }
         }
@@ -281,8 +267,8 @@ public class TextureLoader {
                         for (String piece : pieces) {
                             if (!data.pieces.containsKey(piece)) continue;
                             String key = "item.customgear." + data.id + "_" + piece;
-                            String value = getLocalizedToolName(data, lang, piece,
-                                    data.pieceNameFormat, data.pieceNames,
+                            String value = getLocalizedToolName(lang, piece,
+                                    data.pieceNames,
                                     getDefaultPieceName(piece, lang));
                             counter[0]++;
                             json.append("  \"").append(key).append("\": \"")
@@ -296,8 +282,8 @@ public class TextureLoader {
                         for (String toolType : toolTypes) {
                             if (!data.tools.containsKey(toolType)) continue;
                             String key = "item.customgear." + data.id + "_" + toolType;
-                            String value = getLocalizedToolName(data, lang, toolType,
-                                    data.toolNameFormat, data.toolNames,
+                            String value = getLocalizedToolName(lang, toolType,
+                                    data.toolNames,
                                     getDefaultToolTypeName(toolType, lang));
                             counter[0]++;
                             json.append("  \"").append(key).append("\": \"")
@@ -323,12 +309,9 @@ public class TextureLoader {
         }
     }
 
-    private static String getLocalizedToolName(GearData data, String lang, String toolType,
-                                               java.util.Map<String, String> nameFormat,
+    private static String getLocalizedToolName(String lang, String toolType,
                                                java.util.Map<String, java.util.Map<String, String>> toolNames,
                                                String defaultToolName) {
-        String setName = getLocalizedName(data, lang);
-
         String toolName = defaultToolName;
         if (toolNames != null) {
             java.util.Map<String, String> namesForLang = toolNames.getOrDefault(lang,
@@ -338,14 +321,7 @@ public class TextureLoader {
             }
         }
 
-        String format = "{name} {tool}";
-        if (nameFormat != null) {
-            format = nameFormat.getOrDefault(lang,
-                    nameFormat.getOrDefault("en_us", "{name} {tool}"));
-        }
-
-        return format.replace("{name}", setName).replace("{tool}", toolName)
-                .replace("{piece}", toolName); // compatibilidad con armor
+        return toolName;
     }
 
     private static int countLangEntries(List<GearData> gearList) {

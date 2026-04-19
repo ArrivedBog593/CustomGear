@@ -11,8 +11,8 @@
 - Per-piece armor effects (e.g., helmet gives Night Vision when worn individually)
 - Set bonus effects when wearing the full armor set
 - Held effects per tool (e.g., pickaxe gives Haste, sword gives Strength)
-- Full multi-language support for item names with a customizable format per language
-- Custom textures or reuse textures from other mods with a flexible reference system
+- Full multi-language support for item names with specific names per language
+- Custom textures with flexible path system or reuse textures from other mods
 - Compatible with JEI
 - All items are enchantable with vanilla and modded enchantments
 - `/customgear reload` command to reload JSONs without restarting the game
@@ -34,8 +34,6 @@
 All JSON files go inside `.minecraft/customgear/`. Each file defines one armor set or one tool set.
 
 ### Armor Set — Full Example
-
-**For the best multi-language support (especially non-Latin languages like Chinese, Russian, Japanese), use specific piece names:**
 
 ```json
 {
@@ -96,62 +94,22 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one armor s
     ]
   },
   "texture": {
-    "mode": "default"
+    "mode": "custom",
+    "armor_layers": {
+      "layer_1": "models/my_armor/layer_1.png",
+      "layer_2": "models/my_armor/layer_2.png"
+    },
+    "refs": {
+      "helmet": "item/armor/helmet.png",
+      "chestplate": "item/armor/chestplate.png",
+      "leggings": "item/armor/leggings.png",
+      "boots": "item/armor/boots.png"
+    }
   }
 }
 ```
 
-Advanced Alternative (Piece Name Format):
-If you prefer using placeholders and want to reuse the set name across all pieces:
-
-```json
-{
-  "id": "my_armor",
-  "type": "armor_set",
-  "name": {
-    "en_us": "My Armor",
-    "es_mx": "Mi Armadura",
-    "ja_jp": "マイアーマー"
-  },
-  "piece_name_format": {
-    "en_us": "{name} {piece}",
-    "es_mx": "{piece} de {name}",
-    "ja_jp": "{name}の{piece}"
-  },
-  "piece_names": {
-    "en_us": {
-      "helmet": "Helmet",
-      "chestplate": "Chestplate",
-      "leggings": "Leggings",
-      "boots": "Boots"
-    },
-    "es_mx": {
-      "helmet": "Casco",
-      "chestplate": "Pechera",
-      "leggings": "Pantalones",
-      "boots": "Botas"
-    },
-    "ja_jp": {
-      "helmet": "兜",
-      "chestplate": "胸当て",
-      "leggings": "脚当て",
-      "boots": "靴"
-    }
-  },
-  "pieces": { "..."},
-  "enchantable": true,
-  "enchantability": 15,
-  "piece_effects": { "..." },
-  "set_bonus": { "..." },
-  "texture": { "mode": "default" }
-}
-```
-
-Note: If both piece_names (specific) and piece_name_format (placeholder) are present, piece_names takes priority, providing better control for complex multi-language support.
-
 ### Tool Set — Full Example
-
-**For the best multi-language support (especially non-Latin languages like Chinese, Russian, Japanese), use specific tool names:**
 
 ```json
 {
@@ -235,52 +193,17 @@ Note: If both piece_names (specific) and piece_name_format (placeholder) are pre
   "enchantable": true,
   "enchantability": 22,
   "texture": {
-    "mode": "default"
-  }
-}
-```
-
-Advanced Alternative (Tool Name Format):
-If you prefer using placeholders and want to reuse the set name across all tools:
-
-```json
-{
-  "id": "my_tools",
-  "type": "tool_set",
-  "name": {
-    "en_us": "My Tools",
-    "es_mx": "Mis Herramientas"
-  },
-  "tool_name_format": {
-    "en_us": "{name} {tool}",
-    "es_mx": "{tool} de {name}"
-  },
-  "tool_names": {
-    "en_us": {
-      "pickaxe": "Pickaxe",
-      "axe": "Axe",
-      "shovel": "Shovel",
-      "hoe": "Hoe",
-      "sword": "Sword"
-    },
-    "es_mx": {
-      "pickaxe": "Pico",
-      "axe": "Hacha",
-      "shovel": "Pala",
-      "hoe": "Azadón",
-      "sword": "Espada"
+    "mode": "custom",
+    "refs": {
+      "pickaxe": "item/tools/pickaxe.png",
+      "axe": "item/tools/axe.png",
+      "shovel": "item/tools/shovel.png",
+      "hoe": "item/tools/hoe.png",
+      "sword": "item/tools/sword.png"
     }
-  },
-  "tools": { "..." },
-  "enchantable": true,
-  "enchantability": 22,
-  "texture": {
-    "mode": "default"
   }
 }
 ```
-
-Note: If both tool_names (specific) and tool_name_format (placeholder) are present, tool_names takes priority, providing better control for complex multi-language support.
 
 ---
 
@@ -348,27 +271,83 @@ Note: If both tool_names (specific) and tool_name_format (placeholder) are prese
 
 ### `default`
 Uses iron armor/tool textures as placeholders. Good for testing.
+```json
+"texture": {
+"mode": "default"
+}
+```
 
 ### `custom`
-Uses your own PNG files from `.minecraft/customgear/textures/`.
+Uses your own PNG files from .minecraft/customgear/. All paths are relative to .minecraft/customgear/.
 
-For armor sets, you need two layer files:
-```
-textures/my_armor_layer_1.png   ← body texture
-textures/my_armor_layer_2.png   ← legs texture
+**For armor sets, you must provide:**
+- armor_layers: Layer textures for the armor model
+- refs: Individual texture paths for each armor piece
+```json
+"texture": {
+"mode": "custom",
+"armor_layers": {
+"layer_1": "models/my_armor/layer_1.png",
+"layer_2": "models/my_armor/layer_2.png"
+},
+"refs": {
+"helmet": "item/armor/helmet.png",
+"chestplate": "item/armor/chestplate.png",
+"leggings": "item/armor/leggings.png",
+"boots": "item/armor/boots.png"
+}
+}
 ```
 
-For tool sets, one PNG per tool:
+**For tool sets, one PNG per tool:**
+- refs: Individual texture paths for each tool
+```json
+"texture": {
+"mode": "custom",
+"refs": {
+"pickaxe": "item/tools/pickaxe.png",
+"axe": "item/tools/axe.png",
+"shovel": "item/tools/shovel.png",
+"hoe": "item/tools/hoe.png",
+"sword": "item/tools/sword.png"
+}
+}
 ```
-textures/my_tools_pickaxe.png
-textures/my_tools_axe.png
-textures/my_tools_sword.png
+
+**File structure example:**
+```.minecraft/customgear/
+├── models/
+│   └── my_armor/
+│       ├── layer_1.png
+│       └── layer_2.png
+├── item/
+│   ├── armor/
+│   │   ├── helmet.png
+│   │   ├── chestplate.png
+│   │   ├── leggings.png
+│   │   └── boots.png
+│   └── tools/
+│       ├── pickaxe.png
+│       ├── axe.png
+│       ├── shovel.png
+│       ├── hoe.png
+│       └── sword.png
+├── armor1.json
+├── tool1.json
+├── json/
+│   ├── armor2.json
+│   ├── armors/
+│   │   └── armor3.json
+│   └── tools/
+│       └── tool2.json    
 ```
+
+JSON files can be organized in subfolders as needed, and texture paths are always relative to `.minecraft/customgear/`.
 
 ### `reference`
 Reuses textures from another installed mod. Two options:
 
-**Option A — Individual refs (recommended, most flexible):**
+**For tool sets:**
 ```json
 "texture": {
   "mode": "reference",
@@ -382,7 +361,7 @@ Reuses textures from another installed mod. Two options:
 }
 ```
 
-**For armor sets in reference mode:**
+**For armor sets:**
 ```json
 "texture": {
   "mode": "reference",
@@ -399,40 +378,7 @@ Reuses textures from another installed mod. Two options:
 }
 ```
 
-**Option B — Global ref with automatic suffix:**
-
-If the ref ends with `/`, the tool type is appended directly:
-```json
-"texture": {
-  "mode": "reference",
-  "ref": "othermod:item/material/"
-}
-```
-Generates: `othermod:item/material/pickaxe`, `othermod:item/material/sword`, etc.
-
-If the ref does NOT end with `/`, an underscore is appended:
-```json
-"texture": {
-  "mode": "reference",
-  "ref": "othermod:item/material"
-}
-```
-Generates: `othermod:item/material_pickaxe`, `othermod:item/material_sword`, etc.
-
-If both `ref` and `refs` are present, `refs` takes priority per tool type.
-
-**For armor sets in reference mode:**
-```json
-"texture": {
-  "mode": "reference",
-  "refs": {
-    "helmet":     "othermod:item/myarmor/helmet",
-    "chestplate": "othermod:item/myarmor/chestplate",
-    "leggings":   "othermod:item/myarmor/leggings",
-    "boots":      "othermod:item/myarmor/boots"
-  }
-}
-```
+Note: All refs must be explicitly defined. Both refs and armor_layers (for armor) are required.
 
 ---
 
