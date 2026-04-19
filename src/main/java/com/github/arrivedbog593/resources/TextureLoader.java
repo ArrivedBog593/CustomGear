@@ -292,12 +292,8 @@ public class TextureLoader {
                         }
                     }
                     default -> {
-                        String key = "item.customgear." + data.id;
-                        String value = getLocalizedName(data, lang);
-                        counter[0]++;
-                        json.append("  \"").append(key).append("\": \"")
-                                .append(value).append("\"")
-                                .append(counter[0] < totalEntries ? ",\n" : "\n");
+                        // tipos individuales no soportados en el sistema actual
+                        // se ignoran en el lang
                     }
                 }
             }
@@ -375,12 +371,6 @@ public class TextureLoader {
             case "sword"   -> "Sword";
             default        -> type;
         };
-    }
-
-    private static String getLocalizedName(GearData data, String lang) {
-        if (data.name == null) return "Unknown";
-        return data.name.getOrDefault(lang,
-                data.name.getOrDefault("en_us", "Unknown"));
     }
 
 }

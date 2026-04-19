@@ -8,14 +8,15 @@
 
 - Add custom armor sets with per-piece defense, durability, toughness, and knockback resistance
 - Add custom weapons and tool sets (sword, pickaxe, axe, shovel, hoe) with custom damage, speed, and mining speed
-- Per-piece armor effects (e.g., helmet gives Night Vision when worn individually)
+- Per-piece armor effects (e.g. helmet gives Night Vision when worn individually)
 - Set bonus effects when wearing the full armor set
-- Held effects per tool (e.g., pickaxe gives Haste, sword gives Strength)
-- Full multi-language support for item names with specific names per language
-- Custom textures with flexible path system or reuse textures from other mods
+- Held effects per tool (e.g. pickaxe gives Haste, sword gives Strength)
+- Full multi-language support — define the full item name per language with no format restrictions
+- Custom textures with flexible path system, or reuse textures from other mods
+- JSON files can be organized in any subfolder structure inside `.minecraft/customgear/`
 - Compatible with JEI
 - All items are enchantable with vanilla and modded enchantments
-- `/customgear reload` command to reload JSONs without restarting the game
+- `/customgear reload` command to reload names, textures, and effects without restarting
 
 ---
 
@@ -31,7 +32,7 @@
 
 ## JSON File Structure
 
-All JSON files go inside `.minecraft/customgear/`. Each file defines one armor set or one tool set.
+All JSON files go inside `.minecraft/customgear/`. Each file defines one armor set or one tool set. Files can be organized in any subfolder structure you prefer.
 
 ### Armor Set — Full Example
 
@@ -39,11 +40,6 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one armor s
 {
   "id": "my_armor",
   "type": "armor_set",
-  "name": {
-    "en_us": "My Armor",
-    "es_mx": "Mi Armadura",
-    "ja_jp": "マイアーマー"
-  },
   "piece_names": {
     "en_us": {
       "helmet": "My Armor Helmet",
@@ -100,10 +96,10 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one armor s
       "layer_2": "models/my_armor/layer_2.png"
     },
     "refs": {
-      "helmet": "item/armor/helmet.png",
+      "helmet":     "item/armor/helmet.png",
       "chestplate": "item/armor/chestplate.png",
-      "leggings": "item/armor/leggings.png",
-      "boots": "item/armor/boots.png"
+      "leggings":   "item/armor/leggings.png",
+      "boots":      "item/armor/boots.png"
     }
   }
 }
@@ -115,11 +111,6 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one armor s
 {
   "id": "my_tools",
   "type": "tool_set",
-  "name": {
-    "en_us": "My Tools",
-    "es_mx": "Mis Herramientas",
-    "ja_jp": "マイツール"
-  },
   "tool_names": {
     "en_us": {
       "pickaxe": "My Pickaxe",
@@ -196,10 +187,10 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one armor s
     "mode": "custom",
     "refs": {
       "pickaxe": "item/tools/pickaxe.png",
-      "axe": "item/tools/axe.png",
-      "shovel": "item/tools/shovel.png",
-      "hoe": "item/tools/hoe.png",
-      "sword": "item/tools/sword.png"
+      "axe":     "item/tools/axe.png",
+      "shovel":  "item/tools/shovel.png",
+      "hoe":     "item/tools/hoe.png",
+      "sword":   "item/tools/sword.png"
     }
   }
 }
@@ -215,39 +206,36 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one armor s
 |------------------|---------|----------------------------------------------------------------------|
 | `id`             | String  | Unique identifier. Lowercase letters, numbers, and underscores only. |
 | `type`           | String  | `armor_set` or `tool_set`                                            |
-| `name`           | Map     | Item name per language code (e.g. `en_us`, `es_mx`, `ja_jp`)         |
 | `enchantable`    | Boolean | Whether the item can be enchanted                                    |
 | `enchantability` | Int     | Higher = better enchantments. Iron = 9, Gold = 25, Diamond = 10      |
 
 ### Armor Fields
 
-| Field                         | Type   | Description                                                                 |
-|-------------------------------|--------|-----------------------------------------------------------------------------|
-| `pieces`                      | Map    | Defines each armor piece. Keys: `helmet`, `chestplate`, `leggings`, `boots` |
-| `pieces.durability`           | Int    | Durability of this piece                                                    |
-| `pieces.defense`              | Int    | Armor points this piece provides                                            |
-| `pieces.toughness`            | Float  | Armor toughness per piece. Netherite = 3.0                                  |
-| `pieces.knockback_resistance` | Float  | Knockback resistance. Max is 1.0 (full resistance)                          |
-| `piece_name_format`           | Map    | Format string per language. Use `{name}` and `{piece}` as placeholders      |
-| `piece_names`                 | Map    | Names for each piece per language                                           |
-| `piece_effects`               | Map    | Effects applied when a specific piece is worn individually                  |
-| `set_bonus`                   | Object | Effects applied when the required number of pieces are worn                 |
-| `set_bonus.required_pieces`   | Int    | Number of pieces needed to activate the bonus                               |
-| `set_bonus.effects`           | List   | List of effects to apply when set is complete                               |
+| Field                         | Type   | Description                                                                                 |
+|-------------------------------|--------|---------------------------------------------------------------------------------------------|
+| `pieces`                      | Map    | Defines each armor piece. Keys: `helmet`, `chestplate`, `leggings`, `boots`                 |
+| `pieces.durability`           | Int    | Durability of this piece                                                                    |
+| `pieces.defense`              | Int    | Armor points this piece provides                                                            |
+| `pieces.toughness`            | Float  | Armor toughness per piece. Netherite = 3.0                                                  |
+| `pieces.knockback_resistance` | Float  | Knockback resistance. Max is 1.0 (full resistance)                                          |
+| `piece_names`                 | Map    | Full name for each piece per language. Each language defines all four pieces independently. |
+| `piece_effects`               | Map    | Effects applied when a specific piece is worn individually                                  |
+| `set_bonus`                   | Object | Effects applied when the required number of pieces are worn                                 |
+| `set_bonus.required_pieces`   | Int    | Number of pieces needed to activate the bonus                                               |
+| `set_bonus.effects`           | List   | List of effects to apply when set is complete                                               |
 
 ### Tool Fields
 
-| Field                 | Type  | Description                                                           |
-|-----------------------|-------|-----------------------------------------------------------------------|
-| `tools`               | Map   | Defines each tool. Keys: `pickaxe`, `axe`, `shovel`, `hoe`, `sword`   |
-| `tools.durability`    | Int   | Durability of this tool                                               |
-| `tools.attack_damage` | Float | Bonus attack damage                                                   |
-| `tools.attack_speed`  | Float | Attack speed. Standard sword = 1.6                                    |
-| `tools.mining_speed`  | Float | Mining speed. Netherite = 9.0, Diamond = 8.0                          |
-| `tools.harvest_level` | Int   | 0=Wood, 1=Stone, 2=Iron, 3=Diamond, 4=Netherite                       |
-| `tools.held_effects`  | List  | Effects applied when this specific tool is held in hand               |
-| `tool_name_format`    | Map   | Format string per language. Use `{name}` and `{tool}` as placeholders |
-| `tool_names`          | Map   | Names for each tool type per language                                 |
+| Field                 | Type  | Description                                                                               |
+|-----------------------|-------|-------------------------------------------------------------------------------------------|
+| `tools`               | Map   | Defines each tool. Keys: `pickaxe`, `axe`, `shovel`, `hoe`, `sword`                       |
+| `tools.durability`    | Int   | Durability of this tool                                                                   |
+| `tools.attack_damage` | Float | Bonus attack damage                                                                       |
+| `tools.attack_speed`  | Float | Attack speed. Standard sword = 1.6                                                        |
+| `tools.mining_speed`  | Float | Mining speed. Netherite = 9.0, Diamond = 8.0                                              |
+| `tools.harvest_level` | Int   | 0=Wood, 1=Stone, 2=Iron, 3=Diamond, 4=Netherite                                           |
+| `tools.held_effects`  | List  | Effects applied when this specific tool is held in hand                                   |
+| `tool_names`          | Map   | Full name for each tool type per language. Each language defines all tools independently. |
 
 ### Effect Object
 
@@ -258,12 +246,11 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one armor s
 
 ### Texture Fields
 
-| Field          | Type   | Description                                                                                       |
-|----------------|--------|---------------------------------------------------------------------------------------------------|
-| `texture.mode` | String | `default`, `custom`, or `reference`                                                               |
-| `texture.path` | String | Path relative to `.minecraft/customgear/textures/` (for `custom` mode)                            |
-| `texture.ref`  | String | Global texture fallback — appends `_tooltype` or `/tooltype` automatically (for `reference` mode) |
-| `texture.refs` | Map    | Individual texture path per tool/piece — takes priority over `ref` (for `reference` mode)         |
+| Field                  | Type   | Description                                                                                                                                  |
+|------------------------|--------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| `texture.mode`         | String | `default`, `custom`, or `reference`                                                                                                          |
+| `texture.refs`         | Map    | Texture path per piece/tool. For `custom`: relative path from `.minecraft/customgear/`. For `reference`: resource location from another mod. |
+| `texture.armor_layers` | Map    | Layer textures for the armor model (`layer_1`, `layer_2`). Required for armor in `custom` and `reference` modes.                             |
 
 ---
 
@@ -273,29 +260,29 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one armor s
 Uses iron armor/tool textures as placeholders. Good for testing.
 ```json
 "texture": {
-"mode": "default"
+  "mode": "default"
 }
 ```
 
 ### `custom`
-Uses your own PNG files from .minecraft/customgear/. All paths are relative to .minecraft/customgear/.
+Uses your own PNG files. All paths in `refs` and `armor_layers` are relative to `.minecraft/customgear/`.
 
 **For armor sets, you must provide:**
 - armor_layers: Layer textures for the armor model
 - refs: Individual texture paths for each armor piece
 ```json
 "texture": {
-"mode": "custom",
-"armor_layers": {
-"layer_1": "models/my_armor/layer_1.png",
-"layer_2": "models/my_armor/layer_2.png"
-},
-"refs": {
-"helmet": "item/armor/helmet.png",
-"chestplate": "item/armor/chestplate.png",
-"leggings": "item/armor/leggings.png",
-"boots": "item/armor/boots.png"
-}
+  "mode": "custom",
+  "armor_layers": {
+    "layer_1": "models/my_armor/layer_1.png",
+    "layer_2": "models/my_armor/layer_2.png"
+  },
+  "refs": {
+    "helmet":     "item/armor/helmet.png",
+    "chestplate": "item/armor/chestplate.png",
+    "leggings":   "item/armor/leggings.png",
+    "boots":      "item/armor/boots.png"
+  }
 }
 ```
 
@@ -303,19 +290,20 @@ Uses your own PNG files from .minecraft/customgear/. All paths are relative to .
 - refs: Individual texture paths for each tool
 ```json
 "texture": {
-"mode": "custom",
-"refs": {
-"pickaxe": "item/tools/pickaxe.png",
-"axe": "item/tools/axe.png",
-"shovel": "item/tools/shovel.png",
-"hoe": "item/tools/hoe.png",
-"sword": "item/tools/sword.png"
-}
+  "mode": "custom",
+  "refs": {
+    "pickaxe": "item/tools/pickaxe.png",
+    "axe":     "item/tools/axe.png",
+    "shovel":  "item/tools/shovel.png",
+    "hoe":     "item/tools/hoe.png",
+    "sword":   "item/tools/sword.png"
+  }
 }
 ```
 
-**File structure example:**
-```.minecraft/customgear/
+**Example file structure:**
+```
+.minecraft/customgear/
 ├── models/
 │   └── my_armor/
 │       ├── layer_1.png
@@ -334,29 +322,29 @@ Uses your own PNG files from .minecraft/customgear/. All paths are relative to .
 │       └── sword.png
 ├── armor1.json
 ├── tool1.json
-├── json/
-│   ├── armor2.json
-│   ├── armors/
-│   │   └── armor3.json
-│   └── tools/
-│       └── tool2.json    
+└── json/
+    ├── armor2.json
+    ├── armors/
+    │   └── armor3.json
+    └── tools/
+        └── tool2.json
 ```
 
-JSON files can be organized in subfolders as needed, and texture paths are always relative to `.minecraft/customgear/`.
+JSON files can be placed in any subfolder — CustomGear scans all subfolders automatically.
 
 ### `reference`
-Reuses textures from another installed mod. Two options:
+Reuses textures from another installed mod. All refs must use the full resource location (`modid:path/to/texture`).
 
 **For tool sets:**
 ```json
 "texture": {
   "mode": "reference",
   "refs": {
-    "pickaxe": "mekanismtools:item/steel/pickaxe",
-    "axe":     "mekanismtools:item/steel/axe",
-    "shovel":  "mekanismtools:item/steel/shovel",
-    "hoe":     "mekanismtools:item/steel/hoe",
-    "sword":   "mekanismtools:item/steel/sword"
+    "pickaxe": "othermod:item/mytool/pickaxe",
+    "axe":     "othermod:item/mytool/axe",
+    "shovel":  "othermod:item/mytool/shovel",
+    "hoe":     "othermod:item/mytool/hoe",
+    "sword":   "othermod:item/mytool/sword"
   }
 }
 ```
@@ -378,7 +366,7 @@ Reuses textures from another installed mod. Two options:
 }
 ```
 
-Note: All refs must be explicitly defined. Both refs and armor_layers (for armor) are required.
+> **Note:** To find the correct resource location for a texture from another mod, open the mod's `.jar` file (it's a ZIP) and navigate to `assets/<modid>/textures/`. The resource location follows the pattern `modid:path/within/textures/folder` without the `.png` extension for `reference` mode.
 
 ---
 
@@ -397,6 +385,7 @@ Note: All refs must be explicitly defined. Both refs and armor_layers (for armor
 | Water Breathing | `minecraft:water_breathing` |
 | Invisibility    | `minecraft:invisibility`    |
 | Slow Falling    | `minecraft:slow_falling`    |
+| Health Boost    | `minecraft:health_boost`    |
 | Luck            | `minecraft:luck`            |
 
 Effects from other mods also work — use their ID in `modid:effect_name` format.
@@ -408,6 +397,21 @@ Effects from other mods also work — use their ID in `modid:effect_name` format
 | Command              | Permission | Description                                            |
 |----------------------|------------|--------------------------------------------------------|
 | `/customgear reload` | OP level 2 | Reloads all JSON files and textures without restarting |
+
+### What the reload command updates
+- Item names
+- Textures
+- Held effects (weapons and tools)
+- Piece effects and set bonuses (armor)
+- Durability display
+
+### What requires a full game restart
+- Attack damage and attack speed
+- Armor defense, toughness, and knockback resistance
+- Mining speed and harvest level
+- Adding new items (new JSON files)
+- Removing existing items (deleted JSON files)
+- Changing item IDs
 
 ---
 
