@@ -1,5 +1,9 @@
 {
   "itemGroup.customgear": "Custom Gear",
+
+  "customgear.command.reload.success": "✓ Items recargados correctamente",
+  "customgear.command.reload.error": "✗ Error al recargar",
+
   "tooltip.customgear.piece_effects": "Cuando se usa:",
   "tooltip.customgear.held_effects": "Cuando se sostiene:",
   "tooltip.customgear.set_bonus": "Bono de conjunto (%s piezas):",

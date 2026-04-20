@@ -26,8 +26,9 @@ public class CustomAxeItem extends AxeItem {
                         .durability(data.durability)
                         .attributes(AxeItem.createAttributes(
                                 new CustomTier(data),
-                                data.attackDamage,
-                                data.attackSpeed))
+                                data.attackDamage-1,
+                                data.attackSpeed-4
+                        ))
         );
         this.initialGearData = data;
     }

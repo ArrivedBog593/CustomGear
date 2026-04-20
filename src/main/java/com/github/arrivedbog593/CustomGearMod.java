@@ -35,14 +35,14 @@ public class CustomGearMod {
     public CustomGearMod(IEventBus modEventBus) {
         Path configFolder = Paths.get(".", "customgear");
 
-        // 1. Lee los JSONs
+        // 1. Reed all JSONs
         List<GearData> gearList = GearParser.loadAll(configFolder);
 
-        // 2. Registra los ítems
+        // 2. Register all items
         GearRegistry.register(modEventBus, gearList);
         CustomGearTab.register(modEventBus);
 
-        // 3. Crea el resource pack dinámico
+        // 3. Create the dynamic resource pack
         DYNAMIC_PACK = new DynamicResourcePack(
                 new PackLocationInfo(
                         "customgear_dynamic",
@@ -52,11 +52,11 @@ public class CustomGearMod {
                 )
         );
 
-        // 4. Carga las texturas en el pack
+        // 4. Load textures in the pack
         TextureLoader.loadAll(DYNAMIC_PACK, gearList);
         TextureLoader.generateLang(DYNAMIC_PACK, gearList);
 
-        // 5. Registra el pack
+        // 5. Register the pack
         modEventBus.addListener(this::onAddPackFinders);
         NeoForge.EVENT_BUS.register(CustomGearCommandHandler.class);
     }

@@ -26,8 +26,9 @@ public class CustomShovelItem extends ShovelItem {
                         .durability(data.durability)
                         .attributes(ShovelItem.createAttributes(
                                 new CustomTier(data),
-                                data.attackDamage,
-                                data.attackSpeed))
+                                data.attackDamage-1,
+                                data.attackSpeed-4
+                        ))
         );
         this.initialGearData = data;
     }

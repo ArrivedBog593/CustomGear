@@ -7,7 +7,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SwordItem;
-import net.minecraft.world.item.Tiers;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -19,13 +18,13 @@ public class CustomSwordItem extends SwordItem {
 
     public CustomSwordItem(GearData data) {
         super(
-                Tiers.IRON,
+                new CustomTier(data),
                 new Item.Properties()
                         .durability(data.durability)
                         .attributes(SwordItem.createAttributes(
-                                Tiers.IRON,
-                                (int) data.attackDamage,
-                                data.attackSpeed
+                                new CustomTier(data),
+                                (int) data.attackDamage-1,
+                                data.attackSpeed-4
                         ))
         );
         this.initialGearData = data;
@@ -58,15 +57,19 @@ public class CustomSwordItem extends SwordItem {
     }
 
     public static String buildName(GearData data, String lang, String toolType) {
-        if (data.toolNames == null) {
-            return "Unknown";
+        // Primero intenta con toolNames (para tool_set)
+        if (data.toolNames != null) {
+            Map<String, String> namesForLang = data.toolNames.getOrDefault(lang,
+                    data.toolNames.get("en_us"));
+
+            if (namesForLang != null && namesForLang.containsKey(toolType)) {
+                return namesForLang.get(toolType);
+            }
         }
 
-        Map<String, String> namesForLang = data.toolNames.getOrDefault(lang,
-                data.toolNames.get("en_us"));
-
-        if (namesForLang != null && namesForLang.containsKey(toolType)) {
-            return namesForLang.get(toolType);
+        // Si no encuentra, intenta con name (para herramientas individuales)
+        if (data.name != null) {
+            return data.name.getOrDefault(lang, data.name.get("en_us"));
         }
 
         return "Unknown";

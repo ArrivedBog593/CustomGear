@@ -33,7 +33,7 @@ public class DynamicResourcePack extends AbstractPackResources {
         try {
             resources.put(location, Files.readAllBytes(texturePath));
         } catch (IOException e) {
-            System.err.println("[CustomGear] No se pudo leer textura: " + texturePath);
+            System.err.println("[CustomGear] Couldn't read texture: " + texturePath);
         }
     }
 
@@ -58,7 +58,7 @@ public class DynamicResourcePack extends AbstractPackResources {
                               @NotNull String prefix, @NotNull ResourceOutput output) {
         for (Map.Entry<ResourceLocation, byte[]> entry : resources.entrySet()) {
             ResourceLocation loc = entry.getKey();
-            // Aseguramos que el prefix siempre tenga slash al final para comparar bien
+            // Ensures prefix always has a slash at the end for proper comparison
             String normalizedPrefix = prefix.endsWith("/") ? prefix : prefix + "/";
             if (loc.getNamespace().equals(namespace) &&
                     (loc.getPath().startsWith(normalizedPrefix) ||
@@ -85,7 +85,7 @@ public class DynamicResourcePack extends AbstractPackResources {
         if (deserializer == PackMetadataSection.TYPE) {
             return (T) new PackMetadataSection(
                     Component.literal("CustomGear Dynamic Resources"),
-                    34,  // pack_format para 1.21.1
+                    34,  // pack_format for 1.21.1
                     java.util.Optional.empty()
             );
         }
@@ -97,17 +97,6 @@ public class DynamicResourcePack extends AbstractPackResources {
 
     public void clear() {
         resources.clear();
-    }
-
-    public void addReferenceTexture(ResourceLocation location, ResourceLocation referenceLocation) {
-        String json = String.format("""
-        {
-          "textures": {
-            "layer": "%s"
-          }
-        }""", referenceLocation.toString());
-
-        addRaw(location, json.getBytes());
     }
 
 }

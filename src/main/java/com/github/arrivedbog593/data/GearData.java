@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 public class GearData {
-    // Campos comunes
+    // Common fields
     public String id;
     public String type;
     public Map<String, String> name;
@@ -17,7 +17,7 @@ public class GearData {
     public boolean enchantable;
     public int enchantability;
 
-    // Armadura
+    // Armor
     public Map<String, PieceData> pieces;
 
     @SerializedName("piece_effects")
@@ -26,9 +26,12 @@ public class GearData {
     @SerializedName("set_bonus")
     public SetBonusData setBonus;
 
-    // Armas y herramientas individuales
+    // Individual weapons and tools
     @SerializedName("attack_damage")
     public float attackDamage;
+
+    @SerializedName("attack_damage_bonus")
+    public float attackDamageBonus;
 
     @SerializedName("attack_speed")
     public float attackSpeed;
@@ -51,10 +54,10 @@ public class GearData {
     @SerializedName("tool_names")
     public Map<String, Map<String, String>> toolNames;
 
-    // Textura
+    // Texture
     public TextureData texture;
 
-    // --- Clases internas ---
+    // --- Internal classes ---
 
     public static class PieceData {
         public int durability;
@@ -68,6 +71,9 @@ public class GearData {
 
         @SerializedName("attack_damage")
         public float attackDamage;
+
+        @SerializedName("attack_damage_bonus")
+        public float attackDamageBonus;
 
         @SerializedName("attack_speed")
         public float attackSpeed;

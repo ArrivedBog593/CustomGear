@@ -82,7 +82,7 @@ public class CustomArmorItem extends ArmorItem {
             case "chestplate" -> ArmorItem.Type.CHESTPLATE;
             case "leggings"   -> ArmorItem.Type.LEGGINGS;
             case "boots"      -> ArmorItem.Type.BOOTS;
-            default -> throw new IllegalArgumentException("Pieza inválida: " + piece);
+            default -> throw new IllegalArgumentException("Invalid piece: " + piece);
         };
     }
 

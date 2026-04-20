@@ -21,7 +21,7 @@ public class GearRegistry {
 
     public static final Map<ResourceLocation, GearData> GEAR_MAP = new HashMap<>();
 
-    // Mapa adicional: id del ítem → tipo de herramienta (para tool_set)
+    // Additional map: item id → tool type (for tool_set)
     public static final Map<ResourceLocation, String> TOOL_TYPE_MAP = new HashMap<>();
 
     public static void register(IEventBus modEventBus, List<GearData> gearList) {
@@ -31,7 +31,7 @@ public class GearRegistry {
                 case "sword"     -> registerSword(data);
                 case "tool_set"  -> registerToolSet(data);
                 case "pickaxe", "axe", "shovel", "hoe" -> registerTool(data);
-                default -> System.err.println("[CustomGear] Tipo desconocido: " + data.type);
+                default -> System.err.println("[CustomGear] Unknown type: " + data.type);
             }
         }
         ITEMS.register(modEventBus);
@@ -70,7 +70,7 @@ public class GearRegistry {
             GearData.ToolData toolData = data.tools.get(toolType);
             String itemId = data.id + "_" + toolType;
 
-            // Creamos un GearData derivado para esta herramienta específica
+            // Create a derived GearData for this specific tool
             GearData derived = buildDerived(data, toolType, toolData);
 
             ITEMS.register(itemId, () -> toolType.equals("sword")
@@ -83,7 +83,7 @@ public class GearRegistry {
         }
     }
 
-    // Construye un GearData individual a partir del tool_set y los datos de la herramienta
+    // Builds a GearData for a specific tool from the tool_set and the tool's data'
     private static GearData buildDerived(GearData parent, String toolType,
                                          GearData.ToolData toolData) {
         GearData derived = new GearData();
@@ -93,16 +93,17 @@ public class GearRegistry {
         derived.toolNames = parent.toolNames;
         derived.durability = toolData.durability > 0 ? toolData.durability : parent.durability;
         derived.attackDamage = toolData.attackDamage;
+        derived.attackDamageBonus = toolData.attackDamageBonus;
         derived.attackSpeed = toolData.attackSpeed;
         derived.miningSpeed = toolData.miningSpeed;
         derived.harvestLevel = toolData.harvestLevel;
+        derived.tillRadius = toolData.tillRadius;
         derived.enchantable = parent.enchantable;
         derived.enchantability = parent.enchantability;
         derived.heldEffects = toolData.heldEffects != null
                 ? toolData.heldEffects
                 : parent.heldEffects;
         derived.texture = parent.texture;
-        derived.tillRadius = toolData.tillRadius;
         return derived;
     }
 }

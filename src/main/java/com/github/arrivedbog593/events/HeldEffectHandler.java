@@ -11,21 +11,26 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.minecraft.world.item.Item;
 import net.minecraft.core.Holder;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @EventBusSubscriber(modid = "customgear")
 public class HeldEffectHandler {
 
-    // Rastrea qué efectos están activos por jugador → mano (main/off)
+    // Tracks which items are currently held per player (main/off hand)
     private static final Map<UUID, ResourceLocation> lastMainHand = new HashMap<>();
     private static final Map<UUID, ResourceLocation> lastOffHand = new HashMap<>();
+
+    @SubscribeEvent
+    public static void onPlayerDisconnect(PlayerEvent.PlayerLoggedOutEvent event) {
+        UUID id = event.getEntity().getUUID();
+        lastMainHand.remove(id);
+        lastOffHand.remove(id);
+    }
 
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
@@ -45,7 +50,7 @@ public class HeldEffectHandler {
         ResourceLocation prevMain = lastMainHand.get(id);
         ResourceLocation prevOff = lastOffHand.get(id);
 
-        // Si cambió el ítem en mano principal, quita efectos del anterior
+        // If main hand item changed, remove effects from previous item
         if (prevMain != null && !prevMain.equals(currentMain)) {
             GearData prevData = GearRegistry.GEAR_MAP.get(prevMain);
             if (prevData != null && prevData.heldEffects != null) {
@@ -53,7 +58,7 @@ public class HeldEffectHandler {
             }
         }
 
-        // Si cambió el ítem en mano secundaria, quita efectos del anterior
+        // If off hand item changed, remove effects from previous item
         if (prevOff != null && !prevOff.equals(currentOff)) {
             GearData prevData = GearRegistry.GEAR_MAP.get(prevOff);
             if (prevData != null && prevData.heldEffects != null) {
@@ -61,11 +66,11 @@ public class HeldEffectHandler {
             }
         }
 
-        // Aplica efectos del ítem actual en mano principal
+        // Apply effects from current main hand item
         checkAndApply(player, mainStack);
         checkAndApply(player, offStack);
 
-        // Actualiza el registro
+        // Update tracking
         lastMainHand.put(id, currentMain);
         lastOffHand.put(id, currentOff);
     }
@@ -83,16 +88,16 @@ public class HeldEffectHandler {
                     .orElse(null);
 
             if (effectHolder == null) {
-                System.err.println("[CustomGear] Efecto no encontrado: " + effectData.effect);
+                System.err.println("[CustomGear] Effect not found: " + effectData.effect);
                 continue;
             }
 
             player.addEffect(new MobEffectInstance(
                     effectHolder,
-                    -1,    // infinito
+                    -1,    // infinite duration
                     effectData.amplifier,
                     true,  // ambient
-                    false  // sin partículas
+                    false  // no particles
             ));
         }
     }
