@@ -8,11 +8,11 @@
 
 - Add custom armor sets with per-piece defense, durability, toughness, and knockback resistance
 - Add custom weapons and tool sets (sword, pickaxe, axe, shovel, hoe) with custom damage, speed, and mining speed
-- Per-piece armor effects (e.g. helmet gives Night Vision when worn individually)
+- Per-piece armor effects (e.g., helmet gives Night Vision when worn individually)
 - Set bonus effects when wearing the full armor set
-- Held effects per tool (e.g. pickaxe gives Haste, sword gives Strength)
+- Held effects per tool (e.g., pickaxe gives Haste, sword gives Strength)
 - Full multi-language support — define the full item name per language with no format restrictions
-- Custom textures with flexible path system, or reuse textures from other mods
+- Custom textures with a flexible path system, or reuse textures from other mods
 - JSON files can be organized in any subfolder structure inside `.minecraft/customgear/`
 - Compatible with JEI
 - All items are enchantable with vanilla and modded enchantments
@@ -168,6 +168,7 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one armor s
       "attack_speed": 1.0,
       "mining_speed": 16.0,
       "harvest_level": 4,
+      "till_radius": 3,
       "held_effects": [
         { "effect": "minecraft:regeneration", "amplifier": 0 }
       ]
@@ -235,6 +236,7 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one armor s
 | `tools.mining_speed`  | Float | Mining speed. Netherite = 9.0, Diamond = 8.0                                              |
 | `tools.harvest_level` | Int   | 0=Wood, 1=Stone, 2=Iron, 3=Diamond, 4=Netherite                                           |
 | `tools.held_effects`  | List  | Effects applied when this specific tool is held in hand                                   |
+| `tools.till_radius`   | Int   | (Hoe only) Radius of blocks to till around the target block. 0 = no area tilling          |
 | `tool_names`          | Map   | Full name for each tool type per language. Each language defines all tools independently. |
 
 ### Effect Object

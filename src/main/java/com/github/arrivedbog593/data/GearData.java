@@ -42,6 +42,9 @@ public class GearData {
     @SerializedName("held_effects")
     public List<EffectData> heldEffects;
 
+    @SerializedName("till_radius")
+    public int tillRadius;
+
     // Tool set
     public Map<String, ToolData> tools;
 
@@ -77,6 +80,9 @@ public class GearData {
 
         @SerializedName("held_effects")
         public List<EffectData> heldEffects;
+
+        @SerializedName("till_radius")
+        public int tillRadius;
     }
 
     public static class EffectData {

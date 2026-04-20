@@ -102,6 +102,7 @@ public class GearRegistry {
                 ? toolData.heldEffects
                 : parent.heldEffects;
         derived.texture = parent.texture;
+        derived.tillRadius = toolData.tillRadius;
         return derived;
     }
 }

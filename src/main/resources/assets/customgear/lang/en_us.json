@@ -2,5 +2,7 @@
   "itemGroup.customgear": "Custom Gear",
   "tooltip.customgear.piece_effects": "When worn:",
   "tooltip.customgear.held_effects": "When held:",
-  "tooltip.customgear.set_bonus": "Set Bonus (%s pieces):"
+  "tooltip.customgear.set_bonus": "Set Bonus (%s pieces):",
+  "tooltip.customgear.till_radius": "Till Radius",
+  "tooltip.customgear.till_area": "%sx%s area"
 }

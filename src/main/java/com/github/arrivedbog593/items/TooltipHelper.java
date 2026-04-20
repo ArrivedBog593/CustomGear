@@ -97,4 +97,22 @@ public class TooltipHelper {
             default -> String.valueOf(number);
         };
     }
+
+    // Tooltip para radio de arado (azadas)
+// Tooltip para radio de arado (azadas)
+    public static void addTillRadiusTooltip(List<Component> tooltipComponents,
+                                            GearData data) {
+        if (data.tillRadius <= 0) return;
+
+        int diameter = 2 * data.tillRadius + 1;
+
+        tooltipComponents.add(Component.literal(""));
+        tooltipComponents.add(Component.translatable("tooltip.customgear.till_radius")
+                .withStyle(ChatFormatting.GOLD));
+
+        tooltipComponents.add(Component.literal("• " + data.tillRadius + " (")
+                .append(Component.translatable("tooltip.customgear.till_area", diameter, diameter))
+                .append(Component.literal(")"))
+                .withStyle(ChatFormatting.GRAY));
+    }
 }

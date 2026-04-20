@@ -63,6 +63,100 @@ public class CustomHoeItem extends HoeItem {
                                 @NotNull List<Component> tooltipComponents,
                                 @NotNull net.minecraft.world.item.TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
-        TooltipHelper.addHeldEffectsTooltip(tooltipComponents, getGearData());
+        GearData data = getGearData();
+        TooltipHelper.addHeldEffectsTooltip(tooltipComponents, data);
+        TooltipHelper.addTillRadiusTooltip(tooltipComponents, data);
+    }
+
+    @Override
+    public net.minecraft.world.@NotNull InteractionResultHolder<ItemStack> use(
+            net.minecraft.world.level.Level level,
+            net.minecraft.world.entity.player.Player player,
+            net.minecraft.world.@NotNull InteractionHand hand) {
+
+        ItemStack itemStack = player.getItemInHand(hand);
+
+        // Solo en el servidor
+        if (level.isClientSide) {
+            return net.minecraft.world.InteractionResultHolder.pass(itemStack);
+        }
+
+        // Solo si el jugador está mirando un bloque
+        var hit = player.pick(5.0D, 1.0F, false);
+        if (!(hit instanceof net.minecraft.world.phys.BlockHitResult blockHit)) {
+            return net.minecraft.world.InteractionResultHolder.pass(itemStack);
+        }
+
+        GearData data = getGearData();
+        int radius = data.tillRadius > 0 ? data.tillRadius : 0;
+
+        if (radius > 0) {
+            net.minecraft.core.BlockPos centerPos = blockHit.getBlockPos();
+
+            // Ara en un área cuadrada alrededor del bloque objetivo
+            for (int x = -radius; x <= radius; x++) {
+                for (int z = -radius; z <= radius; z++) {
+                    net.minecraft.core.BlockPos pos = centerPos.offset(x, 0, z);
+                    tryTillBlock(level, pos, player, itemStack, hand);
+                }
+            }
+
+            return net.minecraft.world.InteractionResultHolder.success(itemStack);
+        }
+
+        return net.minecraft.world.InteractionResultHolder.pass(itemStack);
+    }
+
+    private void tryTillBlock(net.minecraft.world.level.Level level,
+                              net.minecraft.core.BlockPos pos,
+                              net.minecraft.world.entity.player.Player player,
+                              ItemStack itemStack,
+                              net.minecraft.world.InteractionHand hand) {
+
+        net.minecraft.world.level.block.state.BlockState blockState = level.getBlockState(pos);
+
+        // No ara si ya es tierra arada (FARMLAND)
+        if (blockState.getBlock() != net.minecraft.world.level.block.Blocks.FARMLAND) {
+            net.minecraft.world.phys.BlockHitResult hit =
+                    new net.minecraft.world.phys.BlockHitResult(
+                            net.minecraft.world.phys.Vec3.atCenterOf(pos),
+                            net.minecraft.core.Direction.UP,
+                            pos,
+                            false);
+
+            this.useOn(new net.minecraft.world.item.context.UseOnContext(
+                    level, player, hand, itemStack, hit));
+        }
+    }
+
+    @Override
+    public net.minecraft.world.@NotNull InteractionResult useOn(
+            net.minecraft.world.item.context.@NotNull UseOnContext context) {
+
+        GearData data = getGearData();
+        int radius = data.tillRadius > 0 ? data.tillRadius : 0;
+
+        if (radius > 0 && !context.getLevel().isClientSide) {
+            net.minecraft.core.BlockPos centerPos = context.getClickedPos();
+
+            for (int x = -radius; x <= radius; x++) {
+                for (int z = -radius; z <= radius; z++) {
+                    net.minecraft.core.BlockPos pos = centerPos.offset(x, 0, z);
+                    net.minecraft.world.phys.BlockHitResult hit =
+                            new net.minecraft.world.phys.BlockHitResult(
+                                    net.minecraft.world.phys.Vec3.atCenterOf(pos),
+                                    net.minecraft.core.Direction.UP,
+                                    pos,
+                                    false);
+                    super.useOn(new net.minecraft.world.item.context.UseOnContext(
+                            context.getLevel(), context.getPlayer(),
+                            context.getHand(), context.getItemInHand(), hit));
+                }
+            }
+
+            return net.minecraft.world.InteractionResult.SUCCESS;
+        }
+
+        return super.useOn(context);
     }
 }

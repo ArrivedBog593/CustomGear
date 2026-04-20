@@ -2,5 +2,7 @@
   "itemGroup.customgear": "Custom Gear",
   "tooltip.customgear.piece_effects": "Cuando se usa:",
   "tooltip.customgear.held_effects": "Cuando se sostiene:",
-  "tooltip.customgear.set_bonus": "Bono de conjunto (%s piezas):"
+  "tooltip.customgear.set_bonus": "Bono de conjunto (%s piezas):",
+  "tooltip.customgear.till_radius": "Radio de arado",
+  "tooltip.customgear.till_area": "área de %sx%s"
 }

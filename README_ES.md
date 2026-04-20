@@ -168,6 +168,7 @@ Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo def
       "attack_speed": 1.0,
       "mining_speed": 16.0,
       "harvest_level": 4,
+      "till_radius": 3,
       "held_effects": [
         { "effect": "minecraft:regeneration", "amplifier": 0 }
       ]
@@ -235,6 +236,7 @@ Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo def
 | `tools.mining_speed`  | Float | Velocidad de minado. Netherite = 9.0, Diamante = 8.0                                                              |
 | `tools.harvest_level` | Int   | 0=Madera, 1=Piedra, 2=Hierro, 3=Diamante, 4=Netherite                                                             |
 | `tools.held_effects`  | List  | Efectos aplicados al sostener esta herramienta específica en la mano                                              |
+| `tools.till_radius`   | Int   | (Solo azada) Radio de bloques a arar alrededor del bloque objetivo. 0 = sin arado en área                         |
 | `tool_names`          | Map   | Nombre completo de cada herramienta por idioma. Cada idioma define todas las herramientas de forma independiente. |
 
 ### Objeto de efecto
