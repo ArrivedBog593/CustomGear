@@ -1,7 +1,6 @@
 package com.github.arrivedbog593.items;
 
 import com.github.arrivedbog593.data.GearData;
-import com.github.arrivedbog593.items.CustomSwordItem;
 import com.github.arrivedbog593.loader.GearRegistry;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -98,7 +97,7 @@ public class CustomArmorItem extends ArmorItem {
         }
 
         String lang = CustomSwordItem.getCurrentLang();
-        java.util.Map<String, String> namesForLang = data.pieceNames.getOrDefault(lang,
+        Map<String, String> namesForLang = data.pieceNames.getOrDefault(lang,
                 data.pieceNames.get("en_us"));
 
         if (namesForLang != null && namesForLang.containsKey(piece)) {
