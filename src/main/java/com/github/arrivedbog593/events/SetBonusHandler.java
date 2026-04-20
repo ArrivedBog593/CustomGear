@@ -2,26 +2,18 @@ package com.github.arrivedbog593.events;
 
 import com.github.arrivedbog593.data.GearData;
 import com.github.arrivedbog593.items.CustomArmorItem;
-import net.minecraft.core.Holder;
-import net.minecraft.world.effect.MobEffect;
-import net.minecraft.world.effect.MobEffectInstance;
+import com.github.arrivedbog593.util.EffectUtils;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
-import net.minecraft.core.registries.BuiltInRegistries;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 
 @EventBusSubscriber(modid = "customgear")
 public class SetBonusHandler {
-
-    private static final Logger LOGGER = LogManager.getLogger("CustomGear");
 
     private static final Map<UUID, Set<String>> activeSetBonuses = new HashMap<>();
     private static final Map<UUID, Set<String>> activePieceEffects = new HashMap<>();
@@ -123,29 +115,11 @@ public class SetBonusHandler {
     }
 
     private static void applyEffects(Player player, List<GearData.EffectData> effects) {
-        if (effects == null) return;
-        for (GearData.EffectData effectData : effects) {
-            ResourceLocation rl = ResourceLocation.parse(effectData.effect);
-            Holder<MobEffect> effectHolder = BuiltInRegistries.MOB_EFFECT
-                    .getHolder(rl).orElse(null);
-            if (effectHolder == null) {
-                LOGGER.error("[CustomGear] Effect not found: {}", effectData.effect);
-                continue;
-            }
-            player.addEffect(new MobEffectInstance(
-                    effectHolder, -1, effectData.amplifier, true, false));
-        }
+        EffectUtils.applyEffects(player, effects);
     }
 
     private static void removeEffects(Player player, List<GearData.EffectData> effects) {
-        if (effects == null) return;
-        for (GearData.EffectData effectData : effects) {
-            ResourceLocation rl = ResourceLocation.parse(effectData.effect);
-            Holder<MobEffect> effectHolder = BuiltInRegistries.MOB_EFFECT
-                    .getHolder(rl).orElse(null);
-            if (effectHolder == null) continue;
-            player.removeEffect(effectHolder);
-        }
+        EffectUtils.removeEffects(player, effects);
     }
 
     private record PieceInfo(String pieceId, GearData data, String piece) {

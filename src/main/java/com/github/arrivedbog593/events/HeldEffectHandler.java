@@ -3,10 +3,9 @@ package com.github.arrivedbog593.events;
 import com.github.arrivedbog593.data.GearData;
 import com.github.arrivedbog593.items.CustomArmorItem;
 import com.github.arrivedbog593.loader.GearRegistry;
+import com.github.arrivedbog593.util.EffectUtils;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.effect.MobEffect;
-import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -14,18 +13,13 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.minecraft.world.item.Item;
-import net.minecraft.core.Holder;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 
 @EventBusSubscriber(modid = "customgear")
 public class HeldEffectHandler {
 
-    private static final Logger LOGGER = LogManager.getLogger("CustomGear");
-
-    // Tracks which items are currently held per player (main/off hand)
+    // Tracks which items are currently held per player (main/offhand)
     private static final Map<UUID, ResourceLocation> lastMainHand = new HashMap<>();
     private static final Map<UUID, ResourceLocation> lastOffHand = new HashMap<>();
 
@@ -62,7 +56,7 @@ public class HeldEffectHandler {
             }
         }
 
-        // If off hand item changed, remove effects from previous item
+        // If offhand item changed, remove effects from previous item
         if (prevOff != null && !prevOff.equals(currentOff)) {
             GearData prevData = GearRegistry.GEAR_MAP.get(prevOff);
             if (prevData != null && prevData.heldEffects != null) {
@@ -85,36 +79,11 @@ public class HeldEffectHandler {
         List<GearData.EffectData> effects = getHeldEffects(stack);
         if (effects == null || effects.isEmpty()) return;
 
-        for (GearData.EffectData effectData : effects) {
-            ResourceLocation rl = ResourceLocation.parse(effectData.effect);
-            Holder<MobEffect> effectHolder = BuiltInRegistries.MOB_EFFECT
-                    .getHolder(rl)
-                    .orElse(null);
-
-            if (effectHolder == null) {
-                LOGGER.error("[CustomGear] Effect not found: {}", effectData.effect);
-                continue;
-            }
-
-            player.addEffect(new MobEffectInstance(
-                    effectHolder,
-                    -1,    // infinite duration
-                    effectData.amplifier,
-                    true,  // ambient
-                    false  // no particles
-            ));
-        }
+        EffectUtils.applyEffects(player, effects);
     }
 
     private static void removeEffects(Player player, List<GearData.EffectData> effects) {
-        for (GearData.EffectData effectData : effects) {
-            ResourceLocation rl = ResourceLocation.parse(effectData.effect);
-            Holder<MobEffect> effectHolder = BuiltInRegistries.MOB_EFFECT
-                    .getHolder(rl)
-                    .orElse(null);
-            if (effectHolder == null) continue;
-            player.removeEffect(effectHolder);
-        }
+        EffectUtils.removeEffects(player, effects);
     }
 
     private static ResourceLocation getItemId(ItemStack stack) {

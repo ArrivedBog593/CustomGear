@@ -53,6 +53,6 @@ public class CustomTier implements Tier {
     @Override
     @NotNull
     public Ingredient getRepairIngredient() {
-        return Ingredient.EMPTY; // Sin reparación por ítem por ahora
+        return Ingredient.EMPTY; // No item repair for now
     }
 }

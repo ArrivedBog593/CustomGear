@@ -35,7 +35,7 @@ public class CustomGearMod {
     public CustomGearMod(IEventBus modEventBus) {
         Path configFolder = Paths.get(".", "customgear");
 
-        // 1. Reed all JSONs
+        // 1. Read all JSONs
         List<GearData> gearList = GearParser.loadAll(configFolder);
 
         // 2. Register all items

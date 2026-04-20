@@ -66,7 +66,7 @@ public class CustomSwordItem extends SwordItem {
     }
 
     public static String buildName(GearData data, String lang, String toolType) {
-        // Primero intenta con toolNames (para tool_set)
+        // First try with toolNames (for tool_set)
         if (data.toolNames != null) {
             Map<String, String> namesForLang = data.toolNames.getOrDefault(lang,
                     data.toolNames.get("en_us"));
@@ -76,7 +76,7 @@ public class CustomSwordItem extends SwordItem {
             }
         }
 
-        // Si no encuentra, intenta con name (para herramientas individuales)
+        // If not found, try with name (for individual tools)
         if (data.name != null) {
             return data.name.getOrDefault(lang, data.name.get("en_us"));
         }

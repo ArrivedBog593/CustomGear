@@ -98,7 +98,7 @@ public class TooltipHelper {
         };
     }
 
-    // Tooltip for till radius (saws)
+    // Tooltip for till radius (hoes)
     public static void addTillRadiusTooltip(List<Component> tooltipComponents,
                                             GearData data) {
         if (data.tillRadius <= 0) return;
