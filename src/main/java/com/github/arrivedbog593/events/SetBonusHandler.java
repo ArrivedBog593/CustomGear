@@ -13,11 +13,15 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.minecraft.core.registries.BuiltInRegistries;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 
 @EventBusSubscriber(modid = "customgear")
 public class SetBonusHandler {
+
+    private static final Logger LOGGER = LogManager.getLogger("CustomGear");
 
     private static final Map<UUID, Set<String>> activeSetBonuses = new HashMap<>();
     private static final Map<UUID, Set<String>> activePieceEffects = new HashMap<>();
@@ -125,7 +129,7 @@ public class SetBonusHandler {
             Holder<MobEffect> effectHolder = BuiltInRegistries.MOB_EFFECT
                     .getHolder(rl).orElse(null);
             if (effectHolder == null) {
-                System.err.println("[CustomGear] Effect not found: " + effectData.effect);
+                LOGGER.error("[CustomGear] Effect not found: {}", effectData.effect);
                 continue;
             }
             player.addEffect(new MobEffectInstance(

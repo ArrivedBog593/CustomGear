@@ -90,18 +90,13 @@ public class CustomArmorItem extends ArmorItem {
 
     @Override
     public @NotNull net.minecraft.network.chat.Component getName(@NotNull ItemStack stack) {
-        String lang = "en_us";
-        try {
-            lang = net.minecraft.client.Minecraft.getInstance()
-                    .getLanguageManager().getSelected();
-        } catch (Exception ignored) {}
-
         GearData data = getGearData();
 
         if (data == null || data.pieceNames == null) {
             return super.getName(stack);
         }
 
+        String lang = CustomSwordItem.getCurrentLang();
         Map<String, String> namesForLang = data.pieceNames.getOrDefault(lang,
                 data.pieceNames.get("en_us"));
 

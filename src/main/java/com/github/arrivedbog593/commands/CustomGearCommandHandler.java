@@ -99,7 +99,7 @@ public class CustomGearCommandHandler {
 
                             String itemId = data.id + "_" + toolType;
                             GearData.ToolData toolData = data.tools.get(toolType);
-                            GearData derived = buildDerived(data, toolType, toolData);
+                            GearData derived = GearRegistry.buildDerived(data, toolType, toolData);
 
                             ResourceLocation loc = ResourceLocation.fromNamespaceAndPath("customgear", itemId);
                             GearRegistry.GEAR_MAP.put(loc, derived);
@@ -109,30 +109,5 @@ public class CustomGearCommandHandler {
                 }
             }
         }
-    }
-
-    /**
-     * Builds a derived GearData object from a ToolSet parent.
-     * Combines parent metadata with tool-specific data.
-     */
-    private static GearData buildDerived(GearData parent, String toolType, GearData.ToolData toolData) {
-        GearData derived = new GearData();
-        derived.id = parent.id + "_" + toolType;
-        derived.type = toolType;
-        derived.name = parent.name;
-        derived.toolNames = parent.toolNames;
-        derived.durability = toolData.durability > 0 ? toolData.durability : parent.durability;
-        derived.attackDamage = toolData.attackDamage;
-        derived.attackSpeed = toolData.attackSpeed;
-        derived.miningSpeed = toolData.miningSpeed;
-        derived.harvestLevel = toolData.harvestLevel;
-        derived.tillRadius = toolData.tillRadius;
-        derived.enchantable = parent.enchantable;
-        derived.enchantability = parent.enchantability;
-        derived.heldEffects = toolData.heldEffects != null
-                ? toolData.heldEffects
-                : parent.heldEffects;
-        derived.texture = parent.texture;
-        return derived;
     }
 }

@@ -49,13 +49,8 @@ public class CustomShovelItem extends ShovelItem {
 
     @Override
     public @NotNull net.minecraft.network.chat.Component getName(@NotNull ItemStack stack) {
-        String lang = "en_us";
-        try {
-            lang = net.minecraft.client.Minecraft.getInstance()
-                    .getLanguageManager().getSelected();
-        } catch (Exception ignored) {}
         return net.minecraft.network.chat.Component.literal(
-                CustomSwordItem.buildName(getGearData(), lang, "shovel"));
+                CustomSwordItem.buildName(getGearData(), CustomSwordItem.getCurrentLang(), "shovel"));
     }
 
     @Override

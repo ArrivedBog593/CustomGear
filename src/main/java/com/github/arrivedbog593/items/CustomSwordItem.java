@@ -7,6 +7,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SwordItem;
+import net.neoforged.fml.loading.FMLEnvironment;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -46,14 +47,22 @@ public class CustomSwordItem extends SwordItem {
 
     @Override
     public @NotNull net.minecraft.network.chat.Component getName(@NotNull ItemStack stack) {
-        String lang = "en_us";
-        try {
-            lang = net.minecraft.client.Minecraft.getInstance()
-                    .getLanguageManager().getSelected();
-        } catch (Exception ignored) {}
-
         return net.minecraft.network.chat.Component.literal(
-                buildName(getGearData(), lang, "sword"));
+                buildName(getGearData(), getCurrentLang(), "sword"));
+    }
+
+    /**
+     * Returns the currently selected client language, or "en_us" as a safe fallback
+     * when running on a dedicated server where Minecraft client classes are absent.
+     */
+    public static String getCurrentLang() {
+        if (FMLEnvironment.dist.isClient()) {
+            try {
+                return net.minecraft.client.Minecraft.getInstance()
+                        .getLanguageManager().getSelected();
+            } catch (Exception ignored) {}
+        }
+        return "en_us";
     }
 
     public static String buildName(GearData data, String lang, String toolType) {

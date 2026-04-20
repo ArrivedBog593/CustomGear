@@ -9,12 +9,16 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class GearRegistry {
+
+    private static final Logger LOGGER = LogManager.getLogger("CustomGear");
 
     public static final DeferredRegister<Item> ITEMS =
             DeferredRegister.create(BuiltInRegistries.ITEM, "customgear");
@@ -31,7 +35,7 @@ public class GearRegistry {
                 case "sword"     -> registerSword(data);
                 case "tool_set"  -> registerToolSet(data);
                 case "pickaxe", "axe", "shovel", "hoe" -> registerTool(data);
-                default -> System.err.println("[CustomGear] Unknown type: " + data.type);
+                default -> LOGGER.warn("[CustomGear] Unknown type: {}", data.type);
             }
         }
         ITEMS.register(modEventBus);
@@ -84,7 +88,7 @@ public class GearRegistry {
     }
 
     // Builds a GearData for a specific tool from the tool_set and the tool's data'
-    private static GearData buildDerived(GearData parent, String toolType,
+    public static GearData buildDerived(GearData parent, String toolType,
                                          GearData.ToolData toolData) {
         GearData derived = new GearData();
         derived.id = parent.id + "_" + toolType;

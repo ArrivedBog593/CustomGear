@@ -8,6 +8,8 @@ import net.minecraft.server.packs.metadata.MetadataSectionSerializer;
 import net.minecraft.server.packs.metadata.pack.PackMetadataSection;
 import net.minecraft.server.packs.resources.IoSupplier;
 import net.minecraft.network.chat.Component;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,6 +25,8 @@ import java.util.Set;
 
 public class DynamicResourcePack extends AbstractPackResources {
 
+    private static final Logger LOGGER = LogManager.getLogger("CustomGear");
+
     private final Map<ResourceLocation, byte[]> resources = new HashMap<>();
 
     public DynamicResourcePack(PackLocationInfo info) {
@@ -33,7 +37,7 @@ public class DynamicResourcePack extends AbstractPackResources {
         try {
             resources.put(location, Files.readAllBytes(texturePath));
         } catch (IOException e) {
-            System.err.println("[CustomGear] Couldn't read texture: " + texturePath);
+            LOGGER.error("[CustomGear] Couldn't read texture: {}", texturePath);
         }
     }
 
