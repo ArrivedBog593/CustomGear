@@ -126,6 +126,7 @@ public class CustomGearCommandHandler {
         derived.attackSpeed = toolData.attackSpeed;
         derived.miningSpeed = toolData.miningSpeed;
         derived.harvestLevel = toolData.harvestLevel;
+        derived.tillRadius = toolData.tillRadius;
         derived.enchantable = parent.enchantable;
         derived.enchantability = parent.enchantability;
         derived.heldEffects = toolData.heldEffects != null
