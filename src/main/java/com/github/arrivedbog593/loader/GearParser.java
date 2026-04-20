@@ -11,9 +11,13 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class GearParser {
 
@@ -33,17 +37,38 @@ public class GearParser {
             }
         }
 
+        GearCache cache = GearCache.load(folder);
+        Set<String> currentKeys = new HashSet<>();
+        AtomicBoolean cacheModified = new AtomicBoolean(false);
+
         try {
             Files.walk(folder)
-                    .filter(p -> p.toString().endsWith(".json"))
+                    .filter(p -> p.toString().endsWith(".json")
+                            && !folder.relativize(p).startsWith(".cache"))
                     .forEach(path -> {
+                        String relKey = folder.relativize(path).toString();
+                        currentKeys.add(relKey);
+
                         try {
-                            String json = Files.readString(path);
-                            GearData data = GSON.fromJson(json, GearData.class);
-                            if (validate(data, path)) {
-                                result.add(data);
-                                LOGGER.info("[CustomGear] Loaded: {} ({})", data.id,
-                                        folder.relativize(path));
+                            FileTime ft = Files.getLastModifiedTime(path);
+                            long lastModified = ft.toMillis();
+                            GearCache.CacheEntry cached = cache.get(relKey);
+
+                            if (cached != null && cached.lastModified == lastModified
+                                    && cached.data != null) {
+                                // File unchanged – use cached GearData
+                                result.add(cached.data);
+                                LOGGER.debug("[CustomGear] Cache hit: {}", relKey);
+                            } else {
+                                // New or modified file – parse and (re)validate
+                                String json = Files.readString(path);
+                                GearData data = GSON.fromJson(json, GearData.class);
+                                if (validate(data, path)) {
+                                    result.add(data);
+                                    cache.put(relKey, lastModified, data);
+                                    cacheModified.set(true);
+                                    LOGGER.info("[CustomGear] Loaded: {} ({})", data.id, relKey);
+                                }
                             }
                         } catch (Exception e) {
                             LOGGER.error("[CustomGear] Error reading {}: {}",
@@ -52,6 +77,15 @@ public class GearParser {
                     });
         } catch (IOException e) {
             LOGGER.error("[CustomGear] Error scanning folder: {}", e.getMessage());
+        }
+
+        // Remove cache entries for files that were deleted
+        if (cache.removeStale(currentKeys)) {
+            cacheModified.set(true);
+        }
+
+        if (cacheModified.get()) {
+            cache.save();
         }
 
         return result;
