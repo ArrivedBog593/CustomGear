@@ -15,11 +15,15 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.minecraft.world.item.Item;
 import net.minecraft.core.Holder;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 
 @EventBusSubscriber(modid = "customgear")
 public class HeldEffectHandler {
+
+    private static final Logger LOGGER = LogManager.getLogger("CustomGear");
 
     // Tracks which items are currently held per player (main/off hand)
     private static final Map<UUID, ResourceLocation> lastMainHand = new HashMap<>();
@@ -88,7 +92,7 @@ public class HeldEffectHandler {
                     .orElse(null);
 
             if (effectHolder == null) {
-                System.err.println("[CustomGear] Effect not found: " + effectData.effect);
+                LOGGER.error("[CustomGear] Effect not found: {}", effectData.effect);
                 continue;
             }
 
