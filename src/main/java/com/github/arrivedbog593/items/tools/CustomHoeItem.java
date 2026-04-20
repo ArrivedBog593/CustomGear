@@ -70,67 +70,6 @@ public class CustomHoeItem extends HoeItem {
     }
 
     @Override
-    public net.minecraft.world.@NotNull InteractionResultHolder<ItemStack> use(
-            net.minecraft.world.level.Level level,
-            net.minecraft.world.entity.player.Player player,
-            net.minecraft.world.@NotNull InteractionHand hand) {
-
-        ItemStack itemStack = player.getItemInHand(hand);
-
-        // Server side only
-        if (level.isClientSide) {
-            return net.minecraft.world.InteractionResultHolder.pass(itemStack);
-        }
-
-        // Only if the player is looking at a block
-        var hit = player.pick(5.0D, 1.0F, false);
-        if (!(hit instanceof net.minecraft.world.phys.BlockHitResult blockHit)) {
-            return net.minecraft.world.InteractionResultHolder.pass(itemStack);
-        }
-
-        GearData data = getGearData();
-        int radius = data.tillRadius > 0 ? data.tillRadius : 0;
-
-        if (radius > 0) {
-            net.minecraft.core.BlockPos centerPos = blockHit.getBlockPos();
-
-            // Tills into a square area around the target block
-            for (int x = -radius; x <= radius; x++) {
-                for (int z = -radius; z <= radius; z++) {
-                    net.minecraft.core.BlockPos pos = centerPos.offset(x, 0, z);
-                    tryTillBlock(level, pos, player, itemStack, hand);
-                }
-            }
-
-            return net.minecraft.world.InteractionResultHolder.success(itemStack);
-        }
-
-        return net.minecraft.world.InteractionResultHolder.pass(itemStack);
-    }
-
-    private void tryTillBlock(net.minecraft.world.level.Level level,
-                              net.minecraft.core.BlockPos pos,
-                              net.minecraft.world.entity.player.Player player,
-                              ItemStack itemStack,
-                              net.minecraft.world.InteractionHand hand) {
-
-        net.minecraft.world.level.block.state.BlockState blockState = level.getBlockState(pos);
-
-        // It won't till if it's already farmland (FARMLAND)
-        if (blockState.getBlock() != net.minecraft.world.level.block.Blocks.FARMLAND) {
-            net.minecraft.world.phys.BlockHitResult hit =
-                    new net.minecraft.world.phys.BlockHitResult(
-                            net.minecraft.world.phys.Vec3.atCenterOf(pos),
-                            net.minecraft.core.Direction.UP,
-                            pos,
-                            false);
-
-            this.useOn(new net.minecraft.world.item.context.UseOnContext(
-                    level, player, hand, itemStack, hit));
-        }
-    }
-
-    @Override
     public net.minecraft.world.@NotNull InteractionResult useOn(
             net.minecraft.world.item.context.@NotNull UseOnContext context) {
 
