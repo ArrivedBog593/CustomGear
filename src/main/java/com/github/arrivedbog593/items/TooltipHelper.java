@@ -12,7 +12,7 @@ import java.util.List;
 
 public class TooltipHelper {
 
-    // Tooltip para efectos al sostener (armas y herramientas)
+    // Tooltip for held effects (weapons and tools)
     public static void addHeldEffectsTooltip(List<Component> tooltipComponents,
                                              GearData data) {
         if (data.heldEffects == null || data.heldEffects.isEmpty()) return;
@@ -29,7 +29,7 @@ public class TooltipHelper {
         }
     }
 
-    // Tooltip para efectos de pieza individual (armadura)
+    // Tooltip for individual piece effects (armor)
     public static void addPieceEffectsTooltip(List<Component> tooltipComponents,
                                               GearData data, String piece) {
         if (data.pieceEffects == null) return;
@@ -48,7 +48,7 @@ public class TooltipHelper {
         }
     }
 
-    // Tooltip para set bonus (armadura)
+    // Tooltip for set bonus (armor)
     public static void addSetBonusTooltip(List<Component> tooltipComponents,
                                           GearData data) {
         if (data.setBonus == null || data.setBonus.effects == null) return;
@@ -67,7 +67,7 @@ public class TooltipHelper {
         }
     }
 
-    // Obtiene el nombre del efecto desde el registro de Minecraft
+    // Obtains the effect name from the Minecraft registry
     private static String getEffectName(String effectId) {
         try {
             ResourceLocation rl = ResourceLocation.parse(effectId);
@@ -81,7 +81,7 @@ public class TooltipHelper {
         return effectId;
     }
 
-    // Convierte número a romano (I, II, III, IV, V...)
+    // Converts a number to Roman numerals (I, II, III, IV, V...)
     public static String toRoman(int number) {
         return switch (number) {
             case 1  -> "I";
@@ -98,8 +98,7 @@ public class TooltipHelper {
         };
     }
 
-    // Tooltip para radio de arado (azadas)
-// Tooltip para radio de arado (azadas)
+    // Tooltip for till radius (saws)
     public static void addTillRadiusTooltip(List<Component> tooltipComponents,
                                             GearData data) {
         if (data.tillRadius <= 0) return;

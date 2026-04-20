@@ -197,18 +197,46 @@ Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo def
 }
 ```
 
+### Herramienta individual - Ejemplo completo
+```json
+{
+  "id": "mi_espada",
+  "type": "sword",
+  "name": {
+    "en_us": "My Custom Sword",
+    "es_mx": "Mi Espada Personalizada"
+  },
+  "durability": 1561,
+  "attack_damage": 5.0,
+  "attack_damage_bonus": 3.0,
+  "attack_speed": 1.6,
+  "enchantable": true,
+  "enchantability": 10,
+  "held_effects": [
+    { "effect": "minecraft:strength", "amplifier": 1 }
+  ],
+  "texture": {
+    "mode": "custom",
+    "refs": {
+      "sword": "item/armas/my_sword.png"
+    }
+  }
+}
+```
+
 ---
 
 ## Referencia de campos
 
 ### Campos comunes
 
-| Campo            | Tipo    | Descripción                                                           |
-|------------------|---------|-----------------------------------------------------------------------|
-| `id`             | String  | Identificador único. Solo letras minúsculas, números y guiones bajos. |
-| `type`           | String  | `armor_set` o `tool_set`                                              |
-| `enchantable`    | Boolean | Si el ítem puede ser encantado                                        |
-| `enchantability` | Int     | Mayor = mejores encantamientos. Hierro = 9, Oro = 25, Diamante = 10   |
+| Campo            | Tipo    | Descripción                                                                 |
+|------------------|---------|-----------------------------------------------------------------------------|
+| `id`             | String  | Identificador único. Solo letras minúsculas, números y guiones bajos.       |
+| `type`           | String  | `armor_set` o `tool_set`                                                    |
+| `name`           | Map     | Nombre completo del objeto por idioma (solo para herramientas individuales) |
+| `enchantable`    | Boolean | Si el ítem puede ser encantado                                              |
+| `enchantability` | Int     | Mayor = mejores encantamientos. Hierro = 9, Oro = 25, Diamante = 10         |
 
 ### Campos de armadura
 
@@ -227,17 +255,29 @@ Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo def
 
 ### Campos de herramientas
 
-| Campo                 | Tipo  | Descripción                                                                                                       |
-|-----------------------|-------|-------------------------------------------------------------------------------------------------------------------|
-| `tools`               | Map   | Define cada herramienta. Claves: `pickaxe`, `axe`, `shovel`, `hoe`, `sword`                                       |
-| `tools.durability`    | Int   | Durabilidad de esta herramienta                                                                                   |
-| `tools.attack_damage` | Float | Daño de ataque adicional                                                                                          |
-| `tools.attack_speed`  | Float | Velocidad de ataque. Espada estándar = 1.6                                                                        |
-| `tools.mining_speed`  | Float | Velocidad de minado. Netherite = 9.0, Diamante = 8.0                                                              |
-| `tools.harvest_level` | Int   | 0=Madera, 1=Piedra, 2=Hierro, 3=Diamante, 4=Netherite                                                             |
-| `tools.held_effects`  | List  | Efectos aplicados al sostener esta herramienta específica en la mano                                              |
-| `tools.till_radius`   | Int   | (Solo azada) Radio de bloques a arar alrededor del bloque objetivo. 0 = sin arado en área                         |
-| `tool_names`          | Map   | Nombre completo de cada herramienta por idioma. Cada idioma define todas las herramientas de forma independiente. |
+| Campo                       | Tipo  | Descripción                                                                                                       |
+|-----------------------------|-------|-------------------------------------------------------------------------------------------------------------------|
+| `tools`                     | Map   | Define cada herramienta. Claves: `pickaxe`, `axe`, `shovel`, `hoe`, `sword`                                       |
+| `tools.durability`          | Int   | Durabilidad de esta herramienta                                                                                   |
+| `tools.attack_damage`       | Float | Daño de ataque adicional                                                                                          |
+| `tools.attack_damage_bonus` | Float | Daño adicional de armas (bonus). Añadido a 'attack_damage'                                                        |
+| `tools.attack_speed`        | Float | Velocidad de ataque. Espada estándar = 1.6                                                                        |
+| `tools.mining_speed`        | Float | Velocidad de minado. Netherite = 9.0, Diamante = 8.0                                                              |
+| `tools.harvest_level`       | Int   | 0=Madera, 1=Piedra, 2=Hierro, 3=Diamante, 4=Netherite                                                             |
+| `tools.held_effects`        | List  | Efectos aplicados al sostener esta herramienta específica en la mano                                              |
+| `tools.till_radius`         | Int   | (Solo azada) Radio de bloques a arar alrededor del bloque objetivo. 0 = sin arado en área                         |
+| `tool_names`                | Map   | Nombre completo de cada herramienta por idioma. Cada idioma define todas las herramientas de forma independiente. |
+
+### Explicación del daño de ataque
+- **`attack_damage`**: Daño base de ataque del arma.
+- **`attack_damage_bonus`**: Daño adicional que se añade a 'attack_damage'.
+
+**Nota**: Para referencia, herramientas vanilla:
+- Espada de madera: 4.0 de daño de ataque
+- Espada de piedra: 5.0 de daño de ataque
+- Espada de hierro: 6.0 de daño de ataque
+- Espada de diamante: 7.0 de daño de ataque
+- Espada de netherita: 8.0 de daño de ataque
 
 ### Objeto de efecto
 

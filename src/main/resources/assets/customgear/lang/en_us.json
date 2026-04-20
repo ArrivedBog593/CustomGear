@@ -1,5 +1,9 @@
 {
   "itemGroup.customgear": "Custom Gear",
+
+  "customgear.command.reload.success": "✓ Items reloaded successfully",
+  "customgear.command.reload.error": "✗ Error reloading",
+
   "tooltip.customgear.piece_effects": "When worn:",
   "tooltip.customgear.held_effects": "When held:",
   "tooltip.customgear.set_bonus": "Set Bonus (%s pieces):",

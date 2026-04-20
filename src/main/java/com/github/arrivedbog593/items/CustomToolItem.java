@@ -12,7 +12,7 @@ public class CustomToolItem {
             case "axe"     -> new CustomAxeItem(data);
             case "shovel"  -> new CustomShovelItem(data);
             case "hoe"     -> new CustomHoeItem(data);
-            default -> throw new IllegalArgumentException("Tool type inválido: " + data.type);
+            default -> throw new IllegalArgumentException("Invalid tool type: " + data.type);
         };
     }
 }

@@ -28,35 +28,36 @@ public class CustomGearCommandHandler {
                             CommandSourceStack source = context.getSource();
 
                             try {
-                                // 1. Recarga los JSONs
+                                // 1. Reload all JSONs
                                 List<GearData> gearList = GearParser.loadAll(
                                         Paths.get(".", "customgear")
                                 );
 
-                                // 2. Limpia el pack dinámico anterior
+                                // 2. Clear previous dynamic pack
                                 CustomGearMod.DYNAMIC_PACK.clear();
 
-                                // 3. Recarga las texturas y lenguajes
+                                // 3. Reload textures and languages
                                 TextureLoader.loadAll(CustomGearMod.DYNAMIC_PACK, gearList);
                                 TextureLoader.generateLang(CustomGearMod.DYNAMIC_PACK, gearList);
 
-                                // 4. ACTUALIZA LOS DATOS EN EL REGISTRO
+                                // 4. Update item data in registry
                                 updateGearRegistry(gearList);
 
-                                // 5. Notifica al usuario
+                                // 5. Notify user
                                 source.sendSuccess(
-                                        () -> Component.literal("§6[CustomGear] ✓ Items recargados correctamente"),
-                                        true // 'true' para que aparezca el mensaje a todos los jugadores
+                                        () -> Component.translatable("customgear.command.reload.success"),
+                                        true
                                 );
 
-                                return 1; // Comando exitoso
+                                return 1;
 
                             } catch (Exception e) {
                                 source.sendFailure(
-                                        Component.literal("§c[CustomGear] ✗ Error al recargar: " + e.getMessage())
+                                        Component.translatable("customgear.command.reload.error")
+                                                .append(Component.literal(": " + e.getMessage()))
                                 );
                                 e.printStackTrace();
-                                return 0; // Comando falló
+                                return 0;
                             }
                         })
                 )
@@ -64,14 +65,15 @@ public class CustomGearCommandHandler {
     }
 
     /**
-     * Actualiza los datos de los items en el registro sin necesidad de reiniciar
+     * Updates item data in registry without restarting the game.
+     * Rebuilds GEAR_MAP and TOOL_TYPE_MAP from the provided gear data.
      */
     private static void updateGearRegistry(List<GearData> gearList) {
-        // Limpia el mapa anterior
+        // Clear previous maps
         GearRegistry.GEAR_MAP.clear();
         GearRegistry.TOOL_TYPE_MAP.clear();
 
-        // Re-registra todos los datos
+        // Re-register all data
         for (GearData data : gearList) {
             switch (data.type) {
                 case "armor_set" -> {
@@ -110,7 +112,8 @@ public class CustomGearCommandHandler {
     }
 
     /**
-     * Construye un GearData derivado (copiado de GearRegistry)
+     * Builds a derived GearData object from a ToolSet parent.
+     * Combines parent metadata with tool-specific data.
      */
     private static GearData buildDerived(GearData parent, String toolType, GearData.ToolData toolData) {
         GearData derived = new GearData();

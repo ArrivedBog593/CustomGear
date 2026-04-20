@@ -26,8 +26,9 @@ public class CustomPickaxeItem extends PickaxeItem {
                         .durability(data.durability)
                         .attributes(PickaxeItem.createAttributes(
                                 new CustomTier(data),
-                                data.attackDamage,
-                                data.attackSpeed))
+                                data.attackDamage-1,
+                                data.attackSpeed-4
+                        ))
         );
         this.initialGearData = data;
     }

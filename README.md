@@ -197,18 +197,46 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one armor s
 }
 ```
 
+### Individual Tool - Full Example
+```json
+{
+  "id": "my_sword",
+  "type": "sword",
+  "name": {
+    "en_us": "My Custom Sword",
+    "es_mx": "Mi Espada Personalizada"
+  },
+  "durability": 1561,
+  "attack_damage": 5.0,
+  "attack_damage_bonus": 3.0,
+  "attack_speed": 1.6,
+  "enchantable": true,
+  "enchantability": 10,
+  "held_effects": [
+    { "effect": "minecraft:strength", "amplifier": 1 }
+  ],
+  "texture": {
+    "mode": "custom",
+    "refs": {
+      "sword": "item/weapons/my_sword.png"
+    }
+  }
+}
+```
+
 ---
 
 ## Field Reference
 
 ### Common Fields
 
-| Field            | Type    | Description                                                          |
-|------------------|---------|----------------------------------------------------------------------|
-| `id`             | String  | Unique identifier. Lowercase letters, numbers, and underscores only. |
-| `type`           | String  | `armor_set` or `tool_set`                                            |
-| `enchantable`    | Boolean | Whether the item can be enchanted                                    |
-| `enchantability` | Int     | Higher = better enchantments. Iron = 9, Gold = 25, Diamond = 10      |
+| Field            | Type    | Description                                                                  |
+|------------------|---------|------------------------------------------------------------------------------|
+| `id`             | String  | Unique identifier. Lowercase letters, numbers, and underscores only.         |
+| `type`           | String  | `armor_set`, `tool_set`, or individual tool types (`sword`, `pickaxe`, etc.) |
+| `name`           | Map     | Full item name per language (only for individual tools)                      |
+| `enchantable`    | Boolean | Whether the item can be enchanted                                            |
+| `enchantability` | Int     | Higher = better enchantments. Iron = 9, Gold = 25, Diamond = 10              |
 
 ### Armor Fields
 
@@ -227,17 +255,29 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one armor s
 
 ### Tool Fields
 
-| Field                 | Type  | Description                                                                               |
-|-----------------------|-------|-------------------------------------------------------------------------------------------|
-| `tools`               | Map   | Defines each tool. Keys: `pickaxe`, `axe`, `shovel`, `hoe`, `sword`                       |
-| `tools.durability`    | Int   | Durability of this tool                                                                   |
-| `tools.attack_damage` | Float | Bonus attack damage                                                                       |
-| `tools.attack_speed`  | Float | Attack speed. Standard sword = 1.6                                                        |
-| `tools.mining_speed`  | Float | Mining speed. Netherite = 9.0, Diamond = 8.0                                              |
-| `tools.harvest_level` | Int   | 0=Wood, 1=Stone, 2=Iron, 3=Diamond, 4=Netherite                                           |
-| `tools.held_effects`  | List  | Effects applied when this specific tool is held in hand                                   |
-| `tools.till_radius`   | Int   | (Hoe only) Radius of blocks to till around the target block. 0 = no area tilling          |
-| `tool_names`          | Map   | Full name for each tool type per language. Each language defines all tools independently. |
+| Field                       | Type  | Description                                                                               |
+|-----------------------------|-------|-------------------------------------------------------------------------------------------|
+| `tools`                     | Map   | Defines each tool. Keys: `pickaxe`, `axe`, `shovel`, `hoe`, `sword`                       |
+| `tools.durability`          | Int   | Durability of this tool                                                                   |
+| `tools.attack_damage`       | Float | Bonus attack damage                                                                       |
+| `tools.attack_damage_bonus` | Float | Additional weapon damage (bonus). Added to `attack_damage`                                |
+| `tools.attack_speed`        | Float | Attack speed. Standard sword = 1.6                                                        |
+| `tools.mining_speed`        | Float | Mining speed. Netherite = 9.0, Diamond = 8.0                                              |
+| `tools.harvest_level`       | Int   | 0=Wood, 1=Stone, 2=Iron, 3=Diamond, 4=Netherite                                           |
+| `tools.held_effects`        | List  | Effects applied when this specific tool is held in hand                                   |
+| `tools.till_radius`         | Int   | (Hoe only) Radius of blocks to till around the target block. 0 = no area tilling          |
+| `tool_names`                | Map   | Full name for each tool type per language. Each language defines all tools independently. |
+
+### Attack Damage Explanation
+- **`attack_damage`**: Weapon's base attack damage.
+- **`attack_damage_bonus`**: Additional damage that is added to `attack_damage`.
+
+**Note**: For reference, vanilla tools:
+- Wooden Sword: 4.0 attack damage
+- Stone Sword: 5.0 attack damage
+- Iron Sword: 6.0 attack damage
+- Diamond Sword: 7.0 attack damage
+- Netherite Sword: 8.0 attack damage
 
 ### Effect Object
 
@@ -248,11 +288,11 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one armor s
 
 ### Texture Fields
 
-| Field                  | Type   | Description                                                                                                                                  |
-|------------------------|--------|----------------------------------------------------------------------------------------------------------------------------------------------|
-| `texture.mode`         | String | `default`, `custom`, or `reference`                                                                                                          |
-| `texture.refs`         | Map    | Texture path per piece/tool. For `custom`: relative path from `.minecraft/customgear/`. For `reference`: resource location from another mod. |
-| `texture.armor_layers` | Map    | Layer textures for the armor model (`layer_1`, `layer_2`). Required for armor in `custom` and `reference` modes.                             |
+| Field                  | Type   | Description                                                                                                                                                                                                                         |
+|------------------------|--------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `texture.mode`         | String | `default`, `custom`, or `reference`                                                                                                                                                                                                 |
+| `texture.refs`         | Map    | Texture path per piece/tool. For `custom`: relative path from `.minecraft/customgear/`. For `reference`: resource location from another mod.                                                                                        |
+| `texture.armor_layers` | Map    | Layer textures for the armor model (`layer_1`, `layer_2`). **Required for `custom` and `reference` modes**. If omitted in `custom` mode, the JSON will be rejected with an error message. In `default` mode, this field is ignored. |
 
 ---
 

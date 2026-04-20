@@ -23,18 +23,18 @@ public class CustomTier implements Tier {
 
     @Override
     public float getSpeed() {
-        return data.miningSpeed; // Aquí lee directo del JSON
+        return data.miningSpeed;
     }
 
     @Override
     public float getAttackDamageBonus() {
-        return data.attackDamage;
+        return data.attackDamageBonus > 0 ? data.attackDamageBonus : 0 ;
     }
 
     @Override
     @NotNull
     public TagKey<Block> getIncorrectBlocksForDrops() {
-        // Basado en harvestLevel del JSON
+        // Based on harvestLevel from JSON
         return switch (data.harvestLevel) {
             case 0  -> BlockTags.INCORRECT_FOR_WOODEN_TOOL;
             case 1  -> BlockTags.INCORRECT_FOR_STONE_TOOL;

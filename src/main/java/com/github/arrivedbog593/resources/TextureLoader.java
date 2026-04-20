@@ -64,7 +64,6 @@ public class TextureLoader {
 
     private static String getDefaultArmorTexture(String piece) {
         return switch (piece) {
-            case "helmet"     -> DEFAULT_HELMET;
             case "chestplate" -> DEFAULT_CHESTPLATE;
             case "leggings"   -> DEFAULT_LEGGINGS;
             case "boots"      -> DEFAULT_BOOTS;
@@ -74,7 +73,6 @@ public class TextureLoader {
 
     private static String getDefaultToolTexture(String type) {
         return switch (type) {
-            case "sword"   -> DEFAULT_SWORD;
             case "pickaxe" -> DEFAULT_PICKAXE;
             case "axe"     -> DEFAULT_AXE;
             case "shovel"  -> DEFAULT_SHOVEL;
@@ -174,6 +172,26 @@ public class TextureLoader {
                     }
                 }
             }
+            default -> {
+                // Herramientas individuales: sword, pickaxe, axe, shovel, hoe
+                if (data.texture.refs == null || data.texture.refs.isEmpty()) {
+                    System.err.println("[CustomGear] 'refs' es obligatorio para herramientas en modo custom: " + data.id);
+                    return;
+                }
+
+                String ref = data.texture.refs.get(data.type);
+                if (ref != null) {
+                    Path texPath = GEAR_FOLDER.resolve(ref);
+                    if (Files.exists(texPath)) {
+                        ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(
+                                "customgear", "textures/item/" + data.id + ".png");
+                        pack.addTexture(loc, texPath);
+                        generateItemModel(pack, data.id);
+                    } else {
+                        System.err.println("[CustomGear] Textura de herramienta no encontrada: " + texPath);
+                    }
+                }
+            }
         }
     }
 
@@ -217,6 +235,15 @@ public class TextureLoader {
                     } else {
                         System.err.println("[CustomGear] 'refs' no contiene: " + toolType + " en " + data.id);
                     }
+                }
+            }
+            default -> {
+                // Herramientas individuales: sword, pickaxe, axe, shovel, hoe
+                String ref = data.texture.refs.get(data.type);
+                if (ref != null) {
+                    generateItemModelWithRef(pack, data.id, ref);
+                } else {
+                    System.err.println("[CustomGear] 'refs' no contiene: " + data.type + " en " + data.id);
                 }
             }
         }
