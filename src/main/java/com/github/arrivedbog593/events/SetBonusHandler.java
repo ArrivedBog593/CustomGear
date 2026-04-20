@@ -62,9 +62,9 @@ public class SetBonusHandler {
         }
 
         UUID playerId = player.getUUID();
-        Set<String> currentActiveSets = activeSetBonuses.computeIfAbsent(playerId, _ -> new HashSet<>());
-        Set<String> currentActivePieces = activePieceEffects.computeIfAbsent(playerId, _ -> new HashSet<>());
-        Map<String, List<GearData.EffectData>> currentActivePieceEffectsData = activePieceEffectsData.computeIfAbsent(playerId, _ -> new HashMap<>());
+        Set<String> currentActiveSets = activeSetBonuses.computeIfAbsent(playerId, k -> new HashSet<>());
+        Set<String> currentActivePieces = activePieceEffects.computeIfAbsent(playerId, k -> new HashSet<>());
+        Map<String, List<GearData.EffectData>> currentActivePieceEffectsData = activePieceEffectsData.computeIfAbsent(playerId, k -> new HashMap<>());
 
         Set<String> newActiveSets = new HashSet<>();
         Set<String> newActivePieces = new HashSet<>();
