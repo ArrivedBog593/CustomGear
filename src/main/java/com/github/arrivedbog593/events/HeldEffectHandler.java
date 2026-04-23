@@ -1,7 +1,7 @@
 package com.github.arrivedbog593.events;
 
 import com.github.arrivedbog593.data.GearData;
-import com.github.arrivedbog593.items.CustomArmorItem;
+import com.github.arrivedbog593.items.gear.CustomArmorItem;
 import com.github.arrivedbog593.loader.GearRegistry;
 import com.github.arrivedbog593.util.EffectUtils;
 import net.minecraft.core.registries.BuiltInRegistries;

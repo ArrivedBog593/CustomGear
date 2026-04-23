@@ -1,4 +1,4 @@
-package com.github.arrivedbog593.items;
+package com.github.arrivedbog593.items.gear;
 
 import com.github.arrivedbog593.data.GearData;
 import net.minecraft.tags.BlockTags;

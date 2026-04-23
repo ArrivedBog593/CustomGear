@@ -1,6 +1,7 @@
 package com.github.arrivedbog593.loader;
 
 import com.github.arrivedbog593.data.GearData;
+import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -37,7 +38,11 @@ public class GearParser {
             }
         }
 
-        GearCache cache = GearCache.load(folder);
+        GenericCache<GearData> cache = GenericCache.load(
+                folder,
+                "gear_cache.json",
+                new TypeToken<Map<String, GenericCache.CacheEntry<GearData>>>() {}.getType()
+        );
         Set<String> currentKeys = new HashSet<>();
         AtomicBoolean cacheModified = new AtomicBoolean(false);
 
@@ -52,7 +57,7 @@ public class GearParser {
                         try {
                             FileTime ft = Files.getLastModifiedTime(path);
                             long lastModified = ft.toMillis();
-                            GearCache.CacheEntry cached = cache.get(relKey);
+                            GenericCache.CacheEntry<GearData> cached = cache.get(relKey);
 
                             if (cached != null && cached.lastModified == lastModified
                                     && cached.data != null) {

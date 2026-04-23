@@ -1,30 +1,30 @@
-package com.github.arrivedbog593.items.tools;
+package com.github.arrivedbog593.items.gear.tools;
 
 import com.github.arrivedbog593.data.GearData;
-import com.github.arrivedbog593.items.CustomSwordItem;
-import com.github.arrivedbog593.items.CustomTier;
-import com.github.arrivedbog593.items.TooltipHelper;
+import com.github.arrivedbog593.items.gear.CustomSwordItem;
+import com.github.arrivedbog593.items.gear.CustomTier;
+import com.github.arrivedbog593.util.TooltipHelper;
 import com.github.arrivedbog593.loader.GearRegistry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.PickaxeItem;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public class CustomPickaxeItem extends PickaxeItem {
+public class CustomAxeItem extends AxeItem {
 
     private final GearData initialGearData;
 
-    public CustomPickaxeItem(GearData data) {
+    public CustomAxeItem(GearData data) {
         super(
                 new CustomTier(data),
                 new Properties()
                         .durability(data.durability)
-                        .attributes(PickaxeItem.createAttributes(
+                        .attributes(AxeItem.createAttributes(
                                 new CustomTier(data),
                                 data.attackDamage-1,
                                 data.attackSpeed-4
@@ -50,7 +50,7 @@ public class CustomPickaxeItem extends PickaxeItem {
     @Override
     public @NotNull net.minecraft.network.chat.Component getName(@NotNull ItemStack stack) {
         return net.minecraft.network.chat.Component.literal(
-                CustomSwordItem.buildName(getGearData(), CustomSwordItem.getCurrentLang(), "pickaxe"));
+                CustomSwordItem.buildName(getGearData(), CustomSwordItem.getCurrentLang(), "axe"));
     }
 
     @Override

@@ -1,6 +1,6 @@
-package com.github.arrivedbog593.items;
+package com.github.arrivedbog593.items.gear;
 
-import com.github.arrivedbog593.items.tools.*;
+import com.github.arrivedbog593.items.gear.tools.*;
 import com.github.arrivedbog593.data.GearData;
 import net.minecraft.world.item.Item;
 

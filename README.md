@@ -197,7 +197,7 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one armor s
 }
 ```
 
-### Individual Tool - Full Example
+### Individual Tool – Full Example
 ```json
 {
   "id": "my_sword",

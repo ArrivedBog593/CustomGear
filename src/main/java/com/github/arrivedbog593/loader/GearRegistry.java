@@ -1,9 +1,9 @@
 package com.github.arrivedbog593.loader;
 
 import com.github.arrivedbog593.data.GearData;
-import com.github.arrivedbog593.items.CustomArmorItem;
-import com.github.arrivedbog593.items.CustomSwordItem;
-import com.github.arrivedbog593.items.CustomToolItem;
+import com.github.arrivedbog593.items.gear.CustomArmorItem;
+import com.github.arrivedbog593.items.gear.CustomSwordItem;
+import com.github.arrivedbog593.items.gear.CustomToolItem;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;

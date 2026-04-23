@@ -1,7 +1,8 @@
-package com.github.arrivedbog593.items;
+package com.github.arrivedbog593.items.gear;
 
 import com.github.arrivedbog593.data.GearData;
 import com.github.arrivedbog593.loader.GearRegistry;
+import com.github.arrivedbog593.util.TooltipHelper;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;

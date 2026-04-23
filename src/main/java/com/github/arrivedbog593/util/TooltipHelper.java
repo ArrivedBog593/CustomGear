@@ -1,4 +1,4 @@
-package com.github.arrivedbog593.items;
+package com.github.arrivedbog593.util;
 
 import com.github.arrivedbog593.data.GearData;
 import net.minecraft.core.registries.BuiltInRegistries;

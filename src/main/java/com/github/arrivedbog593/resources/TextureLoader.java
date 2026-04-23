@@ -1,6 +1,9 @@
 package com.github.arrivedbog593.resources;
 
+import com.github.arrivedbog593.data.BlockData;
+import com.github.arrivedbog593.data.FluidData;
 import com.github.arrivedbog593.data.GearData;
+import com.github.arrivedbog593.data.ItemData;
 import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -20,30 +23,34 @@ public class TextureLoader {
 
     // ========== ARRAY CONSTANTS ==========
     private static final String[] ARMOR_PIECES = {"helmet", "chestplate", "leggings", "boots"};
-    private static final String[] TOOL_TYPES = {"pickaxe", "axe", "shovel", "hoe", "sword"};
-    private static final String[] LANGS = {"en_us", "es_mx", "es_es"};
+    private static final String[] TOOL_TYPES   = {"pickaxe", "axe", "shovel", "hoe", "sword"};
+    private static final String[] LANGS        = {"en_us", "es_mx", "es_es"};
 
     // ========== PATH CONSTANTS ==========
-    private static final String NAMESPACE = "customgear";
+    private static final String NAMESPACE          = "customgear";
     private static final String ARMOR_TEXTURE_PATH = "textures/models/armor/";
-    private static final String ITEM_TEXTURE_PATH = "textures/item/";
-    private static final String MODELS_ITEM_PATH = "models/item/";
-    private static final String LANG_PATH = "lang/";
+    private static final String ITEM_TEXTURE_PATH  = "textures/item/";
+    private static final String BLOCK_TEXTURE_PATH = "textures/block/";
+    private static final String MODELS_ITEM_PATH   = "models/item/";
+    private static final String BLOCK_MODEL_PATH   = "models/block/";
+    private static final String LANG_PATH          = "lang/";
 
     // ========== JSON MODEL CONSTANTS ==========
     private static final String HANDHELD_PARENT = "minecraft:item/handheld";
     private static final String GENERATED_PARENT = "minecraft:item/generated";
 
     // ========== ERROR MESSAGE CONSTANTS ==========
-    private static final String ERROR_ARMOR_LAYERS_REQUIRED = "[CustomGear] 'armor_layers' is required for armor in custom mode: {}";
-    private static final String ERROR_LAYER_NOT_FOUND = "[CustomGear] Layer {} not found: {}";
-    private static final String ERROR_LAYER_NOT_DEFINED = "[CustomGear] 'layer_{}' not defined in armor_layers for: {}";
-    private static final String ERROR_REFS_REQUIRED = "[CustomGear] 'refs' is required for {} in {} mode: {}";
-    private static final String ERROR_PIECE_TEXTURE_NOT_FOUND = "[CustomGear] Piece texture not found: {}";
-    private static final String ERROR_TOOL_TEXTURE_NOT_FOUND = "[CustomGear] Tool texture not found: {}";
-    private static final String ERROR_REFS_MISSING_KEY = "[CustomGear] 'refs' missing key '{}' for: {}";
-    private static final String ERROR_REFS_MISSING_KEY_IN = "[CustomGear] 'refs' missing key '{}' in: {}";
-    private static final String ERROR_REFS_REQUIRED_SIMPLE = "[CustomGear] 'refs' is required in reference mode: {}";
+    private static final String ERROR_ARMOR_LAYERS_REQUIRED    = "[CustomGear] 'armor_layers' is required for armor in custom mode: {}";
+    private static final String ERROR_LAYER_NOT_FOUND          = "[CustomGear] Layer {} not found: {}";
+    private static final String ERROR_LAYER_NOT_DEFINED        = "[CustomGear] 'layer_{}' not defined in armor_layers for: {}";
+    private static final String ERROR_REFS_REQUIRED            = "[CustomGear] 'refs' is required for {} in {} mode: {}";
+    private static final String ERROR_PIECE_TEXTURE_NOT_FOUND  = "[CustomGear] Piece texture not found: {}";
+    private static final String ERROR_TOOL_TEXTURE_NOT_FOUND   = "[CustomGear] Tool texture not found: {}";
+    private static final String ERROR_ITEM_TEXTURE_NOT_FOUND   = "[CustomGear] Item texture not found: {}";
+    private static final String ERROR_BLOCK_TEXTURE_NOT_FOUND  = "[CustomGear] Block texture not found: {}";
+    private static final String ERROR_REFS_MISSING_KEY         = "[CustomGear] 'refs' missing key '{}' for: {}";
+    private static final String ERROR_REFS_MISSING_KEY_IN      = "[CustomGear] 'refs' missing key '{}' in: {}";
+    private static final String ERROR_REFS_REQUIRED_SIMPLE     = "[CustomGear] 'refs' is required in reference mode: {}";
 
     // ========== DEFAULT TEXTURES CONSTANTS ==========
     private static final String DEFAULT_HELMET     = "minecraft:item/iron_helmet";
@@ -55,35 +62,44 @@ public class TextureLoader {
     private static final String DEFAULT_AXE        = "minecraft:item/iron_axe";
     private static final String DEFAULT_SHOVEL     = "minecraft:item/iron_shovel";
     private static final String DEFAULT_HOE        = "minecraft:item/iron_hoe";
+    private static final String DEFAULT_ITEM       = "minecraft:item/paper";
+    private static final String DEFAULT_BLOCK      = "minecraft:block/stone";
 
     // ========== PATH HELPER METHODS ==========
 
     private static ResourceLocation armorTextureLoc(String gearId, String layer) {
         return ResourceLocation.fromNamespaceAndPath(
-                NAMESPACE,
-                ARMOR_TEXTURE_PATH + gearId + "_" + layer + ".png"
-        );
+                NAMESPACE, ARMOR_TEXTURE_PATH + gearId + "_" + layer + ".png");
     }
 
     private static ResourceLocation itemTextureLoc(String itemId) {
         return ResourceLocation.fromNamespaceAndPath(
-                NAMESPACE,
-                ITEM_TEXTURE_PATH + itemId + ".png"
-        );
+                NAMESPACE, ITEM_TEXTURE_PATH + itemId + ".png");
+    }
+
+    private static ResourceLocation blockTextureLoc(String blockId) {
+        return ResourceLocation.fromNamespaceAndPath(
+                NAMESPACE, BLOCK_TEXTURE_PATH + blockId + ".png");
     }
 
     private static ResourceLocation itemModelLoc(String itemId) {
         return ResourceLocation.fromNamespaceAndPath(
-                NAMESPACE,
-                MODELS_ITEM_PATH + itemId + ".json"
-        );
+                NAMESPACE, MODELS_ITEM_PATH + itemId + ".json");
+    }
+
+    private static ResourceLocation blockModelLoc(String blockId) {
+        return ResourceLocation.fromNamespaceAndPath(
+                NAMESPACE, BLOCK_MODEL_PATH + blockId + ".json");
+    }
+
+    private static ResourceLocation blockStateLoc(String blockId) {
+        return ResourceLocation.fromNamespaceAndPath(
+                NAMESPACE, "blockstates/" + blockId + ".json");
     }
 
     private static ResourceLocation langLoc(String lang) {
         return ResourceLocation.fromNamespaceAndPath(
-                NAMESPACE,
-                LANG_PATH + lang + ".json"
-        );
+                NAMESPACE, LANG_PATH + lang + ".json");
     }
 
     // ========== VALIDATION HELPER METHODS ==========
@@ -109,13 +125,24 @@ public class TextureLoader {
 
     // ========== MAIN LOADING METHODS ==========
 
+    /**
+     * Loads textures for gear only (backward-compatible overload).
+     */
     public static void loadAll(DynamicResourcePack pack, List<GearData> gearList) {
+        loadAll(pack, gearList, List.of(), List.of());
+    }
+
+    /**
+     * Loads textures for gear, items, blocks and fluids.
+     */
+    public static void loadAll(DynamicResourcePack pack, List<GearData> gearList,
+                               List<ItemData> itemList, List<BlockData> blockList) {
+        // Gear
         for (GearData data : gearList) {
             if (data.texture == null || data.texture.mode == null) {
                 generateDefaultModels(pack, data);
                 continue;
             }
-
             switch (data.texture.mode) {
                 case "custom"    -> loadCustom(pack, data);
                 case "reference" -> loadReference(pack, data);
@@ -123,6 +150,12 @@ public class TextureLoader {
                 default -> LOGGER.warn("[CustomGear] Invalid texture mode: {}", data.texture.mode);
             }
         }
+
+        // Simple items
+        for (ItemData data : itemList) loadItem(pack, data);
+
+        // Blocks
+        for (BlockData data : blockList) loadBlock(pack, data);
     }
 
     // ========== DEFAULT MODEL GENERATION ==========
@@ -167,13 +200,75 @@ public class TextureLoader {
         };
     }
 
-    // ========== CUSTOM LOADING ==========
+    // ========== ITEM LOADING ==========
+
+    /**
+     * Loads a simple item texture.
+     * - No texture field or blank → default (paper)
+     * - Contains ":" → reference mode (resource location from another mod)
+     * - Otherwise → custom mode (relative path from customgear folder)
+     */
+    private static void loadItem(DynamicResourcePack pack, ItemData data) {
+        if (data.texture == null || data.texture.isBlank()) {
+            generateItemModelWithRef(pack, data.id, DEFAULT_ITEM);
+            return;
+        }
+
+        if (data.texture.contains(":")) {
+            // Reference mode
+            generateItemModelWithRef(pack, data.id, data.texture);
+        } else {
+            // Custom mode
+            Path texPath = GEAR_FOLDER.resolve(data.texture);
+            if (Files.exists(texPath)) {
+                pack.addTexture(itemTextureLoc(data.id), texPath);
+                generateGeneratedItemModel(pack, data.id);
+            } else {
+                LOGGER.error(ERROR_ITEM_TEXTURE_NOT_FOUND, texPath);
+                generateItemModelWithRef(pack, data.id, DEFAULT_ITEM);
+            }
+        }
+    }
+
+    // ========== BLOCK LOADING ==========
+
+    /**
+     * Loads a block texture and generates its model, blockstate and item model.
+     * - No texture field or blank → default (stone)
+     * - Contains ":" → reference mode (resource location from another mod)
+     * - Otherwise → custom mode (relative path from customgear folder)
+     */
+    private static void loadBlock(DynamicResourcePack pack, BlockData data) {
+        if (data.texture == null || data.texture.isBlank()) {
+            generateBlockWithRef(pack, data.id, DEFAULT_BLOCK);
+            return;
+        }
+
+        if (data.texture.contains(":")) {
+            // Reference mode
+            generateBlockWithRef(pack, data.id, data.texture);
+        } else {
+            // Custom mode
+            Path texPath = GEAR_FOLDER.resolve(data.texture);
+            if (Files.exists(texPath)) {
+                pack.addTexture(blockTextureLoc(data.id), texPath);
+                generateBlockModel(pack, data.id);
+                generateBlockState(pack, data.id);
+                generateBlockItemModel(pack, data.id);
+            } else {
+                LOGGER.error(ERROR_BLOCK_TEXTURE_NOT_FOUND, texPath);
+                generateBlockWithRef(pack, data.id, DEFAULT_BLOCK);
+            }
+        }
+    }
+
+    // ========== CUSTOM LOADING (GEAR) ==========
 
     private static void loadCustom(DynamicResourcePack pack, GearData data) {
         switch (data.type) {
             case "armor_set" -> loadCustomArmor(pack, data);
-            case "tool_set" -> loadCustomToolSet(pack, data);
-            default -> loadCustomTool(pack, data);
+            case "tool_set"  -> loadCustomToolSet(pack, data);
+            default          -> loadCustomTool(pack, data);
         }
     }
 
@@ -183,7 +278,6 @@ public class TextureLoader {
             return;
         }
 
-        // Load armor layers
         loadArmorLayer(pack, data, "layer_1");
         loadArmorLayer(pack, data, "layer_2");
 
@@ -192,7 +286,6 @@ public class TextureLoader {
             return;
         }
 
-        // Load individual piece textures
         for (String piece : ARMOR_PIECES) {
             if (!hasPiece(data, piece)) continue;
             loadArmorPiece(pack, data, piece);
@@ -200,7 +293,7 @@ public class TextureLoader {
     }
 
     private static void loadArmorLayer(DynamicResourcePack pack, GearData data, String layerKey) {
-        String layerNum = layerKey.split("_")[1];
+        String layerNum  = layerKey.split("_")[1];
         String layerPath = data.texture.armorLayers.get(layerKey);
 
         if (layerPath != null) {
@@ -278,7 +371,7 @@ public class TextureLoader {
         }
     }
 
-    // ========== REFERENCE LOADING ==========
+    // ========== REFERENCE LOADING (GEAR) ==========
 
     private static void loadReference(DynamicResourcePack pack, GearData data) {
         if (!hasRefs(data)) {
@@ -288,13 +381,12 @@ public class TextureLoader {
 
         switch (data.type) {
             case "armor_set" -> loadReferenceArmor(pack, data);
-            case "tool_set" -> loadReferenceToolSet(pack, data);
-            default -> loadReferenceTool(pack, data);
+            case "tool_set"  -> loadReferenceToolSet(pack, data);
+            default          -> loadReferenceTool(pack, data);
         }
     }
 
     private static void loadReferenceArmor(DynamicResourcePack pack, GearData data) {
-        // Load armor piece references
         for (String piece : ARMOR_PIECES) {
             if (!hasPiece(data, piece)) continue;
             String ref = data.texture.refs.get(piece);
@@ -305,16 +397,11 @@ public class TextureLoader {
             }
         }
 
-        // Load armor layers if present
         if (hasArmorLayers(data)) {
             String layer1 = data.texture.armorLayers.get("layer_1");
             String layer2 = data.texture.armorLayers.get("layer_2");
-            if (layer1 != null) {
-                generateItemModelWithRef(pack, data.id + "_layer_1", layer1);
-            }
-            if (layer2 != null) {
-                generateItemModelWithRef(pack, data.id + "_layer_2", layer2);
-            }
+            if (layer1 != null) generateItemModelWithRef(pack, data.id + "_layer_1", layer1);
+            if (layer2 != null) generateItemModelWithRef(pack, data.id + "_layer_2", layer2);
         }
     }
 
@@ -342,8 +429,8 @@ public class TextureLoader {
     // ========== JSON MODEL GENERATION ==========
 
     /**
-     * Generates a tool item model (handheld) with custom textures.
-     * Used for pickaxes, axes, shovels, hoes, and swords.
+     * Generates a tool item model (handheld) with custom texture.
+     * Used for pickaxes, axes, shovels, hoes and swords.
      */
     private static void generateToolItemModel(DynamicResourcePack pack, String itemId) {
         String json = """
@@ -358,8 +445,8 @@ public class TextureLoader {
     }
 
     /**
-     * Generates an armor item model (generated) with custom textures.
-     * Used for helmets, chestplates, leggings, and boots.
+     * Generates an armor item model (generated) with custom texture.
+     * Used for helmets, chestplates, leggings and boots.
      */
     private static void generateArmorItemModel(DynamicResourcePack pack, String itemId) {
         String json = """
@@ -373,6 +460,25 @@ public class TextureLoader {
         pack.addRaw(itemModelLoc(itemId), json.getBytes());
     }
 
+    /**
+     * Generates a flat generated item model with custom texture.
+     * Used for simple items.
+     */
+    private static void generateGeneratedItemModel(DynamicResourcePack pack, String itemId) {
+        String json = """
+            {
+              "parent": "%s",
+              "textures": {
+                "layer0": "%s:item/%s"
+              }
+            }
+            """.formatted(GENERATED_PARENT, NAMESPACE, itemId);
+        pack.addRaw(itemModelLoc(itemId), json.getBytes());
+    }
+
+    /**
+     * Generates an item or armor model pointing to an external resource location.
+     */
     private static void generateItemModelWithRef(DynamicResourcePack pack,
                                                  String itemId, String ref) {
         String json = """
@@ -386,18 +492,116 @@ public class TextureLoader {
         pack.addRaw(itemModelLoc(itemId), json.getBytes());
     }
 
+    /**
+     * Generates a cube_all block model with a custom texture.
+     */
+    private static void generateBlockModel(DynamicResourcePack pack, String blockId) {
+        String json = """
+            {
+              "parent": "minecraft:block/cube_all",
+              "textures": {
+                "all": "%s:block/%s"
+              }
+            }
+            """.formatted(NAMESPACE, blockId);
+        pack.addRaw(blockModelLoc(blockId), json.getBytes());
+    }
+
+    /**
+     * Generates a blockstate JSON pointing to the block's model.
+     */
+    private static void generateBlockState(DynamicResourcePack pack, String blockId) {
+        String json = """
+            {
+              "variants": {
+                "": { "model": "%s:block/%s" }
+              }
+            }
+            """.formatted(NAMESPACE, blockId);
+        pack.addRaw(blockStateLoc(blockId), json.getBytes());
+    }
+
+    /**
+     * Generates an item model for a block that inherits from its block model.
+     */
+    private static void generateBlockItemModel(DynamicResourcePack pack, String blockId) {
+        String json = """
+            {
+              "parent": "%s:block/%s"
+            }
+            """.formatted(NAMESPACE, blockId);
+        pack.addRaw(itemModelLoc(blockId), json.getBytes());
+    }
+
+    /**
+     * Generates block model, blockstate and item model using a reference texture.
+     */
+    private static void generateBlockWithRef(DynamicResourcePack pack, String blockId, String ref) {
+        String blockJson = """
+            {
+              "parent": "minecraft:block/cube_all",
+              "textures": {
+                "all": "%s"
+              }
+            }
+            """.formatted(ref);
+        pack.addRaw(blockModelLoc(blockId), blockJson.getBytes());
+        generateBlockState(pack, blockId);
+        generateBlockItemModel(pack, blockId);
+    }
+
     // ========== LANGUAGE GENERATION ==========
 
+    /**
+     * Generates lang files for gear only (backward-compatible overload).
+     */
     public static void generateLang(DynamicResourcePack pack, List<GearData> gearList) {
+        generateLang(pack, gearList, List.of(), List.of(), List.of());
+    }
+
+    /**
+     * Generates lang files for gear, items, blocks and fluids.
+     */
+    public static void generateLang(DynamicResourcePack pack, List<GearData> gearList,
+                                    List<ItemData> itemList, List<BlockData> blockList,
+                                    List<FluidData> fluidList) {
         for (String lang : LANGS) {
             Map<String, String> entries = new LinkedHashMap<>();
 
+            // Gear entries
             for (GearData data : gearList) {
                 switch (data.type) {
                     case "armor_set" -> addArmorLangEntries(entries, data, lang);
-                    case "tool_set" -> addToolSetLangEntries(entries, data, lang);
-                    default -> addToolLangEntry(entries, data, lang);
+                    case "tool_set"  -> addToolSetLangEntries(entries, data, lang);
+                    default          -> addToolLangEntry(entries, data, lang);
                 }
+            }
+
+            // Simple item entries
+            for (ItemData data : itemList) {
+                String key   = "item.customgear." + data.id;
+                String value = data.names != null
+                        ? data.names.getOrDefault(lang, data.names.getOrDefault("en_us", data.id))
+                        : data.id;
+                entries.put(key, value);
+            }
+
+            // Block entries
+            for (BlockData data : blockList) {
+                String key   = "block.customgear." + data.id;
+                String value = data.names != null
+                        ? data.names.getOrDefault(lang, data.names.getOrDefault("en_us", data.id))
+                        : data.id;
+                entries.put(key, value);
+            }
+
+            // Fluid entries
+            for (FluidData data : fluidList) {
+                String key   = "fluid.customgear." + data.id;
+                String value = data.names != null
+                        ? data.names.getOrDefault(lang, data.names.getOrDefault("en_us", data.id))
+                        : data.id;
+                entries.put(key, value);
             }
 
             pack.addRaw(langLoc(lang), buildJsonLang(entries).getBytes(StandardCharsets.UTF_8));
@@ -408,7 +612,7 @@ public class TextureLoader {
         if (data.pieces == null) return;
         for (String piece : ARMOR_PIECES) {
             if (!data.pieces.containsKey(piece)) continue;
-            String key = "item.customgear." + data.id + "_" + piece;
+            String key   = "item.customgear." + data.id + "_" + piece;
             String value = getLocalizedToolName(lang, piece, data.pieceNames, getDefaultPieceName(piece, lang));
             entries.put(key, value);
         }
@@ -418,7 +622,7 @@ public class TextureLoader {
         if (data.tools == null) return;
         for (String toolType : TOOL_TYPES) {
             if (!data.tools.containsKey(toolType)) continue;
-            String key = "item.customgear." + data.id + "_" + toolType;
+            String key   = "item.customgear." + data.id + "_" + toolType;
             String value = getLocalizedToolName(lang, toolType, data.toolNames, getDefaultToolTypeName(toolType, lang));
             entries.put(key, value);
         }
@@ -502,5 +706,4 @@ public class TextureLoader {
             default        -> type;
         };
     }
-
 }

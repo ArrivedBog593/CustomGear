@@ -1,9 +1,9 @@
-package com.github.arrivedbog593.items.tools;
+package com.github.arrivedbog593.items.gear.tools;
 
 import com.github.arrivedbog593.data.GearData;
-import com.github.arrivedbog593.items.CustomSwordItem;
-import com.github.arrivedbog593.items.CustomTier;
-import com.github.arrivedbog593.items.TooltipHelper;
+import com.github.arrivedbog593.items.gear.CustomSwordItem;
+import com.github.arrivedbog593.items.gear.CustomTier;
+import com.github.arrivedbog593.util.TooltipHelper;
 import com.github.arrivedbog593.loader.GearRegistry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;

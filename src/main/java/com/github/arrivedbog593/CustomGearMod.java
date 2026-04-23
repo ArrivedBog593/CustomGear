@@ -2,8 +2,12 @@ package com.github.arrivedbog593;
 
 import com.github.arrivedbog593.commands.CustomGearCommandHandler;
 import com.github.arrivedbog593.data.GearData;
+import com.github.arrivedbog593.loader.BlockRegistry;
+import com.github.arrivedbog593.loader.FluidRegistry;
 import com.github.arrivedbog593.loader.GearParser;
 import com.github.arrivedbog593.loader.GearRegistry;
+import com.github.arrivedbog593.loader.ItemRegistry;
+import com.github.arrivedbog593.loader.UniversalParser;
 import com.github.arrivedbog593.resources.DynamicResourcePack;
 import com.github.arrivedbog593.resources.TextureLoader;
 import net.minecraft.network.chat.Component;
@@ -13,11 +17,11 @@ import net.minecraft.server.packs.PackSelectionConfig;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.repository.KnownPack;
 import net.minecraft.server.packs.repository.Pack;
+import net.minecraft.server.packs.repository.PackSource;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddPackFindersEvent;
-import net.minecraft.server.packs.repository.PackSource;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
@@ -37,9 +41,13 @@ public class CustomGearMod {
 
         // 1. Read all JSONs
         List<GearData> gearList = GearParser.loadAll(configFolder);
+        UniversalParser.LoadResult universalResult = UniversalParser.loadAll(configFolder);
 
-        // 2. Register all items
+        // 2. Register all items, blocks and fluids
         GearRegistry.register(modEventBus, gearList);
+        ItemRegistry.register(modEventBus, universalResult.items);
+        BlockRegistry.register(modEventBus, universalResult.blocks);
+        FluidRegistry.register(modEventBus, universalResult.fluids);
         CustomGearTab.register(modEventBus);
 
         // 3. Create the dynamic resource pack

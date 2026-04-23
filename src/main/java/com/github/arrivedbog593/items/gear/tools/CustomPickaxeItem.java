@@ -1,30 +1,30 @@
-package com.github.arrivedbog593.items.tools;
+package com.github.arrivedbog593.items.gear.tools;
 
 import com.github.arrivedbog593.data.GearData;
-import com.github.arrivedbog593.items.CustomSwordItem;
-import com.github.arrivedbog593.items.CustomTier;
-import com.github.arrivedbog593.items.TooltipHelper;
+import com.github.arrivedbog593.items.gear.CustomSwordItem;
+import com.github.arrivedbog593.items.gear.CustomTier;
+import com.github.arrivedbog593.util.TooltipHelper;
 import com.github.arrivedbog593.loader.GearRegistry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.PickaxeItem;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public class CustomAxeItem extends AxeItem {
+public class CustomPickaxeItem extends PickaxeItem {
 
     private final GearData initialGearData;
 
-    public CustomAxeItem(GearData data) {
+    public CustomPickaxeItem(GearData data) {
         super(
                 new CustomTier(data),
                 new Properties()
                         .durability(data.durability)
-                        .attributes(AxeItem.createAttributes(
+                        .attributes(PickaxeItem.createAttributes(
                                 new CustomTier(data),
                                 data.attackDamage-1,
                                 data.attackSpeed-4
@@ -50,7 +50,7 @@ public class CustomAxeItem extends AxeItem {
     @Override
     public @NotNull net.minecraft.network.chat.Component getName(@NotNull ItemStack stack) {
         return net.minecraft.network.chat.Component.literal(
-                CustomSwordItem.buildName(getGearData(), CustomSwordItem.getCurrentLang(), "axe"));
+                CustomSwordItem.buildName(getGearData(), CustomSwordItem.getCurrentLang(), "pickaxe"));
     }
 
     @Override
