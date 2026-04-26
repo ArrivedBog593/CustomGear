@@ -17,6 +17,8 @@ import net.neoforged.neoforge.fluids.FluidType;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
@@ -48,6 +50,14 @@ public class FluidRegistry {
             DeferredRegister.create(BuiltInRegistries.ITEM, "customgear");
 
     public static final Map<ResourceLocation, FluidData> FLUID_MAP = new HashMap<>();
+
+    private static final ResourceLocation WATER_STILL =
+            ResourceLocation.withDefaultNamespace("block/water_still");
+    private static final ResourceLocation WATER_FLOW =
+            ResourceLocation.withDefaultNamespace("block/water_flow");
+
+    private static final Logger LOGGER = LogManager.getLogger("CustomGear");
+
 
     public static void  register(IEventBus modEventBus, List<FluidData> fluidList) {
         for (FluidData data : fluidList) {
@@ -113,7 +123,65 @@ public class FluidRegistry {
             public net.minecraft.network.chat.@NotNull Component getDescription() {
                 return net.minecraft.network.chat.Component.literal(resolveFluidName(data));
             }
+
+            @Override
+            public void initializeClient(
+                    java.util.function.@NotNull Consumer<net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions> consumer) {
+                consumer.accept(new net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions() {
+                    @Override
+                    public @NotNull ResourceLocation getStillTexture() {
+                        return resolveStillTexture(data);
+                    }
+
+                    @Override
+                    public @NotNull ResourceLocation getFlowingTexture() {
+                        return resolveFlowingTexture(data);
+                    }
+
+                    @Override
+                    public int getTintColor() {
+                        if (data.color != null && !data.color.equals("0xFFFFFFFF")) {
+                            try {
+                                return (int) Long.parseLong(
+                                        data.color.replace("0x", "").replace("0X", ""), 16);
+                            } catch (Exception ignored) {}
+                        }
+                        // Default mode — use water blue tint
+                        if (data.texture == null || data.texture.mode == null
+                                || data.texture.mode.equals("default")) {
+                            return 0xFF3F76E4;
+                        }
+                        return 0xFFFFFFFF;
+                    }
+                });
+            }
         };
+    }
+
+    private static ResourceLocation resolveStillTexture(FluidData data) {
+        if (data.texture == null || data.texture.mode == null || data.texture.mode.equals("default")) {
+            return WATER_STILL;
+        }
+        if (data.texture.mode.equals("custom")) {
+            return ResourceLocation.fromNamespaceAndPath("customgear",
+                    "fluid/" + data.id + "_still");
+        }
+        // reference mode
+        String stillRef = data.texture.refs != null ? data.texture.refs.get("still") : null;
+        return stillRef != null ? ResourceLocation.parse(stillRef) : WATER_STILL;
+    }
+
+    private static ResourceLocation resolveFlowingTexture(FluidData data) {
+        if (data.texture == null || data.texture.mode == null || data.texture.mode.equals("default")) {
+            return WATER_FLOW;
+        }
+        if (data.texture.mode.equals("custom")) {
+            return ResourceLocation.fromNamespaceAndPath("customgear",
+                    "fluid/" + data.id + "_flowing");
+        }
+        // reference mode
+        String flowingRef = data.texture.refs != null ? data.texture.refs.get("flowing") : null;
+        return flowingRef != null ? ResourceLocation.parse(flowingRef) : WATER_FLOW;
     }
 
     public static String resolveFluidName(FluidData data) {
@@ -121,5 +189,16 @@ public class FluidRegistry {
         String lang = CustomSwordItem.getCurrentLang();
         return data.names.getOrDefault(lang,
                 data.names.getOrDefault("en_us", data.id));
+    }
+
+    /**
+     * Updates fluid data during reload. Allows changing texture references without restart.
+     */
+    public static void updateFluidData(List<FluidData> fluidList) {
+        FLUID_MAP.clear();
+        for (FluidData data : fluidList) {
+            FLUID_MAP.put(ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
+        }
+        LOGGER.info("[CustomGear] Updated {} fluids in registry", fluidList.size());
     }
 }

@@ -14,7 +14,7 @@ public class AdvancementData {
     /**
      * Criterion type.
      * "inventory_changed" = obtain an item
-     * "placed_block"      = place a block
+     * "placed_block" = place a block
      */
     public String criterionType = "inventory_changed";
 

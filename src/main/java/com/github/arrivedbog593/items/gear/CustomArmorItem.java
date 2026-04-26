@@ -55,26 +55,66 @@ public class CustomArmorItem extends ArmorItem {
 
     private static Holder<ArmorMaterial> buildMaterial(GearData data, String piece) {
         GearData.PieceData pieceData = data.pieces.get(piece);
-        int defense = pieceData.defense;
-        float toughness = (float) pieceData.toughness;
-        float knockbackResistance = (float) pieceData.knockback_resistance;
+
+        // Build armor layers from texture data
+        List<ArmorMaterial.Layer> layers = buildLayers(data);
 
         ArmorMaterial material = new ArmorMaterial(
                 Map.of(
-                        ArmorItem.Type.HELMET,     piece.equals("helmet")     ? defense : 0,
-                        ArmorItem.Type.CHESTPLATE, piece.equals("chestplate") ? defense : 0,
-                        ArmorItem.Type.LEGGINGS,   piece.equals("leggings")   ? defense : 0,
-                        ArmorItem.Type.BOOTS,      piece.equals("boots")      ? defense : 0
+                        ArmorItem.Type.HELMET,     piece.equals("helmet")     ? pieceData.defense : 0,
+                        ArmorItem.Type.CHESTPLATE, piece.equals("chestplate") ? pieceData.defense : 0,
+                        ArmorItem.Type.LEGGINGS,   piece.equals("leggings")   ? pieceData.defense : 0,
+                        ArmorItem.Type.BOOTS,      piece.equals("boots")      ? pieceData.defense : 0
                 ),
                 data.enchantability,
                 SoundEvents.ARMOR_EQUIP_IRON,
                 () -> Ingredient.EMPTY,
-                List.of(),
-                toughness,
-                knockbackResistance
+                layers,
+                (float) pieceData.toughness,
+                (float) pieceData.knockback_resistance
         );
 
         return Holder.direct(material);
+    }
+
+    private static List<ArmorMaterial.Layer> buildLayers(GearData data) {
+        if (data.texture == null || data.texture.armorLayers == null) {
+            // Default — iron texture
+            return List.of(new ArmorMaterial.Layer(
+                    ResourceLocation.withDefaultNamespace("iron")));
+        }
+
+        if (data.texture.mode != null && data.texture.mode.equals("reference")) {
+            // Reference mode — use resource location from another mod
+            // layer_1 defines the base texture id
+            String layer1Ref = data.texture.armorLayers.get("layer_1");
+            if (layer1Ref != null) {
+                // Strip "textures/models/armor/" prefix and "_layer_1" suffix if present
+                // ArmorMaterial.Layer takes just the material id like "netherite"
+                ResourceLocation rl = ResourceLocation.parse(layer1Ref);
+                // Extract just the material name from path like "models/armor/netherite_layer_1"
+                String path = rl.getPath();
+                // Remove "models/armor/" prefix
+                if (path.startsWith("models/armor/")) {
+                    path = path.substring("models/armor/".length());
+                }
+                // Remove "_layer_1" suffix
+                if (path.endsWith("_layer_1")) {
+                    path = path.substring(0, path.length() - "_layer_1".length());
+                }
+                return List.of(new ArmorMaterial.Layer(
+                        ResourceLocation.fromNamespaceAndPath(rl.getNamespace(), path)));
+            }
+        }
+
+        if (data.texture.mode != null && data.texture.mode.equals("custom")) {
+            // Custom mode — use customgear namespace with gear id
+            return List.of(new ArmorMaterial.Layer(
+                    ResourceLocation.fromNamespaceAndPath("customgear", data.id)));
+        }
+
+        return List.of(new ArmorMaterial.Layer(
+                ResourceLocation.withDefaultNamespace("iron")));
     }
 
     private static ArmorItem.Type pieceToType(String piece) {

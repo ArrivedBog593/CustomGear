@@ -61,8 +61,10 @@ public class CustomGearMod {
         );
 
         // 4. Load textures in the pack
-        TextureLoader.loadAll(DYNAMIC_PACK, gearList);
-        TextureLoader.generateLang(DYNAMIC_PACK, gearList);
+        TextureLoader.loadAll(DYNAMIC_PACK, gearList,
+                universalResult.items, universalResult.blocks, universalResult.fluids);
+        TextureLoader.generateLang(DYNAMIC_PACK, gearList,
+                universalResult.items, universalResult.blocks, universalResult.fluids);
 
         // 5. Register the pack
         modEventBus.addListener(this::onAddPackFinders);

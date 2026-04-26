@@ -13,7 +13,7 @@ import java.util.function.Supplier;
  * Source and Flowing fluid pair generated from FluidData.
  * <p>
  * NeoForge requires two separate BaseFlowingFluid instances:
- *  - Source  → static fluid block
+ *  - Source → static fluid block
  *  - Flowing → moving fluid
  * <p>
  * Both share the same FluidData and are linked via

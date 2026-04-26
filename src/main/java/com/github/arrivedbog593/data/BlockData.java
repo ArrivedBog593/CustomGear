@@ -14,10 +14,20 @@ public class BlockData {
     public int lightLevel = 0;
 
     /** Texture path, e.g. "customgear:block/ruby_ore" */
-    public String texture;
+    public GearData.TextureData texture;
 
-    /** Model path, e.g. "customgear:block/ruby_ore" */
-    public String model;
+    public BlockFaces faces;
+
+    public static class BlockFaces {
+        public String top;
+        public String bottom;
+        public String north;
+        public String south;
+        public String east;
+        public String west;
+        // Optional "side" field for blocks that use the same texture on all faces
+        public String side;
+    }
 
     /**
      * Translatable names by language code.

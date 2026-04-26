@@ -11,10 +11,7 @@ public class ItemData {
     public String type;
 
     /** Texture path, e.g. "customgear:item/ruby_gem" */
-    public String texture;
-
-    /** Model path, e.g. "customgear:item/ruby_gem" */
-    public String model;
+    public GearData.TextureData texture;
 
     /**
      * Translatable names by language code.

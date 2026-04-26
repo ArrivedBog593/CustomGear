@@ -181,10 +181,7 @@ public class UniversalParser {
             LOGGER.warn("[CustomGear] Block ID does not match format: {}", data.id);
             return false;
         }
-        if (data.texture == null || data.texture.isBlank()) {
-            LOGGER.warn("[CustomGear] Block '{}' missing 'texture': {}", data.id, path.getFileName());
-            return false;
-        }
+        // texture is optional — defaults to stone if null
         return true;
     }
 
@@ -197,9 +194,12 @@ public class UniversalParser {
             LOGGER.warn("[CustomGear] Fluid ID does not match format: {}", data.id);
             return false;
         }
-        if (data.textureStill == null || data.textureFlowing == null) {
-            LOGGER.warn("[CustomGear] Fluid '{}' missing textures: {}", data.id, path.getFileName());
-            return false;
+        // Textures are only required in custom and reference modes
+        if (data.texture != null && data.texture.mode != null && !data.texture.mode.equals("default")) {
+            if (data.texture.refs == null || data.texture.refs.get("still") == null || data.texture.refs.get("flowing") == null) {
+                LOGGER.warn("[CustomGear] Fluid '{}' missing textures in {} mode: {}", data.id, data.texture.mode, path.getFileName());
+                return false;
+            }
         }
         return true;
     }
@@ -213,10 +213,7 @@ public class UniversalParser {
             LOGGER.warn("[CustomGear] Item ID does not match format: {}", data.id);
             return false;
         }
-        if (data.texture == null || data.texture.isBlank()) {
-            LOGGER.warn("[CustomGear] Item '{}' missing 'texture': {}", data.id, path.getFileName());
-            return false;
-        }
+        // texture is optional — defaults to paper if null
         return true;
     }
 

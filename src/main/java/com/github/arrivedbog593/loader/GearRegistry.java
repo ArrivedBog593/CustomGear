@@ -35,6 +35,8 @@ public class GearRegistry {
                 case "sword"     -> registerSword(data);
                 case "tool_set"  -> registerToolSet(data);
                 case "pickaxe", "axe", "shovel", "hoe" -> registerTool(data);
+                // Sylently ignore types handled by UniversalParser
+                case "block", "item", "fluid", "advancement" -> {}
                 default -> LOGGER.warn("[CustomGear] Unknown type: {}", data.type);
             }
         }

@@ -13,7 +13,7 @@ import org.jetbrains.annotations.NotNull;
  * <p>
  * JSON properties:
  *  - texture / model → assets
- *  - names           → translatable name
+ *  - names → translatable name
  */
 public class CustomItem extends Item {
 

@@ -126,17 +126,10 @@ public class TextureLoader {
     // ========== MAIN LOADING METHODS ==========
 
     /**
-     * Loads textures for gear only (backward-compatible overload).
-     */
-    public static void loadAll(DynamicResourcePack pack, List<GearData> gearList) {
-        loadAll(pack, gearList, List.of(), List.of());
-    }
-
-    /**
      * Loads textures for gear, items, blocks and fluids.
      */
     public static void loadAll(DynamicResourcePack pack, List<GearData> gearList,
-                               List<ItemData> itemList, List<BlockData> blockList) {
+                               List<ItemData> itemList, List<BlockData> blockList, List<FluidData> fluidList) {
         // Gear
         for (GearData data : gearList) {
             if (data.texture == null || data.texture.mode == null) {
@@ -156,6 +149,9 @@ public class TextureLoader {
 
         // Blocks
         for (BlockData data : blockList) loadBlock(pack, data);
+
+        // Fluids Buckets
+        for (FluidData data : fluidList) generateBucketModel(pack, data);
     }
 
     // ========== DEFAULT MODEL GENERATION ==========
@@ -209,24 +205,42 @@ public class TextureLoader {
      * - Otherwise → custom mode (relative path from customgear folder)
      */
     private static void loadItem(DynamicResourcePack pack, ItemData data) {
-        if (data.texture == null || data.texture.isBlank()) {
+        LOGGER.info("[CustomGear] Loading item texture: {}", data.id);
+        if (data.texture == null || data.texture.mode == null) {
             generateItemModelWithRef(pack, data.id, DEFAULT_ITEM);
             return;
         }
-
-        if (data.texture.contains(":")) {
-            // Reference mode
-            generateItemModelWithRef(pack, data.id, data.texture);
-        } else {
-            // Custom mode
-            Path texPath = GEAR_FOLDER.resolve(data.texture);
-            if (Files.exists(texPath)) {
-                pack.addTexture(itemTextureLoc(data.id), texPath);
-                generateGeneratedItemModel(pack, data.id);
-            } else {
-                LOGGER.error(ERROR_ITEM_TEXTURE_NOT_FOUND, texPath);
-                generateItemModelWithRef(pack, data.id, DEFAULT_ITEM);
+        switch (data.texture.mode) {
+            case "reference" -> {
+                String ref = data.texture.refs != null
+                        ? data.texture.refs.get("item")
+                        : null;
+                if (ref != null) {
+                    generateItemModelWithRef(pack, data.id, ref);
+                } else {
+                    LOGGER.error("[CustomGear] 'refs.item' missing in reference mode: {}", data.id);
+                    generateItemModelWithRef(pack, data.id, DEFAULT_ITEM);
+                }
             }
+            case "custom" -> {
+                String path = data.texture.refs != null
+                        ? data.texture.refs.get("item")
+                        : null;
+                if (path != null) {
+                    Path texPath = GEAR_FOLDER.resolve(path);
+                    if (Files.exists(texPath)) {
+                        pack.addTexture(itemTextureLoc(data.id), texPath);
+                        generateGeneratedItemModel(pack, data.id);
+                    } else {
+                        LOGGER.error(ERROR_ITEM_TEXTURE_NOT_FOUND, texPath);
+                        generateItemModelWithRef(pack, data.id, DEFAULT_ITEM);
+                    }
+                } else {
+                    LOGGER.error("[CustomGear] 'refs.item' missing in custom mode: {}", data.id);
+                    generateItemModelWithRef(pack, data.id, DEFAULT_ITEM);
+                }
+            }
+            default -> generateItemModelWithRef(pack, data.id, DEFAULT_ITEM);
         }
     }
 
@@ -239,27 +253,73 @@ public class TextureLoader {
      * - Otherwise → custom mode (relative path from customgear folder)
      */
     private static void loadBlock(DynamicResourcePack pack, BlockData data) {
-        if (data.texture == null || data.texture.isBlank()) {
+        LOGGER.info("[CustomGear] Loading block texture: {}", data.id);
+        if (data.texture == null || data.texture.mode == null) {
             generateBlockWithRef(pack, data.id, DEFAULT_BLOCK);
             return;
         }
-
-        if (data.texture.contains(":")) {
-            // Reference mode
-            generateBlockWithRef(pack, data.id, data.texture);
-        } else {
-            // Custom mode
-            Path texPath = GEAR_FOLDER.resolve(data.texture);
-            if (Files.exists(texPath)) {
-                pack.addTexture(blockTextureLoc(data.id), texPath);
-                generateBlockModel(pack, data.id);
-                generateBlockState(pack, data.id);
-                generateBlockItemModel(pack, data.id);
-            } else {
-                LOGGER.error(ERROR_BLOCK_TEXTURE_NOT_FOUND, texPath);
-                generateBlockWithRef(pack, data.id, DEFAULT_BLOCK);
+        switch (data.texture.mode) {
+            case "reference" -> {
+                String ref = data.texture.refs != null
+                        ? data.texture.refs.get("block")
+                        : null;
+                if (ref != null) {
+                    generateBlockWithRef(pack, data.id, ref);
+                } else {
+                    LOGGER.error("[CustomGear] 'refs.block' missing in reference mode: {}", data.id);
+                    generateBlockWithRef(pack, data.id, DEFAULT_BLOCK);
+                }
             }
+            case "custom" -> {
+                String path = data.texture.refs != null
+                        ? data.texture.refs.get("all")
+                        : null;
+                if (path != null) {
+                    Path texPath = GEAR_FOLDER.resolve(path);
+                    if (Files.exists(texPath)) {
+                        pack.addTexture(blockTextureLoc(data.id), texPath);
+                        generateBlockModel(pack, data.id);
+                        generateBlockState(pack, data.id);
+                        generateBlockItemModel(pack, data.id);
+                    } else {
+                        LOGGER.error(ERROR_BLOCK_TEXTURE_NOT_FOUND, texPath);
+                        generateBlockWithRef(pack, data.id, DEFAULT_BLOCK);
+                    }
+                } else {
+                    LOGGER.error("[CustomGear] 'refs.all' missing in custom mode: {}", data.id);
+                    generateBlockWithRef(pack, data.id, DEFAULT_BLOCK);
+                }
+            }
+            default -> generateBlockWithRef(pack, data.id, DEFAULT_BLOCK);
         }
+    }
+    // ========== FLUID BUCKET LOADING ==========
+
+    /**
+     * Loads a fluid texture and generates its bucket model.
+     */
+    private static void generateBucketModel(DynamicResourcePack pack, FluidData data) {
+        String bucketTexture;
+
+        if (data.texture == null || data.texture.mode == null || data.texture.mode.equals("default")) {
+            bucketTexture = "minecraft:item/water_bucket";
+        } else if (data.texture.mode.equals("custom")) {
+            bucketTexture = NAMESPACE + ":item/" + data.id + "_bucket";
+        } else {
+            // reference mode
+            String bucketRef = data.texture.refs != null ? data.texture.refs.get("bucket") : null;
+            bucketTexture = bucketRef != null ? bucketRef : "minecraft:item/water_bucket";
+        }
+
+        String json = """
+    {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "%s"
+      }
+    }
+    """.formatted(bucketTexture);
+        pack.addRaw(itemModelLoc(data.id + "_bucket"), json.getBytes());
     }
 
     // ========== CUSTOM LOADING (GEAR) ==========
@@ -461,7 +521,7 @@ public class TextureLoader {
     }
 
     /**
-     * Generates a flat generated item model with custom texture.
+     * Generates a flat-generated item model with custom texture.
      * Used for simple items.
      */
     private static void generateGeneratedItemModel(DynamicResourcePack pack, String itemId) {
@@ -553,13 +613,6 @@ public class TextureLoader {
     // ========== LANGUAGE GENERATION ==========
 
     /**
-     * Generates lang files for gear only (backward-compatible overload).
-     */
-    public static void generateLang(DynamicResourcePack pack, List<GearData> gearList) {
-        generateLang(pack, gearList, List.of(), List.of(), List.of());
-    }
-
-    /**
      * Generates lang files for gear, items, blocks and fluids.
      */
     public static void generateLang(DynamicResourcePack pack, List<GearData> gearList,
@@ -588,6 +641,7 @@ public class TextureLoader {
 
             // Block entries
             for (BlockData data : blockList) {
+                LOGGER.debug("Generating lang for block: {}", data.id);
                 String key   = "block.customgear." + data.id;
                 String value = data.names != null
                         ? data.names.getOrDefault(lang, data.names.getOrDefault("en_us", data.id))
@@ -595,13 +649,32 @@ public class TextureLoader {
                 entries.put(key, value);
             }
 
-            // Fluid entries
+            // Fluids entries
             for (FluidData data : fluidList) {
-                String key   = "fluid.customgear." + data.id;
-                String value = data.names != null
-                        ? data.names.getOrDefault(lang, data.names.getOrDefault("en_us", data.id))
-                        : data.id;
-                entries.put(key, value);
+                // Obtener nombre del fluido
+                String fluidName = data.names != null && data.names.containsKey("fluid_name")
+                        ? getLocalizedFluidName(data.names.get("fluid_name"), lang)
+                        : (data.names != null
+                           ? data.names.getOrDefault(lang, data.names.getOrDefault("en_us", data.id))
+                           : data.id);
+
+                // Fluid entry
+                String fluidKey = "fluid.customgear." + data.id;
+                entries.put(fluidKey, fluidName);
+
+                // Bucket entry
+                String bucketKey = "item.customgear." + data.id + "_bucket";
+                String bucketValue;
+
+                if (data.bucketNames != null && data.bucketNames.containsKey(lang)) {
+                    bucketValue = data.bucketNames.get(lang).replace("{fluid_name}", fluidName);
+                } else if (data.bucketNames != null && data.bucketNames.containsKey("en_us")) {
+                    bucketValue = data.bucketNames.get("en_us").replace("{fluid_name}", fluidName);
+                } else {
+                    bucketValue = getFluidBucketName(fluidName, lang);
+                }
+
+                entries.put(bucketKey, bucketValue);
             }
 
             pack.addRaw(langLoc(lang), buildJsonLang(entries).getBytes(StandardCharsets.UTF_8));
@@ -706,4 +779,24 @@ public class TextureLoader {
             default        -> type;
         };
     }
+
+    private static String getFluidBucketName(String fluidName, String lang) {
+        if (lang.equals("es_mx")) {
+            return "Cubeta de " + fluidName;
+        } else if (lang.equals("es_es")) {
+            return "Cubo de " + fluidName;
+        }
+        // En_us y otros idiomas por defecto
+        return fluidName + " Bucket";
+    }
+
+    private static String getLocalizedFluidName(Object fluidNameObj, String lang) {
+        if (fluidNameObj instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, String> names = (Map<String, String>) fluidNameObj;
+            return names.getOrDefault(lang, names.getOrDefault("en_us", ""));
+        }
+        return fluidNameObj != null ? fluidNameObj.toString() : "";
+    }
+
 }

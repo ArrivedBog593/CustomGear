@@ -2,8 +2,10 @@ package com.github.arrivedbog593.commands;
 
 import com.github.arrivedbog593.CustomGearMod;
 import com.github.arrivedbog593.data.GearData;
+import com.github.arrivedbog593.loader.FluidRegistry;
 import com.github.arrivedbog593.loader.GearParser;
 import com.github.arrivedbog593.loader.GearRegistry;
+import com.github.arrivedbog593.loader.UniversalParser;
 import com.github.arrivedbog593.resources.TextureLoader;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.commands.CommandSourceStack;
@@ -13,6 +15,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
@@ -29,18 +32,23 @@ public class CustomGearCommandHandler {
 
                             try {
                                 // 1. Reload all JSONs
-                                List<GearData> gearList = GearParser.loadAll(
-                                        Paths.get(".", "customgear")
-                                );
+                                Path customgear = Paths.get(".", "customgear");
+                                List<GearData> gearList = GearParser.loadAll(customgear);
+                                UniversalParser.LoadResult universalResult = UniversalParser.loadAll(customgear);
 
-                                // 2. Clear previous dynamic pack
+                                // 2. Clear the previous dynamic pack
                                 CustomGearMod.DYNAMIC_PACK.clear();
 
                                 // 3. Reload textures and languages
-                                TextureLoader.loadAll(CustomGearMod.DYNAMIC_PACK, gearList);
-                                TextureLoader.generateLang(CustomGearMod.DYNAMIC_PACK, gearList);
+                                TextureLoader.loadAll(CustomGearMod.DYNAMIC_PACK, gearList,
+                                        universalResult.items, universalResult.blocks, universalResult.fluids);
+                                TextureLoader.generateLang(CustomGearMod.DYNAMIC_PACK, gearList,
+                                        universalResult.items, universalResult.blocks, universalResult.fluids);
 
-                                // 4. Update item data in registry
+                                // 3.5 UPDATE: Reload fluid data in registry
+                                FluidRegistry.updateFluidData(universalResult.fluids);
+
+                                // 4. Update item data in the registry
                                 updateGearRegistry(gearList);
 
                                 // 5. Notify user
@@ -50,7 +58,6 @@ public class CustomGearCommandHandler {
                                 );
 
                                 return 1;
-
                             } catch (Exception e) {
                                 source.sendFailure(
                                         Component.translatable("customgear.command.reload.error")
@@ -65,7 +72,7 @@ public class CustomGearCommandHandler {
     }
 
     /**
-     * Updates item data in registry without restarting the game.
+     * Updates item data in the registry without restarting the game.
      * Rebuilds GEAR_MAP and TOOL_TYPE_MAP from the provided gear data.
      */
     private static void updateGearRegistry(List<GearData> gearList) {

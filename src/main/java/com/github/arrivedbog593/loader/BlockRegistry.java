@@ -28,7 +28,7 @@ import java.util.Map;
  *   data/minecraft/tags/blocks/needs_iron_tool.json → toolLevel >= 2
  *   data/minecraft/tags/blocks/needs_diamond_tool.json → toolLevel >= 3
  * Tool type tags:
- *   data/minecraft/tags/blocks/mineable/pickaxe.json   → requiredTool = "pickaxe"
+ *   data/minecraft/tags/blocks/mineable/pickaxe.json → requiredTool = "pickaxe"
  *   data/minecraft/tags/blocks/mineable/axe.json → requiredTool = "axe"
  *   etc.
  */

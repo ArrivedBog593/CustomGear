@@ -10,10 +10,10 @@ import net.minecraft.world.level.material.MapColor;
  * Generic block built from a BlockData JSON.
  * <p>
  * JSON properties:
- *  - lightLevel              → light emission
+ *  - lightLevel → light emission
  *  - requiredTool + toolLevel → controlled via block tags (see BlockRegistry)
- *  - texture / model          → runtime-generated assets
- *  - names                    → translatable name
+ *  - texture / model → runtime-generated assets
+ *  - names → translatable name
  */
 public class CustomBlock extends Block {
 
