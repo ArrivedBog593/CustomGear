@@ -1,5 +1,7 @@
 # CustomGear
 
+[![Java CI with Gradle](https://github.com/ArrivedBog593/CustomGear/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/ArrivedBog593/CustomGear/actions/workflows/main.yml)
+
 **CustomGear** is a data-driven NeoForge mod for Minecraft 1.21.1 that allows server owners, modpack creators, and players to add fully custom armor sets, weapons, and tools — all through simple JSON files. No coding required.
 
 ---
