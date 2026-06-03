@@ -91,8 +91,8 @@ public class CustomSwordItem extends SwordItem {
         }
 
         // Finally try name (for individual items)
-        if (data.name != null) {
-            return data.name.getOrDefault(lang, data.name.getOrDefault("en_us", data.id));
+        if (data.names != null) {
+            return data.names.getOrDefault(lang, data.names.getOrDefault("en_us", data.id));
         }
 
         return "Unknown";

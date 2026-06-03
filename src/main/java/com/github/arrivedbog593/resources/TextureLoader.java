@@ -906,8 +906,8 @@ public class TextureLoader {
     private static void addToolLangEntry(Map<String, String> entries, GearData data, String lang) {
         String key = "item.customgear." + data.id;
         String value;
-        if (data.name != null) {
-            value = data.name.getOrDefault(lang, data.name.getOrDefault("en_us", data.id));
+        if (data.names != null) {
+            value = data.names.getOrDefault(lang, data.names.getOrDefault("en_us", data.id));
         } else {
             value = data.id;
         }

@@ -241,7 +241,7 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one item se
 {
   "id": "my_sword",
   "type": "sword",
-  "name": {
+  "names": {
     "en_us": "My Custom Sword",
     "es_mx": "Mi Espada Personalizada"
   },
@@ -269,7 +269,7 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one item se
 {
   "id": "my_bow",
   "type": "bow",
-  "name": {
+  "names": {
     "en_us": "My Custom Bow",
     "es_mx": "Mi Arco Personalizado"
   },
@@ -295,7 +295,7 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one item se
 {
   "id": "my_crossbow",
   "type": "crossbow",
-  "name": {
+  "names": {
     "en_us": "My Custom Crossbow",
     "es_mx": "Mi Ballesta Personalizada"
   },
@@ -324,7 +324,7 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one item se
 |------------------|---------|-------------------------------------------------------------------------------------------------------------------|
 | `id`             | String  | Unique identifier. Lowercase letters, numbers, and underscores only.                                              |
 | `type`           | String  | `armor_set`, `tool_set`, `weapon_set`, `sword`, `bow`, `crossbow`, `shield`, `pickaxe`, `axe`, `shovel`, or `hoe` |
-| `name`           | Map     | Full item name per language (for individual items only — sets use `piece_names`, `tool_names`, or `weapon_names`) |
+| `names`          | Map     | Full item name per language (for individual items only — sets use `piece_names`, `tool_names`, or `weapon_names`) |
 | `enchantable`    | Boolean | Whether the item can be enchanted                                                                                 |
 | `enchantability` | Int     | Higher = better enchantments. Iron = 9, Gold = 25, Diamond = 10                                                   |
 

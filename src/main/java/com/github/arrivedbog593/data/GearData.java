@@ -8,7 +8,7 @@ public class GearData {
     // Common fields
     public String id;
     public String type;
-    public Map<String, String> name;
+    public Map<String, String> names;
 
     @SerializedName("piece_names")
     public Map<String, Map<String, String>> pieceNames;

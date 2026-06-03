@@ -126,7 +126,7 @@ public class GearRegistry {
         GearData derived = new GearData();
         derived.id = parent.id + "_" + weaponType;
         derived.type = weaponType;
-        derived.name = parent.name;
+        derived.names = parent.names;
         derived.weaponNames = parent.weaponNames;
         derived.durability = weaponData.durability > 0 ? weaponData.durability : parent.durability;
         derived.attackDamage = weaponData.attackDamage;
@@ -150,7 +150,7 @@ public class GearRegistry {
         GearData derived = new GearData();
         derived.id = parent.id + "_" + toolType;
         derived.type = toolType;
-        derived.name = parent.name;
+        derived.names = parent.names;
         derived.toolNames = parent.toolNames;
         derived.durability = toolData.durability > 0 ? toolData.durability : parent.durability;
         derived.attackDamage = toolData.attackDamage;

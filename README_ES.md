@@ -235,7 +235,7 @@ Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo def
 {
   "id": "mi_espada",
   "type": "sword",
-  "name": {
+  "names": {
     "en_us": "My Custom Sword",
     "es_mx": "Mi Espada Personalizada"
   },
@@ -263,7 +263,7 @@ Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo def
 {
   "id": "mi_arco",
   "type": "bow",
-  "name": {
+  "names": {
     "en_us": "My Custom Bow",
     "es_mx": "Mi Arco Personalizado"
   },
@@ -289,7 +289,7 @@ Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo def
 {
   "id": "mi_ballesta",
   "type": "crossbow",
-  "name": {
+  "names": {
     "en_us": "My Custom Crossbow",
     "es_mx": "Mi Ballesta Personalizada"
   },
@@ -314,13 +314,13 @@ Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo def
 
 ### Campos comunes
 
-| Campo            | Tipo    | Descripción                                                                                                                              |
-|------------------|---------|------------------------------------------------------------------------------------------------------------------------------------------|
-| `id`             | String  | Identificador único. Solo letras minúsculas, números y guiones bajos.                                                                    |
-| `type`           | String  | `armor_set`, `tool_set`, `weapon_set`, `sword`, `bow`, `crossbow`, `shield`, `pickaxe`, `axe`, `shovel`, o `hoe`                        |
-| `name`           | Map     | Nombre completo por idioma (solo para ítems individuales — los sets usan `piece_names`, `tool_names` o `weapon_names`)                   |
-| `enchantable`    | Boolean | Si el ítem puede ser encantado                                                                                                           |
-| `enchantability` | Int     | Mayor = mejores encantamientos. Hierro = 9, Oro = 25, Diamante = 10                                                                      |
+| Campo            | Tipo    | Descripción                                                                                                            |
+|------------------|---------|------------------------------------------------------------------------------------------------------------------------|
+| `id`             | String  | Identificador único. Solo letras minúsculas, números y guiones bajos.                                                  |
+| `type`           | String  | `armor_set`, `tool_set`, `weapon_set`, `sword`, `bow`, `crossbow`, `shield`, `pickaxe`, `axe`, `shovel`, o `hoe`       |
+| `names`          | Map     | Nombre completo por idioma (solo para ítems individuales — los sets usan `piece_names`, `tool_names` o `weapon_names`) |
+| `enchantable`    | Boolean | Si el ítem puede ser encantado                                                                                         |
+| `enchantability` | Int     | Mayor = mejores encantamientos. Hierro = 9, Oro = 25, Diamante = 10                                                    |
 
 ### Campos de armadura
 
@@ -346,7 +346,7 @@ Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo def
 | `tools.attack_damage`       | Float | Daño de ataque base                                                                                               |
 | `tools.attack_damage_bonus` | Float | Daño adicional sumado a `attack_damage`                                                                           |
 | `tools.attack_speed`        | Float | Velocidad de ataque. Valores referencia: espada = 1.6, hacha = 0.9, pala = 1.0                                    |
-| `tools.mining_speed`        | Float | Velocidad de minado. Netherite = 9.0, Diamante = 8.0, Hierro = 6.0                                               |
+| `tools.mining_speed`        | Float | Velocidad de minado. Netherite = 9.0, Diamante = 8.0, Hierro = 6.0                                                |
 | `tools.harvest_level`       | Int   | 0=Madera, 1=Piedra, 2=Hierro, 3=Diamante, 4=Netherite                                                             |
 | `tools.held_effects`        | List  | Efectos aplicados al sostener esta herramienta en la mano                                                         |
 | `tools.till_radius`         | Int   | (Solo azadón) Radio de bloques a arar alrededor del bloque objetivo. 0 = sin arado en área                        |
@@ -354,20 +354,20 @@ Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo def
 
 ### Campos de armas
 
-| Campo                            | Tipo  | Descripción                                                                                          |
-|----------------------------------|-------|------------------------------------------------------------------------------------------------------|
-| `weapons`                        | Map   | Define cada arma. Claves: `sword`, `bow`, `crossbow`, `shield`                                       |
-| `weapons.durability`             | Int   | Durabilidad de esta arma                                                                             |
-| `weapons.attack_damage`          | Float | Daño de ataque base (solo espada)                                                                    |
-| `weapons.attack_damage_bonus`    | Float | Daño adicional (solo espada)                                                                         |
-| `weapons.attack_speed`           | Float | Velocidad de ataque (solo espada)                                                                    |
-| `weapons.damage_multiplier`      | Float | Multiplicador del daño de ataque final. Por defecto: 1.0                                             |
-| `weapons.arrow_damage`           | Float | Daño base de flecha (arco/ballesta). Si es 0, usa el cálculo vanilla                                 |
-| `weapons.arrow_damage_bonus`     | Float | Bonus plano sumado al daño de flecha (arco/ballesta)                                                 |
-| `weapons.arrow_damage_multiplier`| Float | Multiplicador del daño de flecha (arco/ballesta). Por defecto: 1.0                                  |
-| `weapons.charge_speed`           | Float | Multiplicador de velocidad de carga (arco/ballesta). Valores < 1.0 = más lento. Por defecto: 1.0    |
-| `weapons.held_effects`           | List  | Efectos aplicados al sostener esta arma en la mano                                                   |
-| `weapon_names`                   | Map   | Nombre completo de cada arma por idioma.                                                             |
+| Campo                             | Tipo  | Descripción                                                                                      |
+|-----------------------------------|-------|--------------------------------------------------------------------------------------------------|
+| `weapons`                         | Map   | Define cada arma. Claves: `sword`, `bow`, `crossbow`, `shield`                                   |
+| `weapons.durability`              | Int   | Durabilidad de esta arma                                                                         |
+| `weapons.attack_damage`           | Float | Daño de ataque base (solo espada)                                                                |
+| `weapons.attack_damage_bonus`     | Float | Daño adicional (solo espada)                                                                     |
+| `weapons.attack_speed`            | Float | Velocidad de ataque (solo espada)                                                                |
+| `weapons.damage_multiplier`       | Float | Multiplicador del daño de ataque final. Por defecto: 1.0                                         |
+| `weapons.arrow_damage`            | Float | Daño base de flecha (arco/ballesta). Si es 0, usa el cálculo vanilla                             |
+| `weapons.arrow_damage_bonus`      | Float | Bonus plano sumado al daño de flecha (arco/ballesta)                                             |
+| `weapons.arrow_damage_multiplier` | Float | Multiplicador del daño de flecha (arco/ballesta). Por defecto: 1.0                               |
+| `weapons.charge_speed`            | Float | Multiplicador de velocidad de carga (arco/ballesta). Valores < 1.0 = más lento. Por defecto: 1.0 |
+| `weapons.held_effects`            | List  | Efectos aplicados al sostener esta arma en la mano                                               |
+| `weapon_names`                    | Map   | Nombre completo de cada arma por idioma.                                                         |
 
 > **Nota sobre charge_speed:** Valores mayores a 1.0 no están soportados actualmente para ballestas y serán ignorados. Solo valores ≤ 1.0 (más lento que vanilla) tienen efecto.
 
@@ -388,13 +388,13 @@ Las armas individuales (`type: "sword"`, `type: "bow"`, etc.) usan los mismos ca
 
 ### Referencia de daño de ataque
 
-| Arma vanilla      | attack_damage |
-|-------------------|---------------|
-| Espada de madera  | 4.0           |
-| Espada de piedra  | 5.0           |
-| Espada de hierro  | 6.0           |
-| Espada de diamante| 7.0           |
-| Espada de netherita| 8.0          |
+| Arma vanilla        | attack_damage |
+|---------------------|---------------|
+| Espada de madera    | 4.0           |
+| Espada de piedra    | 5.0           |
+| Espada de hierro    | 6.0           |
+| Espada de diamante  | 7.0           |
+| Espada de netherita | 8.0           |
 
 ### Objeto de efecto
 
@@ -405,11 +405,11 @@ Las armas individuales (`type: "sword"`, `type: "bow"`, etc.) usan los mismos ca
 
 ### Campos de textura
 
-| Campo                  | Tipo   | Descripción                                                                                                                                                                                                                                                                       |
-|------------------------|--------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `texture.mode`         | String | `default`, `custom`, o `reference`                                                                                                                                                                                                                                                |
+| Campo                  | Tipo   | Descripción                                                                                                                                                                                                                                                                                 |
+|------------------------|--------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `texture.mode`         | String | `default`, `custom`, o `reference`                                                                                                                                                                                                                                                          |
 | `texture.refs`         | Map    | Para `custom`: ruta relativa a un archivo PNG dentro de `.minecraft/customgear/`. Para `reference`: resource location completo del modelo de otro mod (ej. `minecraft:item/netherite_sword`). **Para herramientas y armas en modo reference, se usa la ruta del modelo, no de la textura.** |
-| `texture.armor_layers` | Map    | Texturas de capa del modelo de armadura (`layer_1`, `layer_2`). Requerido para armaduras en modo `custom`. En modo `reference`, usa el resource location del material de armadura.                                                                                                |
+| `texture.armor_layers` | Map    | Texturas de capa del modelo de armadura (`layer_1`, `layer_2`). Requerido para armaduras en modo `custom`. En modo `reference`, usa el resource location del material de armadura.                                                                                                          |
 
 ---
 
