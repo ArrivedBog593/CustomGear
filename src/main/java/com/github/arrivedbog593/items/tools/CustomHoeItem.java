@@ -1,7 +1,7 @@
-package com.github.arrivedbog593.items.gear.tools;
+package com.github.arrivedbog593.items.tools;
 
 import com.github.arrivedbog593.data.GearData;
-import com.github.arrivedbog593.items.gear.CustomSwordItem;
+import com.github.arrivedbog593.items.weapons.CustomSwordItem;
 import com.github.arrivedbog593.items.gear.CustomTier;
 import com.github.arrivedbog593.util.TooltipHelper;
 import com.github.arrivedbog593.loader.GearRegistry;
@@ -19,13 +19,17 @@ public class CustomHoeItem extends HoeItem {
 
     private final GearData initialGearData;
 
-    public CustomHoeItem(GearData data) {
+    public CustomHoeItem(GearData data){
+        this(data, new CustomTier(data));
+    }
+
+    private CustomHoeItem(GearData data, CustomTier tier) {
         super(
-                new CustomTier(data),
+                tier,
                 new Properties()
                         .durability(data.durability)
                         .attributes(HoeItem.createAttributes(
-                                new CustomTier(data),
+                                tier,
                                 data.attackDamage-1,
                                 data.attackSpeed-4
                         ))

@@ -1,6 +1,10 @@
 package com.github.arrivedbog593;
 
+import com.github.arrivedbog593.client.ClientSetup;
 import com.github.arrivedbog593.commands.CustomGearCommandHandler;
+import com.github.arrivedbog593.events.ArrowDamageHandler;
+import com.github.arrivedbog593.events.HeldEffectHandler;
+import com.github.arrivedbog593.events.SetBonusHandler;
 import com.github.arrivedbog593.data.GearData;
 import com.github.arrivedbog593.loader.BlockRegistry;
 import com.github.arrivedbog593.loader.FluidRegistry;
@@ -20,6 +24,7 @@ import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackSource;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddPackFindersEvent;
 import org.jetbrains.annotations.NotNull;
@@ -68,7 +73,13 @@ public class CustomGearMod {
 
         // 5. Register the pack
         modEventBus.addListener(this::onAddPackFinders);
+        if (FMLEnvironment.dist.isClient()) {
+            modEventBus.addListener(ClientSetup::onClientSetup);
+        }
         NeoForge.EVENT_BUS.register(CustomGearCommandHandler.class);
+        NeoForge.EVENT_BUS.register(SetBonusHandler.class);
+        NeoForge.EVENT_BUS.register(HeldEffectHandler.class);
+        NeoForge.EVENT_BUS.register(ArrowDamageHandler.class);
     }
 
     private void onAddPackFinders(AddPackFindersEvent event) {

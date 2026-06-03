@@ -1,7 +1,7 @@
-package com.github.arrivedbog593.items.gear.tools;
+package com.github.arrivedbog593.items.tools;
 
 import com.github.arrivedbog593.data.GearData;
-import com.github.arrivedbog593.items.gear.CustomSwordItem;
+import com.github.arrivedbog593.items.weapons.CustomSwordItem;
 import com.github.arrivedbog593.items.gear.CustomTier;
 import com.github.arrivedbog593.util.TooltipHelper;
 import com.github.arrivedbog593.loader.GearRegistry;
@@ -10,22 +10,26 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.ShovelItem;
+import net.minecraft.world.item.PickaxeItem;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public class CustomShovelItem extends ShovelItem {
+public class CustomPickaxeItem extends PickaxeItem {
 
     private final GearData initialGearData;
 
-    public CustomShovelItem(GearData data) {
+    public CustomPickaxeItem(GearData data) {
+        this(data, new CustomTier(data));
+    }
+
+    private CustomPickaxeItem(GearData data, CustomTier tier) {
         super(
-                new CustomTier(data),
+                tier,
                 new Properties()
                         .durability(data.durability)
-                        .attributes(ShovelItem.createAttributes(
-                                new CustomTier(data),
+                        .attributes(PickaxeItem.createAttributes(
+                                tier,
                                 data.attackDamage-1,
                                 data.attackSpeed-4
                         ))
@@ -50,7 +54,7 @@ public class CustomShovelItem extends ShovelItem {
     @Override
     public @NotNull net.minecraft.network.chat.Component getName(@NotNull ItemStack stack) {
         return net.minecraft.network.chat.Component.literal(
-                CustomSwordItem.buildName(getGearData(), CustomSwordItem.getCurrentLang(), "shovel"));
+                CustomSwordItem.buildName(getGearData(), CustomSwordItem.getCurrentLang(), "pickaxe"));
     }
 
     @Override

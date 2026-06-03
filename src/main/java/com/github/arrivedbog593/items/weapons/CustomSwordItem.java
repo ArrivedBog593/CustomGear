@@ -1,6 +1,7 @@
-package com.github.arrivedbog593.items.gear;
+package com.github.arrivedbog593.items.weapons;
 
 import com.github.arrivedbog593.data.GearData;
+import com.github.arrivedbog593.items.gear.CustomTier;
 import com.github.arrivedbog593.loader.GearRegistry;
 import com.github.arrivedbog593.util.TooltipHelper;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -19,12 +20,16 @@ public class CustomSwordItem extends SwordItem {
     private final GearData initialGearData;
 
     public CustomSwordItem(GearData data) {
+        this(data, new CustomTier(data));
+    }
+
+    private CustomSwordItem(GearData data, CustomTier tier) {
         super(
-                new CustomTier(data),
+                tier,
                 new Item.Properties()
                         .durability(data.durability)
                         .attributes(SwordItem.createAttributes(
-                                new CustomTier(data),
+                                tier,
                                 (int) data.attackDamage-1,
                                 data.attackSpeed-4
                         ))
@@ -67,19 +72,27 @@ public class CustomSwordItem extends SwordItem {
     }
 
     public static String buildName(GearData data, String lang, String toolType) {
-        // First try with toolNames (for tool_set)
-        if (data.toolNames != null) {
-            Map<String, String> namesForLang = data.toolNames.getOrDefault(lang,
-                    data.toolNames.get("en_us"));
-
+        // First try weaponNames (for weapon_set)
+        if (data.weaponNames != null) {
+            Map<String, String> namesForLang = data.weaponNames.getOrDefault(lang,
+                    data.weaponNames.get("en_us"));
             if (namesForLang != null && namesForLang.containsKey(toolType)) {
                 return namesForLang.get(toolType);
             }
         }
 
-        // If not found, try with name (for individual tools)
+        // Then try toolNames (for tool_set)
+        if (data.toolNames != null) {
+            Map<String, String> namesForLang = data.toolNames.getOrDefault(lang,
+                    data.toolNames.get("en_us"));
+            if (namesForLang != null && namesForLang.containsKey(toolType)) {
+                return namesForLang.get(toolType);
+            }
+        }
+
+        // Finally try name (for individual items)
         if (data.name != null) {
-            return data.name.getOrDefault(lang, data.name.get("en_us"));
+            return data.name.getOrDefault(lang, data.name.getOrDefault("en_us", data.id));
         }
 
         return "Unknown";

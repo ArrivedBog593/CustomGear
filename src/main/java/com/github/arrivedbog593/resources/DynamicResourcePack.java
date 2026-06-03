@@ -60,13 +60,15 @@ public class DynamicResourcePack extends AbstractPackResources {
     @Override
     public void listResources(@NotNull PackType type, @NotNull String namespace,
                               @NotNull String prefix, @NotNull ResourceOutput output) {
+        // FIX: `loc.getPath().startsWith(prefix)` was used as a fallback without a separator,
+        // which caused false positives (e.g., prefix="block" matched "blockstates/foo").
+        // Now only the prefix normalized with a slash at the end is used.
+        String normalizedPrefix = prefix.endsWith("/") ? prefix : prefix + "/";
+
         for (Map.Entry<ResourceLocation, byte[]> entry : resources.entrySet()) {
             ResourceLocation loc = entry.getKey();
-            // Ensures prefix always has a slash at the end for proper comparison
-            String normalizedPrefix = prefix.endsWith("/") ? prefix : prefix + "/";
             if (loc.getNamespace().equals(namespace) &&
-                    (loc.getPath().startsWith(normalizedPrefix) ||
-                            loc.getPath().startsWith(prefix))) {
+                    loc.getPath().startsWith(normalizedPrefix)) {
                 byte[] data = entry.getValue();
                 output.accept(loc, () -> new ByteArrayInputStream(data));
             }
@@ -102,5 +104,4 @@ public class DynamicResourcePack extends AbstractPackResources {
     public void clear() {
         resources.clear();
     }
-
 }

@@ -54,6 +54,29 @@ public class GearData {
     @SerializedName("tool_names")
     public Map<String, Map<String, String>> toolNames;
 
+    // Weapon set
+    public Map<String, WeaponData> weapons;
+
+    @SerializedName("weapon_names")
+    public Map<String, Map<String, String>> weaponNames;
+
+    // Damage multiplier (sword, axe, etc.)
+    @SerializedName("damage_multiplier")
+    public float damageMultiplier = 1.0f;
+
+    // Bow / Crossbow specific
+    @SerializedName("arrow_damage")
+    public float arrowDamage;
+
+    @SerializedName("arrow_damage_bonus")
+    public float arrowDamageBonus;
+
+    @SerializedName("arrow_damage_multiplier")
+    public float arrowDamageMultiplier = 1.0f;
+
+    @SerializedName("charge_speed")
+    public float chargeSpeed = 1.0f;
+
     // Texture
     public TextureData texture;
 
@@ -89,6 +112,40 @@ public class GearData {
 
         @SerializedName("till_radius")
         public int tillRadius;
+
+        @SerializedName("damage_multiplier")
+        public float damageMultiplier = 1.0f;
+    }
+
+    public static class WeaponData {
+        public int durability;
+
+        @SerializedName("attack_damage")
+        public float attackDamage;
+
+        @SerializedName("attack_damage_bonus")
+        public float attackDamageBonus;
+
+        @SerializedName("attack_speed")
+        public float attackSpeed;
+
+        @SerializedName("damage_multiplier")
+        public float damageMultiplier = 1.0f;
+
+        @SerializedName("arrow_damage")
+        public float arrowDamage;
+
+        @SerializedName("arrow_damage_bonus")
+        public float arrowDamageBonus;
+
+        @SerializedName("arrow_damage_multiplier")
+        public float arrowDamageMultiplier = 1.0f;
+
+        @SerializedName("charge_speed")
+        public float chargeSpeed = 1.0f;
+
+        @SerializedName("held_effects")
+        public List<EffectData> heldEffects;
     }
 
     public static class EffectData {

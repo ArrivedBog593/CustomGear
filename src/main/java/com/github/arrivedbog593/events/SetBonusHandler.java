@@ -6,23 +6,24 @@ import com.github.arrivedbog593.util.EffectUtils;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
-@EventBusSubscriber(modid = "customgear")
 public class SetBonusHandler {
 
-    private static final Map<UUID, Set<String>> activeSetBonuses = new HashMap<>();
-    private static final Map<UUID, Set<String>> activePieceEffects = new HashMap<>();
-    private static final Map<UUID, Map<String, List<GearData.EffectData>>> activePieceEffectsData = new HashMap<>();
+    private static final Map<UUID, Set<String>> activeSetBonuses = new ConcurrentHashMap<>();
+    private static final Map<UUID, Map<String, GearData>> activeSetData = new ConcurrentHashMap<>();
+    private static final Map<UUID, Set<String>> activePieceEffects = new ConcurrentHashMap<>();
+    private static final Map<UUID, Map<String, List<GearData.EffectData>>> activePieceEffectsData = new ConcurrentHashMap<>();
 
     @SubscribeEvent
     public static void onPlayerDisconnect(PlayerEvent.PlayerLoggedOutEvent event) {
         UUID id = event.getEntity().getUUID();
         activeSetBonuses.remove(id);
+        activeSetData.remove(id);
         activePieceEffects.remove(id);
         activePieceEffectsData.remove(id);
     }
@@ -43,14 +44,12 @@ public class SetBonusHandler {
                 GearData data = armorItem.getGearDataDirect();
                 String piece = armorItem.getPiece();
 
-                // Check for set bonus
                 if (data.setBonus != null) {
                     String setId = data.id;
                     piecesWorn.merge(setId, 1, Integer::sum);
                     setDataMap.put(setId, data);
                 }
 
-                // Check for individual piece effects
                 if (data.pieceEffects != null && data.pieceEffects.containsKey(piece)) {
                     equippedPieces.add(new PieceInfo(data.id + "_" + piece, data, piece));
                 }
@@ -59,10 +58,12 @@ public class SetBonusHandler {
 
         UUID playerId = player.getUUID();
         Set<String> currentActiveSets = activeSetBonuses.computeIfAbsent(playerId, k -> new HashSet<>());
+        Map<String, GearData> currentActiveSetData = activeSetData.computeIfAbsent(playerId, k -> new HashMap<>()); // FIX
         Set<String> currentActivePieces = activePieceEffects.computeIfAbsent(playerId, k -> new HashSet<>());
         Map<String, List<GearData.EffectData>> currentActivePieceEffectsData = activePieceEffectsData.computeIfAbsent(playerId, k -> new HashMap<>());
 
         Set<String> newActiveSets = new HashSet<>();
+        Map<String, GearData> newActiveSetData = new HashMap<>(); // FIX
         Set<String> newActivePieces = new HashSet<>();
         Map<String, List<GearData.EffectData>> newActivePieceEffectsData = new HashMap<>();
 
@@ -75,6 +76,7 @@ public class SetBonusHandler {
             if (data.setBonus != null && count >= data.setBonus.requiredPieces) {
                 applyEffects(player, data.setBonus.effects);
                 newActiveSets.add(setId);
+                newActiveSetData.put(setId, data);
             }
         }
 
@@ -84,14 +86,14 @@ public class SetBonusHandler {
             if (effects != null && !effects.isEmpty()) {
                 applyEffects(player, effects);
                 newActivePieces.add(info.pieceId);
-                newActivePieceEffectsData.put(info.pieceId, effects); // Store effects for next iteration
+                newActivePieceEffectsData.put(info.pieceId, effects);
             }
         }
 
         // Remove effects from sets that no longer meet requirements
         for (String setId : currentActiveSets) {
             if (!newActiveSets.contains(setId)) {
-                GearData data = setDataMap.get(setId);
+                GearData data = currentActiveSetData.get(setId);
                 if (data != null && data.setBonus != null) {
                     removeEffects(player, data.setBonus.effects);
                 }
@@ -101,7 +103,6 @@ public class SetBonusHandler {
         // Remove effects from unequipped pieces
         for (String pieceId : currentActivePieces) {
             if (!newActivePieces.contains(pieceId)) {
-                // Use stored data instead of searching equipped pieces
                 List<GearData.EffectData> effects = currentActivePieceEffectsData.get(pieceId);
                 if (effects != null) {
                     removeEffects(player, effects);
@@ -110,8 +111,9 @@ public class SetBonusHandler {
         }
 
         activeSetBonuses.put(playerId, newActiveSets);
+        activeSetData.put(playerId, newActiveSetData);
         activePieceEffects.put(playerId, newActivePieces);
-        activePieceEffectsData.put(playerId, newActivePieceEffectsData); // Store for next iteration
+        activePieceEffectsData.put(playerId, newActivePieceEffectsData);
     }
 
     private static void applyEffects(Player player, List<GearData.EffectData> effects) {

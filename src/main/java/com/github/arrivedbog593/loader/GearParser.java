@@ -4,6 +4,8 @@ import com.github.arrivedbog593.data.GearData;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
@@ -24,6 +26,13 @@ public class GearParser {
 
     private static final Logger LOGGER = LogManager.getLogger("CustomGear");
     private static final Gson GSON = new GsonBuilder().create();
+
+    // FIX: only valid gear types are processed — prevents parsing JSONs of block/item/fluid
+    private static final Set<String> GEAR_TYPES = Set.of(
+            "armor_set", "tool_set", "weapon_set",
+            "sword", "bow", "crossbow", "shield",
+            "pickaxe", "axe", "shovel", "hoe"
+    );
 
     public static List<GearData> loadAll(Path folder) {
         List<GearData> result = new ArrayList<>();
@@ -55,18 +64,20 @@ public class GearParser {
                         currentKeys.add(relKey);
 
                         try {
+                            // FIX: read the type of the JSON before trying to parse as GearData to avoid processing block/item/fluid files here
+                            String json = Files.readString(path);
+                            String type = extractType(json);
+                            if (type == null || !GEAR_TYPES.contains(type)) return;
+
                             FileTime ft = Files.getLastModifiedTime(path);
                             long lastModified = ft.toMillis();
                             GenericCache.CacheEntry<GearData> cached = cache.get(relKey);
 
                             if (cached != null && cached.lastModified == lastModified
                                     && cached.data != null) {
-                                // File unchanged – use cached GearData
                                 result.add(cached.data);
                                 LOGGER.debug("[CustomGear] Cache hit: {}", relKey);
                             } else {
-                                // New or modified file – parse and (re)validate
-                                String json = Files.readString(path);
                                 GearData data = GSON.fromJson(json, GearData.class);
                                 if (validate(data, path)) {
                                     result.add(data);
@@ -84,7 +95,6 @@ public class GearParser {
             LOGGER.error("[CustomGear] Error scanning folder: {}", e.getMessage());
         }
 
-        // Remove cache entries for files that were deleted
         if (cache.removeStale(currentKeys)) {
             cacheModified.set(true);
         }
@@ -154,6 +164,19 @@ public class GearParser {
             return BuiltInRegistries.MOB_EFFECT.getHolder(rl).isPresent();
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    /** Extract the "type" field from a JSON without parsing it completely. */
+    private static String extractType(String json) {
+        try {
+            JsonElement root = JsonParser.parseString(json);
+            if (!root.isJsonObject()) return null;
+            JsonElement typeEl = root.getAsJsonObject().get("type");
+            if (typeEl == null || !typeEl.isJsonPrimitive()) return null;
+            return typeEl.getAsString();
+        } catch (Exception e) {
+            return null;
         }
     }
 }

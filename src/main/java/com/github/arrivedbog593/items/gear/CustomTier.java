@@ -18,29 +18,27 @@ public class CustomTier implements Tier {
 
     @Override
     public int getUses() {
-        return data.durability;
+        return data.durability > 0 ? data.durability : 64;
     }
 
     @Override
     public float getSpeed() {
-        return data.miningSpeed;
+        return data.miningSpeed > 0 ? data.miningSpeed : 1.0f;
     }
 
     @Override
     public float getAttackDamageBonus() {
-        return data.attackDamageBonus > 0 ? data.attackDamageBonus : 0 ;
+        return data.attackDamageBonus > 0 ? data.attackDamageBonus : 0;
     }
 
     @Override
     @NotNull
     public TagKey<Block> getIncorrectBlocksForDrops() {
-        // Based on harvestLevel from JSON
         return switch (data.harvestLevel) {
             case 0  -> BlockTags.INCORRECT_FOR_WOODEN_TOOL;
             case 1  -> BlockTags.INCORRECT_FOR_STONE_TOOL;
             case 2  -> BlockTags.INCORRECT_FOR_IRON_TOOL;
             case 3  -> BlockTags.INCORRECT_FOR_DIAMOND_TOOL;
-            case 4  -> BlockTags.INCORRECT_FOR_NETHERITE_TOOL;
             default -> BlockTags.INCORRECT_FOR_NETHERITE_TOOL;
         };
     }
@@ -53,6 +51,6 @@ public class CustomTier implements Tier {
     @Override
     @NotNull
     public Ingredient getRepairIngredient() {
-        return Ingredient.EMPTY; // No item repair for now
+        return Ingredient.EMPTY;
     }
 }

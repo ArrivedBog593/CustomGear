@@ -23,7 +23,8 @@ public class TextureLoader {
 
     // ========== ARRAY CONSTANTS ==========
     private static final String[] ARMOR_PIECES = {"helmet", "chestplate", "leggings", "boots"};
-    private static final String[] TOOL_TYPES   = {"pickaxe", "axe", "shovel", "hoe", "sword"};
+    private static final String[] TOOL_TYPES   = {"pickaxe", "axe", "shovel", "hoe"};
+    private static final String[] WEAPON_TYPES = {"sword", "bow", "crossbow", "shield"};
     private static final String[] LANGS        = {"en_us", "es_mx", "es_es"};
 
     // ========== PATH CONSTANTS ==========
@@ -64,6 +65,10 @@ public class TextureLoader {
     private static final String DEFAULT_HOE        = "minecraft:item/iron_hoe";
     private static final String DEFAULT_ITEM       = "minecraft:item/paper";
     private static final String DEFAULT_BLOCK      = "minecraft:block/stone";
+    private static final String DEFAULT_BOW      = "minecraft:item/bow";
+    private static final String DEFAULT_CROSSBOW = "minecraft:item/crossbow";
+    private static final String DEFAULT_SHIELD   = "minecraft:item/shield";
+
 
     // ========== PATH HELPER METHODS ==========
 
@@ -161,19 +166,28 @@ public class TextureLoader {
             case "armor_set" -> {
                 for (String piece : ARMOR_PIECES) {
                     if (!hasPiece(data, piece)) continue;
-                    String itemId = data.id + "_" + piece;
-                    generateItemModelWithRef(pack, itemId, getDefaultArmorTexture(piece));
+                    generateItemModelWithRef(pack, data.id + "_" + piece, getDefaultArmorTexture(piece));
                 }
             }
             case "tool_set" -> {
                 if (data.tools == null) return;
                 for (String toolType : TOOL_TYPES) {
                     if (!hasTool(data, toolType)) continue;
-                    String itemId = data.id + "_" + toolType;
-                    generateItemModelWithRef(pack, itemId, getDefaultToolTexture(toolType));
+                    generateParentOnlyModel(pack, data.id + "_" + toolType, getDefaultToolModelPath(toolType));
                 }
             }
-            default -> generateItemModelWithRef(pack, data.id, getDefaultToolTexture(data.type));
+            case "weapon_set" -> {
+                if (data.weapons == null) return;
+                for (String weaponType : WEAPON_TYPES) {
+                    if (!data.weapons.containsKey(weaponType)) continue;
+                    generateParentOnlyModel(pack, data.id + "_" + weaponType, getDefaultWeaponParent(weaponType));
+                }
+            }
+            case "bow"      -> generateBowModelWithRef(pack, data.id, DEFAULT_BOW);
+            case "crossbow" -> generateCrossbowModelWithRef(pack, data.id, DEFAULT_CROSSBOW);
+            case "shield"   -> generateParentOnlyModel(pack, data.id, DEFAULT_SHIELD);
+            case "sword"    -> generateParentOnlyModel(pack, data.id, DEFAULT_SWORD);
+            default         -> generateParentOnlyModel(pack, data.id, getDefaultToolModelPath(data.type));
         }
     }
 
@@ -186,14 +200,37 @@ public class TextureLoader {
         };
     }
 
-    private static String getDefaultToolTexture(String type) {
+    /**
+     * Retorna el path del MODELO vanilla para herramientas/armas.
+     * A diferencia de getDefaultToolTexture, este se usa como parent del modelo
+     * para heredar la orientación handheld correctamente.
+     */
+    private static String getDefaultToolModelPath(String type) {
         return switch (type) {
-            case "pickaxe" -> DEFAULT_PICKAXE;
-            case "axe"     -> DEFAULT_AXE;
-            case "shovel"  -> DEFAULT_SHOVEL;
-            case "hoe"     -> DEFAULT_HOE;
-            default        -> DEFAULT_SWORD;
+            case "axe"    -> DEFAULT_AXE;
+            case "shovel" -> DEFAULT_SHOVEL;
+            case "hoe"    -> DEFAULT_HOE;
+            default       -> DEFAULT_PICKAXE;
         };
+    }
+
+    private static String getDefaultWeaponParent(String type) {
+        return switch (type) {
+            case "bow"      -> DEFAULT_BOW;
+            case "crossbow" -> DEFAULT_CROSSBOW;
+            case "shield"   -> DEFAULT_SHIELD;
+            default         -> DEFAULT_SWORD;
+        };
+    }
+
+    private static void generateParentOnlyModel(DynamicResourcePack pack,
+                                                String itemId, String parent) {
+        String json = """
+        {
+          "parent": "%s"
+        }
+        """.formatted(parent);
+        pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
     }
 
     // ========== ITEM LOADING ==========
@@ -319,16 +356,17 @@ public class TextureLoader {
       }
     }
     """.formatted(bucketTexture);
-        pack.addRaw(itemModelLoc(data.id + "_bucket"), json.getBytes());
+        pack.addRaw(itemModelLoc(data.id + "_bucket"), json.getBytes(StandardCharsets.UTF_8));
     }
 
     // ========== CUSTOM LOADING (GEAR) ==========
 
     private static void loadCustom(DynamicResourcePack pack, GearData data) {
         switch (data.type) {
-            case "armor_set" -> loadCustomArmor(pack, data);
-            case "tool_set"  -> loadCustomToolSet(pack, data);
-            default          -> loadCustomTool(pack, data);
+            case "armor_set"  -> loadCustomArmor(pack, data);
+            case "tool_set"   -> loadCustomToolSet(pack, data);
+            case "weapon_set" -> loadCustomWeaponSet(pack, data);
+            default           -> loadCustomTool(pack, data);
         }
     }
 
@@ -431,6 +469,85 @@ public class TextureLoader {
         }
     }
 
+    private static void loadCustomWeaponSet(DynamicResourcePack pack, GearData data) {
+        if (data.weapons == null) return;
+        if (!hasRefs(data)) {
+            LOGGER.error(ERROR_REFS_REQUIRED, "weapons", "custom", data.id);
+            return;
+        }
+        for (String weaponType : WEAPON_TYPES) {
+            if (!data.weapons.containsKey(weaponType)) continue;
+            String ref = data.texture.refs.get(weaponType);
+            if (ref == null) {
+                LOGGER.error(ERROR_REFS_MISSING_KEY, weaponType, data.id);
+                continue;
+            }
+            String itemId = data.id + "_" + weaponType;
+            if (weaponType.equals("bow")) {
+                loadCustomBowTextures(pack, data, itemId, ref);
+            } else {
+                loadToolTexture(pack, itemId, ref);
+                generateToolItemModel(pack, itemId);
+            }
+        }
+    }
+
+    private static void loadCustomBowTextures(DynamicResourcePack pack, GearData data,
+                                              String itemId, String baseRef) {
+        Path basePath = GEAR_FOLDER.resolve(baseRef);
+        if (!Files.exists(basePath)) {
+            LOGGER.error(ERROR_TOOL_TEXTURE_NOT_FOUND, basePath);
+            generateParentOnlyModel(pack, itemId, DEFAULT_BOW);
+            return;
+        }
+        pack.addTexture(itemTextureLoc(itemId), basePath);
+
+        String[] frames = {"pulling_0", "pulling_1", "pulling_2"};
+        boolean hasAllFrames = true;
+        for (String frame : frames) {
+            String frameRef = data.texture.refs.get("bow_" + frame);
+            if (frameRef != null) {
+                Path framePath = GEAR_FOLDER.resolve(frameRef);
+                if (Files.exists(framePath)) {
+                    pack.addTexture(itemTextureLoc(itemId + "_" + frame), framePath);
+                } else {
+                    LOGGER.error(ERROR_TOOL_TEXTURE_NOT_FOUND, framePath);
+                    hasAllFrames = false;
+                }
+            } else {
+                hasAllFrames = false;
+            }
+        }
+        generateBowItemModel(pack, itemId, hasAllFrames);
+    }
+
+    private static void generateBowItemModel(DynamicResourcePack pack,
+                                             String itemId, boolean withAnimation) {
+        String json;
+        if (withAnimation) {
+            json = """
+            {
+              "parent": "%s",
+              "textures": { "layer0": "%s:item/%s" },
+              "overrides": [
+                { "predicate": { "pulling": 1 },              "model": "%s:item/%s_pulling_0" },
+                { "predicate": { "pulling": 1, "pull": 0.65 },"model": "%s:item/%s_pulling_1" },
+                { "predicate": { "pulling": 1, "pull": 0.9 }, "model": "%s:item/%s_pulling_2" }
+              ]
+            }
+            """.formatted(HANDHELD_PARENT, NAMESPACE, itemId,
+                    NAMESPACE, itemId, NAMESPACE, itemId, NAMESPACE, itemId);
+        } else {
+            json = """
+            {
+              "parent": "%s",
+              "textures": { "layer0": "%s:item/%s" }
+            }
+            """.formatted(HANDHELD_PARENT, NAMESPACE, itemId);
+        }
+        pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
+    }
+
     // ========== REFERENCE LOADING (GEAR) ==========
 
     private static void loadReference(DynamicResourcePack pack, GearData data) {
@@ -438,11 +555,12 @@ public class TextureLoader {
             LOGGER.error(ERROR_REFS_REQUIRED_SIMPLE, data.id);
             return;
         }
-
         switch (data.type) {
-            case "armor_set" -> loadReferenceArmor(pack, data);
-            case "tool_set"  -> loadReferenceToolSet(pack, data);
-            default          -> loadReferenceTool(pack, data);
+            case "armor_set"  -> loadReferenceArmor(pack, data);
+            case "tool_set"   -> loadReferenceToolSet(pack, data);
+            case "weapon_set" -> loadReferenceWeaponSet(pack, data);
+            case "bow", "crossbow", "shield" -> loadReferenceWeapon(pack, data);
+            default           -> loadReferenceTool(pack, data);
         }
     }
 
@@ -470,7 +588,7 @@ public class TextureLoader {
             if (!hasTool(data, toolType)) continue;
             String ref = data.texture.refs.get(toolType);
             if (ref != null) {
-                generateItemModelWithRef(pack, data.id + "_" + toolType, ref);
+                generateParentOnlyModel(pack, data.id + "_" + toolType, ref);
             } else {
                 LOGGER.error(ERROR_REFS_MISSING_KEY_IN, toolType, data.id);
             }
@@ -480,9 +598,43 @@ public class TextureLoader {
     private static void loadReferenceTool(DynamicResourcePack pack, GearData data) {
         String ref = data.texture.refs.get(data.type);
         if (ref != null) {
-            generateItemModelWithRef(pack, data.id, ref);
+            // FIX: mismo caso — ref es un modelo, no una textura
+            generateParentOnlyModel(pack, data.id, ref);
         } else {
             LOGGER.error(ERROR_REFS_MISSING_KEY_IN, data.type, data.id);
+        }
+    }
+
+    private static void loadReferenceWeaponSet(DynamicResourcePack pack, GearData data) {
+        for (String weaponType : WEAPON_TYPES) {
+            if (data.weapons == null || !data.weapons.containsKey(weaponType)) continue;
+            String ref = data.texture.refs.get(weaponType);
+            String itemId = data.id + "_" + weaponType;
+            if (ref != null) {
+                switch (weaponType) {
+                    case "bow"      -> generateBowModelWithRef(pack, itemId, ref);
+                    case "crossbow" -> generateCrossbowModelWithRef(pack, itemId, ref);
+                    case "shield"   -> generateParentOnlyModel(pack, itemId, ref);
+                    default         -> generateParentOnlyModel(pack, itemId, ref); // FIX: sword hereda el modelo en vez de usar generated
+                }
+            } else {
+                LOGGER.error(ERROR_REFS_MISSING_KEY_IN, weaponType, data.id);
+                generateParentOnlyModel(pack, itemId, getDefaultWeaponParent(weaponType));
+            }
+        }
+    }
+
+    private static void loadReferenceWeapon(DynamicResourcePack pack, GearData data) {
+        String ref = data.texture.refs.get(data.type);
+        if (ref != null) {
+            switch (data.type) {
+                case "bow"      -> generateBowModelWithRef(pack, data.id, ref);
+                case "crossbow" -> generateCrossbowModelWithRef(pack, data.id, ref);
+                default         -> generateParentOnlyModel(pack, data.id, ref);
+            }
+        } else {
+            LOGGER.error(ERROR_REFS_MISSING_KEY_IN, data.type, data.id);
+            generateParentOnlyModel(pack, data.id, getDefaultWeaponParent(data.type));
         }
     }
 
@@ -501,7 +653,7 @@ public class TextureLoader {
               }
             }
             """.formatted(HANDHELD_PARENT, NAMESPACE, itemId);
-        pack.addRaw(itemModelLoc(itemId), json.getBytes());
+        pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
@@ -517,7 +669,7 @@ public class TextureLoader {
               }
             }
             """.formatted(GENERATED_PARENT, NAMESPACE, itemId);
-        pack.addRaw(itemModelLoc(itemId), json.getBytes());
+        pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
@@ -533,7 +685,7 @@ public class TextureLoader {
               }
             }
             """.formatted(GENERATED_PARENT, NAMESPACE, itemId);
-        pack.addRaw(itemModelLoc(itemId), json.getBytes());
+        pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
@@ -549,7 +701,7 @@ public class TextureLoader {
               }
             }
             """.formatted(GENERATED_PARENT, ref);
-        pack.addRaw(itemModelLoc(itemId), json.getBytes());
+        pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
@@ -564,7 +716,7 @@ public class TextureLoader {
               }
             }
             """.formatted(NAMESPACE, blockId);
-        pack.addRaw(blockModelLoc(blockId), json.getBytes());
+        pack.addRaw(blockModelLoc(blockId), json.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
@@ -578,7 +730,7 @@ public class TextureLoader {
               }
             }
             """.formatted(NAMESPACE, blockId);
-        pack.addRaw(blockStateLoc(blockId), json.getBytes());
+        pack.addRaw(blockStateLoc(blockId), json.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
@@ -590,7 +742,7 @@ public class TextureLoader {
               "parent": "%s:block/%s"
             }
             """.formatted(NAMESPACE, blockId);
-        pack.addRaw(itemModelLoc(blockId), json.getBytes());
+        pack.addRaw(itemModelLoc(blockId), json.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
@@ -605,9 +757,61 @@ public class TextureLoader {
               }
             }
             """.formatted(ref);
-        pack.addRaw(blockModelLoc(blockId), blockJson.getBytes());
+        pack.addRaw(blockModelLoc(blockId), blockJson.getBytes(StandardCharsets.UTF_8));
         generateBlockState(pack, blockId);
         generateBlockItemModel(pack, blockId);
+    }
+
+    private static void generateBowModelWithRef(DynamicResourcePack pack,
+                                                String itemId, String ref) {
+        String json;
+        if (ref.equals("minecraft:item/bow")) {
+            json = """
+            {
+              "parent": "minecraft:item/bow"
+            }
+            """;
+        } else {
+            json = """
+            {
+              "parent": "minecraft:item/bow",
+              "textures": { "layer0": "%s" },
+              "overrides": [
+                { "predicate": { "pulling": 1 },               "model": "minecraft:item/bow_pulling_0" },
+                { "predicate": { "pulling": 1, "pull": 0.65 }, "model": "minecraft:item/bow_pulling_1" },
+                { "predicate": { "pulling": 1, "pull": 0.9 },  "model": "minecraft:item/bow_pulling_2" }
+              ]
+            }
+            """.formatted(ref);
+        }
+        pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static void generateCrossbowModelWithRef(DynamicResourcePack pack,
+                                                     String itemId, String ref) {
+        String json;
+        if (ref.equals("minecraft:item/crossbow")) {
+            json = """
+            {
+              "parent": "minecraft:item/crossbow"
+            }
+            """;
+        } else {
+            json = """
+            {
+              "parent": "minecraft:item/crossbow",
+              "textures": { "layer0": "%s" },
+              "overrides": [
+                { "predicate": { "pulling": 1 },                "model": "minecraft:item/crossbow_pulling_0" },
+                { "predicate": { "pulling": 1, "pull": 0.58 },  "model": "minecraft:item/crossbow_pulling_1" },
+                { "predicate": { "pulling": 1, "pull": 1.0 },   "model": "minecraft:item/crossbow_pulling_2" },
+                { "predicate": { "charged": 1 },                "model": "minecraft:item/crossbow_arrow" },
+                { "predicate": { "charged": 1, "firework": 1 }, "model": "minecraft:item/crossbow_firework" }
+              ]
+            }
+            """.formatted(ref);
+        }
+        pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
     }
 
     // ========== LANGUAGE GENERATION ==========
@@ -624,9 +828,10 @@ public class TextureLoader {
             // Gear entries
             for (GearData data : gearList) {
                 switch (data.type) {
-                    case "armor_set" -> addArmorLangEntries(entries, data, lang);
-                    case "tool_set"  -> addToolSetLangEntries(entries, data, lang);
-                    default          -> addToolLangEntry(entries, data, lang);
+                    case "armor_set"  -> addArmorLangEntries(entries, data, lang);
+                    case "tool_set"   -> addToolSetLangEntries(entries, data, lang);
+                    case "weapon_set" -> addWeaponSetLangEntries(entries, data, lang);
+                    default           -> addToolLangEntry(entries, data, lang);
                 }
             }
 
@@ -651,12 +856,9 @@ public class TextureLoader {
 
             // Fluids entries
             for (FluidData data : fluidList) {
-                // Obtener nombre del fluido
-                String fluidName = data.names != null && data.names.containsKey("fluid_name")
-                        ? getLocalizedFluidName(data.names.get("fluid_name"), lang)
-                        : (data.names != null
-                           ? data.names.getOrDefault(lang, data.names.getOrDefault("en_us", data.id))
-                           : data.id);
+                String fluidName = data.names != null
+                        ? data.names.getOrDefault(lang, data.names.getOrDefault("en_us", data.id))
+                        : data.id;
 
                 // Fluid entry
                 String fluidKey = "fluid.customgear." + data.id;
@@ -712,17 +914,23 @@ public class TextureLoader {
         entries.put(key, value);
     }
 
-    private static String buildJsonLang(Map<String, String> entries) {
-        StringBuilder json = new StringBuilder("{\n");
-        int i = 0;
-        for (Map.Entry<String, String> entry : entries.entrySet()) {
-            json.append("  \"").append(entry.getKey()).append("\": \"")
-                    .append(entry.getValue()).append("\"");
-            if (++i < entries.size()) json.append(",");
-            json.append("\n");
+    private static void addWeaponSetLangEntries(Map<String, String> entries,
+                                                GearData data, String lang) {
+        if (data.weapons == null) return;
+        for (String weaponType : WEAPON_TYPES) {
+            if (!data.weapons.containsKey(weaponType)) continue;
+            String key = "item.customgear." + data.id + "_" + weaponType;
+            String value = getLocalizedToolName(lang, weaponType,
+                    data.weaponNames, getDefaultWeaponTypeName(weaponType, lang));
+            entries.put(key, value);
         }
-        json.append("}");
-        return json.toString();
+    }
+
+    private static final com.google.gson.Gson LANG_GSON =
+            new com.google.gson.GsonBuilder().setPrettyPrinting().create();
+
+    private static String buildJsonLang(Map<String, String> entries) {
+        return LANG_GSON.toJson(entries);
     }
 
     // ========== NAME HELPER METHODS ==========
@@ -780,6 +988,23 @@ public class TextureLoader {
         };
     }
 
+    private static String getDefaultWeaponTypeName(String type, String lang) {
+        if (lang.startsWith("es")) {
+            return switch (type) {
+                case "bow"      -> "Arco";
+                case "crossbow" -> "Ballesta";
+                case "shield"   -> "Escudo";
+                default         -> "Espada";
+            };
+        }
+        return switch (type) {
+            case "bow"      -> "Bow";
+            case "crossbow" -> "Crossbow";
+            case "shield"   -> "Shield";
+            default         -> "Sword";
+        };
+    }
+
     private static String getFluidBucketName(String fluidName, String lang) {
         if (lang.equals("es_mx")) {
             return "Cubeta de " + fluidName;
@@ -788,15 +1013,6 @@ public class TextureLoader {
         }
         // En_us y otros idiomas por defecto
         return fluidName + " Bucket";
-    }
-
-    private static String getLocalizedFluidName(Object fluidNameObj, String lang) {
-        if (fluidNameObj instanceof Map) {
-            @SuppressWarnings("unchecked")
-            Map<String, String> names = (Map<String, String>) fluidNameObj;
-            return names.getOrDefault(lang, names.getOrDefault("en_us", ""));
-        }
-        return fluidNameObj != null ? fluidNameObj.toString() : "";
     }
 
 }

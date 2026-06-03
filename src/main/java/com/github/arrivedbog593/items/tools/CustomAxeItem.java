@@ -1,7 +1,7 @@
-package com.github.arrivedbog593.items.gear.tools;
+package com.github.arrivedbog593.items.tools;
 
 import com.github.arrivedbog593.data.GearData;
-import com.github.arrivedbog593.items.gear.CustomSwordItem;
+import com.github.arrivedbog593.items.weapons.CustomSwordItem;
 import com.github.arrivedbog593.items.gear.CustomTier;
 import com.github.arrivedbog593.util.TooltipHelper;
 import com.github.arrivedbog593.loader.GearRegistry;
@@ -20,12 +20,16 @@ public class CustomAxeItem extends AxeItem {
     private final GearData initialGearData;
 
     public CustomAxeItem(GearData data) {
+        this(data, new CustomTier(data));
+    }
+
+    private CustomAxeItem(GearData data, CustomTier tier) {
         super(
-                new CustomTier(data),
+                tier,
                 new Properties()
                         .durability(data.durability)
                         .attributes(AxeItem.createAttributes(
-                                new CustomTier(data),
+                                tier,
                                 data.attackDamage-1,
                                 data.attackSpeed-4
                         ))

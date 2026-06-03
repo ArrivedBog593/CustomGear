@@ -6,13 +6,17 @@
 
 ## Features
 
-- Add custom armor sets with per-piece defense, durability, toughness, and knockback resistance
-- Add custom weapons and tool sets (sword, pickaxe, axe, shovel, hoe) with custom damage, speed, and mining speed
+- Add custom **armor sets** with per-piece defense, durability, toughness, and knockback resistance
+- Add custom **tool sets** (pickaxe, axe, shovel, hoe) and individual tools with custom damage, speed, and mining speed
+- Add custom **weapon sets** (sword, bow, crossbow, shield) and individual weapons
+- Add custom **bows** with configurable arrow damage and charge speed
+- Add custom **crossbows** with configurable arrow damage and charge speed
+- Add custom **shields** with configurable durability
 - Per-piece armor effects (e.g., helmet gives Night Vision when worn individually)
-- Set bonus effects when wearing the full armor set
-- Held effects per tool (e.g., pickaxe gives Haste, sword gives Strength)
+- Set bonus effects when wearing the required number of armor pieces
+- Held effects per tool/weapon (e.g., pickaxe gives Haste, sword gives Strength)
 - Full multi-language support — define the full item name per language with no format restrictions
-- Custom textures with a flexible path system, or reuse textures from other mods
+- Custom textures with a flexible path system, or reuse models from other mods
 - JSON files can be organized in any subfolder structure inside `.minecraft/customgear/`
 - Compatible with JEI
 - All items are enchantable with vanilla and modded enchantments
@@ -23,16 +27,18 @@
 ## Installation
 
 1. Download and install [NeoForge 1.21.1](https://neoforged.net/)
-2. Place `customgear-1.0.0.jar` in your `mods/` folder
+2. Place `customgear-1.0.jar` in your `mods/` folder
 3. Launch the game once to generate the `customgear/` folder inside `.minecraft/`
 4. Add your JSON files to `.minecraft/customgear/`
 5. Restart the game
+
+> **JSON syntax note:** Standard JSON does not allow trailing commas. A trailing comma after the last element in an object or array will cause the file to be silently skipped on load.
 
 ---
 
 ## JSON File Structure
 
-All JSON files go inside `.minecraft/customgear/`. Each file defines one armor set or one tool set. Files can be organized in any subfolder structure you prefer.
+All JSON files go inside `.minecraft/customgear/`. Each file defines one item set or weapon. Files can be organized in any subfolder structure you prefer.
 
 ### Armor Set — Full Example
 
@@ -52,12 +58,6 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one armor s
       "chestplate": "Pechera de Mi Armadura",
       "leggings": "Pantalones de Mi Armadura",
       "boots": "Botas de Mi Armadura"
-    },
-    "ja_jp": {
-      "helmet": "マイアーマーヘルメット",
-      "chestplate": "マイアーマーチェストプレート",
-      "leggings": "マイアーマーレギンス",
-      "boots": "マイアーマーブーツ"
     }
   },
   "pieces": {
@@ -71,12 +71,6 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one armor s
   "piece_effects": {
     "helmet": [
       { "effect": "minecraft:night_vision", "amplifier": 0 }
-    ],
-    "chestplate": [
-      { "effect": "minecraft:fire_resistance", "amplifier": 0 }
-    ],
-    "leggings": [
-      { "effect": "minecraft:speed", "amplifier": 0 }
     ],
     "boots": [
       { "effect": "minecraft:jump_boost", "amplifier": 0 }
@@ -107,6 +101,8 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one armor s
 
 ### Tool Set — Full Example
 
+> **Note:** `tool_set` supports `pickaxe`, `axe`, `shovel`, and `hoe` only. To add a sword alongside tools, use a separate `weapon_set` or individual `sword` file.
+
 ```json
 {
   "id": "my_tools",
@@ -116,22 +112,13 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one armor s
       "pickaxe": "My Pickaxe",
       "axe": "My Axe",
       "shovel": "My Shovel",
-      "hoe": "My Hoe",
-      "sword": "My Sword"
+      "hoe": "My Hoe"
     },
     "es_mx": {
       "pickaxe": "Mi Pico",
       "axe": "Mi Hacha",
       "shovel": "Mi Pala",
-      "hoe": "Mi Azada",
-      "sword": "Mi Espada"
-    },
-    "ja_jp": {
-      "pickaxe": "マイピッケル",
-      "axe": "マイ斧",
-      "shovel": "マイシャベル",
-      "hoe": "マイ鍬",
-      "sword": "マイソード"
+      "hoe": "Mi Azada"
     }
   },
   "tools": {
@@ -172,14 +159,6 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one armor s
       "held_effects": [
         { "effect": "minecraft:regeneration", "amplifier": 0 }
       ]
-    },
-    "sword": {
-      "durability": 5000,
-      "attack_damage": 20.0,
-      "attack_speed": 1.6,
-      "held_effects": [
-        { "effect": "minecraft:strength", "amplifier": 2 }
-      ]
     }
   },
   "enchantable": true,
@@ -190,14 +169,74 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one armor s
       "pickaxe": "item/tools/pickaxe.png",
       "axe":     "item/tools/axe.png",
       "shovel":  "item/tools/shovel.png",
-      "hoe":     "item/tools/hoe.png",
-      "sword":   "item/tools/sword.png"
+      "hoe":     "item/tools/hoe.png"
     }
   }
 }
 ```
 
-### Individual Tool – Full Example
+### Weapon Set — Full Example
+
+```json
+{
+  "id": "my_weapons",
+  "type": "weapon_set",
+  "weapon_names": {
+    "en_us": {
+      "sword":    "My Sword",
+      "bow":      "My Bow",
+      "crossbow": "My Crossbow",
+      "shield":   "My Shield"
+    },
+    "es_mx": {
+      "sword":    "Mi Espada",
+      "bow":      "Mi Arco",
+      "crossbow": "Mi Ballesta",
+      "shield":   "Mi Escudo"
+    }
+  },
+  "weapons": {
+    "sword": {
+      "durability": 2031,
+      "attack_damage": 8.0,
+      "attack_speed": 1.6,
+      "held_effects": [
+        { "effect": "minecraft:strength", "amplifier": 1 }
+      ]
+    },
+    "bow": {
+      "durability": 384,
+      "arrow_damage": 8.0,
+      "arrow_damage_bonus": 2.0,
+      "arrow_damage_multiplier": 1.3,
+      "charge_speed": 1.0
+    },
+    "crossbow": {
+      "durability": 465,
+      "arrow_damage": 11.0,
+      "arrow_damage_multiplier": 1.5,
+      "charge_speed": 1.0
+    },
+    "shield": {
+      "durability": 336
+    }
+  },
+  "enchantable": true,
+  "enchantability": 15,
+  "texture": {
+    "mode": "reference",
+    "refs": {
+      "sword":    "minecraft:item/netherite_sword",
+      "bow":      "minecraft:item/bow",
+      "crossbow": "minecraft:item/crossbow",
+      "shield":   "minecraft:item/shield"
+    }
+  }
+}
+```
+
+### Individual Sword — Full Example
+
 ```json
 {
   "id": "my_sword",
@@ -207,18 +246,69 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one armor s
     "es_mx": "Mi Espada Personalizada"
   },
   "durability": 1561,
-  "attack_damage": 5.0,
-  "attack_damage_bonus": 3.0,
+  "attack_damage": 8.0,
+  "attack_damage_bonus": 0.0,
   "attack_speed": 1.6,
   "enchantable": true,
-  "enchantability": 10,
+  "enchantability": 15,
   "held_effects": [
     { "effect": "minecraft:strength", "amplifier": 1 }
   ],
   "texture": {
-    "mode": "custom",
+    "mode": "reference",
     "refs": {
-      "sword": "item/weapons/my_sword.png"
+      "sword": "minecraft:item/netherite_sword"
+    }
+  }
+}
+```
+
+### Individual Bow — Full Example
+
+```json
+{
+  "id": "my_bow",
+  "type": "bow",
+  "name": {
+    "en_us": "My Custom Bow",
+    "es_mx": "Mi Arco Personalizado"
+  },
+  "durability": 600,
+  "arrow_damage": 10.0,
+  "arrow_damage_bonus": 1.0,
+  "arrow_damage_multiplier": 1.2,
+  "charge_speed": 1.0,
+  "enchantable": true,
+  "enchantability": 15,
+  "texture": {
+    "mode": "reference",
+    "refs": {
+      "bow": "minecraft:item/bow"
+    }
+  }
+}
+```
+
+### Individual Crossbow — Full Example
+
+```json
+{
+  "id": "my_crossbow",
+  "type": "crossbow",
+  "name": {
+    "en_us": "My Custom Crossbow",
+    "es_mx": "Mi Ballesta Personalizada"
+  },
+  "durability": 465,
+  "arrow_damage": 12.0,
+  "arrow_damage_multiplier": 1.5,
+  "charge_speed": 1.0,
+  "enchantable": true,
+  "enchantability": 15,
+  "texture": {
+    "mode": "reference",
+    "refs": {
+      "crossbow": "minecraft:item/crossbow"
     }
   }
 }
@@ -230,13 +320,13 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one armor s
 
 ### Common Fields
 
-| Field            | Type    | Description                                                                  |
-|------------------|---------|------------------------------------------------------------------------------|
-| `id`             | String  | Unique identifier. Lowercase letters, numbers, and underscores only.         |
-| `type`           | String  | `armor_set`, `tool_set`, or individual tool types (`sword`, `pickaxe`, etc.) |
-| `name`           | Map     | Full item name per language (only for individual tools)                      |
-| `enchantable`    | Boolean | Whether the item can be enchanted                                            |
-| `enchantability` | Int     | Higher = better enchantments. Iron = 9, Gold = 25, Diamond = 10              |
+| Field            | Type    | Description                                                                                                       |
+|------------------|---------|-------------------------------------------------------------------------------------------------------------------|
+| `id`             | String  | Unique identifier. Lowercase letters, numbers, and underscores only.                                              |
+| `type`           | String  | `armor_set`, `tool_set`, `weapon_set`, `sword`, `bow`, `crossbow`, `shield`, `pickaxe`, `axe`, `shovel`, or `hoe` |
+| `name`           | Map     | Full item name per language (for individual items only — sets use `piece_names`, `tool_names`, or `weapon_names`) |
+| `enchantable`    | Boolean | Whether the item can be enchanted                                                                                 |
+| `enchantability` | Int     | Higher = better enchantments. Iron = 9, Gold = 25, Diamond = 10                                                   |
 
 ### Armor Fields
 
@@ -257,27 +347,60 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one armor s
 
 | Field                       | Type  | Description                                                                               |
 |-----------------------------|-------|-------------------------------------------------------------------------------------------|
-| `tools`                     | Map   | Defines each tool. Keys: `pickaxe`, `axe`, `shovel`, `hoe`, `sword`                       |
+| `tools`                     | Map   | Defines each tool. Keys: `pickaxe`, `axe`, `shovel`, `hoe`                                |
 | `tools.durability`          | Int   | Durability of this tool                                                                   |
-| `tools.attack_damage`       | Float | Bonus attack damage                                                                       |
-| `tools.attack_damage_bonus` | Float | Additional weapon damage (bonus). Added to `attack_damage`                                |
-| `tools.attack_speed`        | Float | Attack speed. Standard sword = 1.6                                                        |
-| `tools.mining_speed`        | Float | Mining speed. Netherite = 9.0, Diamond = 8.0                                              |
+| `tools.attack_damage`       | Float | Base attack damage                                                                        |
+| `tools.attack_damage_bonus` | Float | Additional attack damage added on top of `attack_damage`                                  |
+| `tools.attack_speed`        | Float | Attack speed. Standard values: sword = 1.6, axe = 0.9, shovel = 1.0                       |
+| `tools.mining_speed`        | Float | Mining speed. Netherite = 9.0, Diamond = 8.0, Iron = 6.0                                  |
 | `tools.harvest_level`       | Int   | 0=Wood, 1=Stone, 2=Iron, 3=Diamond, 4=Netherite                                           |
-| `tools.held_effects`        | List  | Effects applied when this specific tool is held in hand                                   |
+| `tools.held_effects`        | List  | Effects applied when this tool is held in hand                                            |
 | `tools.till_radius`         | Int   | (Hoe only) Radius of blocks to till around the target block. 0 = no area tilling          |
 | `tool_names`                | Map   | Full name for each tool type per language. Each language defines all tools independently. |
 
-### Attack Damage Explanation
-- **`attack_damage`**: Weapon's base attack damage.
-- **`attack_damage_bonus`**: Additional damage that is added to `attack_damage`.
+### Weapon Fields
 
-**Note**: For reference, vanilla tools:
-- Wooden Sword: 4.0 attack damage
-- Stone Sword: 5.0 attack damage
-- Iron Sword: 6.0 attack damage
-- Diamond Sword: 7.0 attack damage
-- Netherite Sword: 8.0 attack damage
+| Field                             | Type  | Description                                                                  |
+|-----------------------------------|-------|------------------------------------------------------------------------------|
+| `weapons`                         | Map   | Defines each weapon. Keys: `sword`, `bow`, `crossbow`, `shield`              |
+| `weapons.durability`              | Int   | Durability of this weapon                                                    |
+| `weapons.attack_damage`           | Float | Base attack damage (sword only)                                              |
+| `weapons.attack_damage_bonus`     | Float | Additional attack damage (sword only)                                        |
+| `weapons.attack_speed`            | Float | Attack speed (sword only)                                                    |
+| `weapons.damage_multiplier`       | Float | Multiplier applied to final attack damage. Default: 1.0                      |
+| `weapons.arrow_damage`            | Float | Base arrow damage (bow/crossbow). If 0, uses vanilla calculation             |
+| `weapons.arrow_damage_bonus`      | Float | Flat bonus added to arrow damage (bow/crossbow)                              |
+| `weapons.arrow_damage_multiplier` | Float | Multiplier applied to arrow damage (bow/crossbow). Default: 1.0              |
+| `weapons.charge_speed`            | Float | Charge speed multiplier (bow/crossbow). Values < 1.0 = slower. Default: 1.0  |
+| `weapons.held_effects`            | List  | Effects applied when this weapon is held in hand (sword/bow/crossbow/shield) |
+| `weapon_names`                    | Map   | Full name for each weapon type per language.                                 |
+
+> **charge_speed note:** Values greater than 1.0 are not currently supported for crossbows and will be clamped to vanilla speed. Only values ≤ 1.0 (slower than vanilla) take effect.
+
+### Fields for individual weapons (not in a weapon_set)
+
+Individual weapons (`type: "sword"`, `type: "bow"`, etc.) use the same fields as above but at the top level instead of nested under `weapons`:
+
+```json
+{
+  "id": "my_bow",
+  "type": "bow",
+  "durability": 384,
+  "arrow_damage": 8.0,
+  "charge_speed": 1.0,
+  ...
+}
+```
+
+### Attack Damage Reference
+
+| Vanilla Weapon    | attack_damage |
+|-------------------|---------------|
+| Wooden Sword      | 4.0           |
+| Stone Sword       | 5.0           |
+| Iron Sword        | 6.0           |
+| Diamond Sword     | 7.0           |
+| Netherite Sword   | 8.0           |
 
 ### Effect Object
 
@@ -288,11 +411,11 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one armor s
 
 ### Texture Fields
 
-| Field                  | Type   | Description                                                                                                                                                                                                                         |
-|------------------------|--------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `texture.mode`         | String | `default`, `custom`, or `reference`                                                                                                                                                                                                 |
-| `texture.refs`         | Map    | Texture path per piece/tool. For `custom`: relative path from `.minecraft/customgear/`. For `reference`: resource location from another mod.                                                                                        |
-| `texture.armor_layers` | Map    | Layer textures for the armor model (`layer_1`, `layer_2`). **Required for `custom` and `reference` modes**. If omitted in `custom` mode, the JSON will be rejected with an error message. In `default` mode, this field is ignored. |
+| Field                  | Type   | Description                                                                                                                                                                                                                                                               |
+|------------------------|--------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `texture.mode`         | String | `default`, `custom`, or `reference`                                                                                                                                                                                                                                       |
+| `texture.refs`         | Map    | For `custom`: relative path to a PNG file inside `.minecraft/customgear/`. For `reference`: full model resource location from another mod (e.g. `minecraft:item/netherite_sword`). **For tools and weapons in reference mode, this is a model path, not a texture path.** |
+| `texture.armor_layers` | Map    | Layer textures for the armor model (`layer_1`, `layer_2`). Required for `custom` mode armors. In `reference` mode, use the armor material resource location.                                                                                                              |
 
 ---
 
@@ -309,9 +432,7 @@ Uses iron armor/tool textures as placeholders. Good for testing.
 ### `custom`
 Uses your own PNG files. All paths in `refs` and `armor_layers` are relative to `.minecraft/customgear/`.
 
-**For armor sets, you must provide:**
-- armor_layers: Layer textures for the armor model
-- refs: Individual texture paths for each armor piece
+**For armor sets:**
 ```json
 "texture": {
   "mode": "custom",
@@ -328,8 +449,7 @@ Uses your own PNG files. All paths in `refs` and `armor_layers` are relative to 
 }
 ```
 
-**For tool sets, one PNG per tool:**
-- refs: Individual texture paths for each tool
+**For tool sets:**
 ```json
 "texture": {
   "mode": "custom",
@@ -337,8 +457,21 @@ Uses your own PNG files. All paths in `refs` and `armor_layers` are relative to 
     "pickaxe": "item/tools/pickaxe.png",
     "axe":     "item/tools/axe.png",
     "shovel":  "item/tools/shovel.png",
-    "hoe":     "item/tools/hoe.png",
-    "sword":   "item/tools/sword.png"
+    "hoe":     "item/tools/hoe.png"
+  }
+}
+```
+
+**For weapon sets (bow requires pulling animation frames):**
+```json
+"texture": {
+  "mode": "custom",
+  "refs": {
+    "sword":         "item/weapons/sword.png",
+    "bow":           "item/weapons/bow.png",
+    "bow_pulling_0": "item/weapons/bow_pulling_0.png",
+    "bow_pulling_1": "item/weapons/bow_pulling_1.png",
+    "bow_pulling_2": "item/weapons/bow_pulling_2.png"
   }
 }
 ```
@@ -356,37 +489,43 @@ Uses your own PNG files. All paths in `refs` and `armor_layers` are relative to 
 │   │   ├── chestplate.png
 │   │   ├── leggings.png
 │   │   └── boots.png
-│   └── tools/
-│       ├── pickaxe.png
-│       ├── axe.png
-│       ├── shovel.png
-│       ├── hoe.png
-│       └── sword.png
+│   ├── tools/
+│   │   ├── pickaxe.png
+│   │   └── ...
+│   └── weapons/
+│       ├── sword.png
+│       └── ...
 ├── armor1.json
-├── tool1.json
-└── json/
-    ├── armor2.json
-    ├── armors/
-    │   └── armor3.json
-    └── tools/
-        └── tool2.json
+├── tools1.json
+└── weapons/
+    └── weapons1.json
 ```
 
-JSON files can be placed in any subfolder — CustomGear scans all subfolders automatically.
-
 ### `reference`
-Reuses textures from another installed mod. All refs must use the full resource location (`modid:path/to/texture`).
+Reuses models from another installed mod. For tools and weapons, `refs` must point to an **item model** resource location (not a texture). For armor `refs`, point to the item inventory texture.
 
 **For tool sets:**
 ```json
 "texture": {
   "mode": "reference",
   "refs": {
-    "pickaxe": "othermod:item/mytool/pickaxe",
-    "axe":     "othermod:item/mytool/axe",
-    "shovel":  "othermod:item/mytool/shovel",
-    "hoe":     "othermod:item/mytool/hoe",
-    "sword":   "othermod:item/mytool/sword"
+    "pickaxe": "minecraft:item/netherite_pickaxe",
+    "axe":     "minecraft:item/netherite_axe",
+    "shovel":  "minecraft:item/netherite_shovel",
+    "hoe":     "minecraft:item/netherite_hoe"
+  }
+}
+```
+
+**For weapon sets:**
+```json
+"texture": {
+  "mode": "reference",
+  "refs": {
+    "sword":    "minecraft:item/netherite_sword",
+    "bow":      "minecraft:item/bow",
+    "crossbow": "minecraft:item/crossbow",
+    "shield":   "minecraft:item/shield"
   }
 }
 ```
@@ -396,19 +535,19 @@ Reuses textures from another installed mod. All refs must use the full resource 
 "texture": {
   "mode": "reference",
   "refs": {
-    "helmet":     "othermod:item/myarmor/helmet",
-    "chestplate": "othermod:item/myarmor/chestplate",
-    "leggings":   "othermod:item/myarmor/leggings",
-    "boots":      "othermod:item/myarmor/boots"
+    "helmet":     "minecraft:item/netherite_helmet",
+    "chestplate": "minecraft:item/netherite_chestplate",
+    "leggings":   "minecraft:item/netherite_leggings",
+    "boots":      "minecraft:item/netherite_boots"
   },
   "armor_layers": {
-    "layer_1": "othermod:textures/models/armor/myarmor_layer_1",
-    "layer_2": "othermod:textures/models/armor/myarmor_layer_2"
+    "layer_1": "minecraft:models/armor/netherite_layer_1",
+    "layer_2": "minecraft:models/armor/netherite_layer_2"
   }
 }
 ```
 
-> **Note:** To find the correct resource location for a texture from another mod, open the mod's `.jar` file (it's a ZIP) and navigate to `assets/<modid>/textures/`. The resource location follows the pattern `modid:path/within/textures/folder` without the `.png` extension for `reference` mode.
+> **Finding resource locations:** Open the mod's `.jar` file as a ZIP and navigate to `assets/<modid>/models/item/`. The resource location follows the pattern `modid:item/filename` without the `.json` extension.
 
 ---
 
@@ -442,7 +581,7 @@ Effects from other mods also work — use their ID in `modid:effect_name` format
 
 ### What the reload command updates
 - Item names
-- Textures
+- Textures and models
 - Held effects (weapons and tools)
 - Piece effects and set bonuses (armor)
 - Durability display
@@ -461,7 +600,9 @@ Effects from other mods also work — use their ID in `modid:effect_name` format
 
 CustomGear does not add crafting recipes by default. To add recipes, use [KubeJS](https://www.curseforge.com/minecraft/mc-mods/kubejs) or a similar mod. Item IDs follow the pattern:
 - Armor: `customgear:my_armor_helmet`, `customgear:my_armor_chestplate`, etc.
-- Tools: `customgear:my_tools_pickaxe`, `customgear:my_tools_sword`, etc.
+- Tools: `customgear:my_tools_pickaxe`, `customgear:my_tools_axe`, etc.
+- Weapons: `customgear:my_weapons_sword`, `customgear:my_weapons_bow`, etc.
+- Individual items: `customgear:my_sword`, `customgear:my_bow`, etc.
 
 ---
 
@@ -472,7 +613,7 @@ CustomGear does not add crafting recipes by default. To add recipes, use [KubeJS
 - JEI (optional, recommended)
 - Compatible with KubeJS for recipes
 - Modded enchantments work automatically on enchantable items
-- Textures from any installed mod can be referenced with `reference` mode
+- Models from any installed mod can be referenced with `reference` mode
 
 ---
 

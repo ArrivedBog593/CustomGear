@@ -30,7 +30,9 @@ public class UniversalParser {
 
     // Gear types handled by GearParser — ignored here
     private static final Set<String> GEAR_TYPES = Set.of(
-            "armor_set", "tool_set", "sword", "pickaxe", "axe", "shovel", "hoe"
+            "armor_set", "tool_set", "weapon_set",
+            "sword", "bow", "crossbow", "shield",
+            "pickaxe", "axe", "shovel", "hoe"
     );
 
     public static class LoadResult {

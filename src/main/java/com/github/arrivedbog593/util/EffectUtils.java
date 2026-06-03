@@ -33,6 +33,14 @@ public class EffectUtils {
                 continue;
             }
 
+            // Check if the effect is already active with the correct amplifier and infinite duration to avoid calling addEffect() every tick unnecessarily
+            MobEffectInstance existing = player.getEffect(effectHolder);
+            if (existing != null
+                    && existing.getDuration() == -1
+                    && existing.getAmplifier() == effectData.amplifier) {
+                continue;
+            }
+
             player.addEffect(new MobEffectInstance(
                     effectHolder,
                     -1,    // infinite duration

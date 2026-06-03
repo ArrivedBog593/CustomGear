@@ -2,7 +2,7 @@ package com.github.arrivedbog593.loader;
 
 import com.github.arrivedbog593.data.FluidData;
 import com.github.arrivedbog593.items.fluids.CustomFluid;
-import com.github.arrivedbog593.items.gear.CustomSwordItem;
+import com.github.arrivedbog593.items.weapons.CustomSwordItem;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BucketItem;
@@ -124,6 +124,7 @@ public class FluidRegistry {
                 return net.minecraft.network.chat.Component.literal(resolveFluidName(data));
             }
 
+            @SuppressWarnings("removal")
             @Override
             public void initializeClient(
                     java.util.function.@NotNull Consumer<net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions> consumer) {

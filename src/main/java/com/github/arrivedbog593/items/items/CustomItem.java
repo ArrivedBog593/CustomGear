@@ -1,7 +1,7 @@
 package com.github.arrivedbog593.items.items;
 
 import com.github.arrivedbog593.data.ItemData;
-import com.github.arrivedbog593.items.gear.CustomSwordItem;
+import com.github.arrivedbog593.items.weapons.CustomSwordItem;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;

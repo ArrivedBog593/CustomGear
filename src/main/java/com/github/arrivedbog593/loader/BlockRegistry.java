@@ -66,4 +66,16 @@ public class BlockRegistry {
         BLOCK_MAP.put(loc, data);
         LOGGER.info("[CustomGear] Block registered: {}", data.id);
     }
+
+    /**
+     * Updates block data during reload without restarting the game.
+     * Allows refreshing names and other runtime properties.
+     */
+    public static void updateBlockData(List<BlockData> blockList) {
+        BLOCK_MAP.clear();
+        for (BlockData data : blockList) {
+            BLOCK_MAP.put(ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
+        }
+        LOGGER.info("[CustomGear] Updated {} blocks in registry", blockList.size());
+    }
 }

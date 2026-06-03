@@ -9,19 +9,18 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.minecraft.world.item.Item;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
-@EventBusSubscriber(modid = "customgear")
 public class HeldEffectHandler {
 
     // Tracks which items are currently held per player (main/offhand)
-    private static final Map<UUID, ResourceLocation> lastMainHand = new HashMap<>();
-    private static final Map<UUID, ResourceLocation> lastOffHand = new HashMap<>();
+    private static final Map<UUID, ResourceLocation> lastMainHand = new ConcurrentHashMap<>();
+    private static final Map<UUID, ResourceLocation> lastOffHand = new ConcurrentHashMap<>();
 
     @SubscribeEvent
     public static void onPlayerDisconnect(PlayerEvent.PlayerLoggedOutEvent event) {
@@ -69,8 +68,11 @@ public class HeldEffectHandler {
         checkAndApply(player, offStack);
 
         // Update tracking
-        lastMainHand.put(id, currentMain);
-        lastOffHand.put(id, currentOff);
+        if (currentMain != null) lastMainHand.put(id, currentMain);
+        else lastMainHand.remove(id);
+
+        if (currentOff != null) lastOffHand.put(id, currentOff);
+        else lastOffHand.remove(id);
     }
 
     private static void checkAndApply(Player player, ItemStack stack) {

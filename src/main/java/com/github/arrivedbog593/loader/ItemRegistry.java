@@ -37,4 +37,16 @@ public class ItemRegistry {
         }
         ITEMS.register(modEventBus);
     }
+
+    /**
+     * Updates item data during reload without restarting the game.
+     * Allows refreshing names and other runtime properties.
+     */
+    public static void updateItemData(List<ItemData> itemList) {
+        ITEM_MAP.clear();
+        for (ItemData data : itemList) {
+            ITEM_MAP.put(ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
+        }
+        LOGGER.info("[CustomGear] Updated {} items in registry", itemList.size());
+    }
 }

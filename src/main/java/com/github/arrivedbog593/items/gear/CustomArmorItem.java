@@ -1,6 +1,7 @@
 package com.github.arrivedbog593.items.gear;
 
 import com.github.arrivedbog593.data.GearData;
+import com.github.arrivedbog593.items.weapons.CustomSwordItem;
 import com.github.arrivedbog593.loader.GearRegistry;
 import com.github.arrivedbog593.util.TooltipHelper;
 import net.minecraft.core.Holder;
