@@ -1,11 +1,9 @@
 package com.github.arrivedbog593.items.weapons;
 
 import com.github.arrivedbog593.data.GearData;
-import com.github.arrivedbog593.loader.GearRegistry;
+import com.github.arrivedbog593.util.GearLookup;
 import com.github.arrivedbog593.util.TooltipHelper;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.Item;
@@ -19,13 +17,12 @@ public class CustomCrossbowItem extends CrossbowItem {
     private final GearData initialGearData;
 
     public CustomCrossbowItem(GearData data) {
-        super(new Item.Properties().durability(data.durability));
+        super(new Properties().durability(data.durability));
         this.initialGearData = data;
     }
 
     private GearData getGearData() {
-        ResourceLocation loc = BuiltInRegistries.ITEM.getKey(this);
-        return GearRegistry.GEAR_MAP.getOrDefault(loc, initialGearData);
+        return GearLookup.getGearData(this, initialGearData);
     }
 
     @Override
@@ -38,14 +35,13 @@ public class CustomCrossbowItem extends CrossbowItem {
     public int getUseDuration(@NotNull ItemStack stack, @NotNull LivingEntity entity) {
         GearData data = getGearData();
         float chargeSpeed = data.chargeSpeed > 0 ? data.chargeSpeed : 1.0f;
-        return Math.max((int)(25.0f / chargeSpeed) + 3, 28);
+        return Math.max((int) (25.0f / chargeSpeed) + 3, 28);
     }
 
     @Override
     public @NotNull Component getName(@NotNull ItemStack stack) {
         GearData data = getGearData();
-        return Component.literal(
-                CustomSwordItem.buildName(data, CustomSwordItem.getCurrentLang(), "crossbow"));
+        return Component.literal(CustomSwordItem.buildName(data, GearLookup.getCurrentLang(), "crossbow"));
     }
 
     @Override

@@ -21,21 +21,38 @@ import org.apache.logging.log4j.Logger;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class CustomGearCommandHandler {
 
+    private static final Logger LOGGER = LogManager.getLogger("CustomGear");
+
+    private static final long RELOAD_COOLDOWN_MS = 5_000L;
+    private static final AtomicLong lastReloadTime = new AtomicLong(0L);
+
     @SubscribeEvent
     public static void onCommandsRegister(RegisterCommandsEvent event) {
-
-        final Logger LOGGER = LogManager.getLogger("CustomGear");
-
         CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
 
         dispatcher.register(Commands.literal("customgear")
                 .then(Commands.literal("reload")
+                        .requires(src -> src.hasPermission(2))
                         .executes(context -> {
                             CommandSourceStack source = context.getSource();
+
+                            // FIX: cooldown anti-spam
+                            long now = System.currentTimeMillis();
+                            long last = lastReloadTime.get();
+                            long remaining = RELOAD_COOLDOWN_MS - (now - last);
+                            if (remaining > 0) {
+                                source.sendFailure(Component.literal(
+                                        "[CustomGear] Reload on cooldown. Wait " + (remaining / 1000 + 1) + "s."));
+                                return 0;
+                            }
+                            lastReloadTime.set(now);
 
                             try {
                                 // 1. Reload all JSONs
@@ -52,27 +69,28 @@ public class CustomGearCommandHandler {
                                 TextureLoader.generateLang(CustomGearMod.DYNAMIC_PACK, gearList,
                                         universalResult.items, universalResult.blocks, universalResult.fluids);
 
-                                // 3.5 UPDATE: Reload fluid, item and block data in registries
+                                // 4. Reload fluid, item and block data in registries
                                 FluidRegistry.updateFluidData(universalResult.fluids);
                                 ItemRegistry.updateItemData(universalResult.items);
                                 BlockRegistry.updateBlockData(universalResult.blocks);
 
-                                // 4. Update item data in the registry
-                                updateGearRegistry(gearList);
+                                // 5. Atomic swap of the GEAR_MAP — removes the inconsistency window
+                                updateGearRegistryAtomic(gearList);
 
-                                // 5. Notify user
+                                // 6. Notify user
                                 source.sendSuccess(
                                         () -> Component.translatable("customgear.command.reload.success"),
                                         true
                                 );
 
                                 return 1;
+
                             } catch (Exception e) {
+                                // FIX: no exponer rutas internas ni stack traces al jugador
                                 source.sendFailure(
-                                        Component.translatable("customgear.command.reload.error")
-                                                .append(Component.literal(": " + e.getMessage()))
-                                );
-                                LOGGER.error("Error reloading CustomGear data", e);
+                                        Component.translatable("customgear.command.reload.error"));
+                                // El detalle completo solo va al log del servidor
+                                LOGGER.error("[CustomGear] Reload failed", e);
                                 return 0;
                             }
                         })
@@ -81,57 +99,54 @@ public class CustomGearCommandHandler {
     }
 
     /**
-     * Updates item data in the registry without restarting the game.
-     * Rebuilds GEAR_MAP and TOOL_TYPE_MAP from the provided gear data.
+     * Builds new maps from scratch and swaps them in atomically via
+     * {@link GearRegistry#atomicSwap}. This eliminates the clear() + put() window
+     * where the map was temporarily empty and could cause NPEs in server ticks.
      */
-    private static void updateGearRegistry(List<GearData> gearList) {
-        GearRegistry.GEAR_MAP.clear();
-        GearRegistry.TOOL_TYPE_MAP.clear();
+    private static void updateGearRegistryAtomic(List<GearData> gearList) {
+        Map<ResourceLocation, GearData> newGear     = new HashMap<>();
+        Map<ResourceLocation, String>   newToolType = new HashMap<>();
 
         for (GearData data : gearList) {
             switch (data.type) {
                 case "armor_set" -> {
                     if (data.pieces != null) {
-                        String[] pieces = {"helmet", "chestplate", "leggings", "boots"};
-                        for (String piece : pieces) {
+                        for (String piece : new String[]{"helmet", "chestplate", "leggings", "boots"}) {
                             if (!data.pieces.containsKey(piece)) continue;
-                            String itemId = data.id + "_" + piece;
-                            GearRegistry.GEAR_MAP.put(
-                                    ResourceLocation.fromNamespaceAndPath("customgear", itemId), data);
+                            newGear.put(rl(data.id + "_" + piece), data);
                         }
                     }
                 }
                 case "sword", "bow", "crossbow", "shield",
-                     "pickaxe", "axe", "shovel", "hoe" -> GearRegistry.GEAR_MAP.put(
-                             ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
+                     "pickaxe", "axe", "shovel", "hoe" -> newGear.put(rl(data.id), data);
+
                 case "tool_set" -> {
                     if (data.tools != null) {
-                        String[] validTypes = {"pickaxe", "axe", "shovel", "hoe"};
-                        for (String toolType : validTypes) {
+                        for (String toolType : new String[]{"pickaxe", "axe", "shovel", "hoe"}) {
                             if (!data.tools.containsKey(toolType)) continue;
-                            GearData.ToolData toolData = data.tools.get(toolType);
-                            GearData derived = GearRegistry.buildDerived(data, toolType, toolData);
-                            String itemId = data.id + "_" + toolType;
-                            ResourceLocation loc = ResourceLocation.fromNamespaceAndPath("customgear", itemId);
-                            GearRegistry.GEAR_MAP.put(loc, derived);
-                            GearRegistry.TOOL_TYPE_MAP.put(loc, toolType);
+                            GearData derived = GearRegistry.buildDerived(data, toolType, data.tools.get(toolType));
+                            ResourceLocation loc = rl(data.id + "_" + toolType);
+                            newGear.put(loc, derived);
+                            newToolType.put(loc, toolType);
                         }
                     }
                 }
                 case "weapon_set" -> {
                     if (data.weapons != null) {
-                        String[] validTypes = {"sword", "bow", "crossbow", "shield"};
-                        for (String weaponType : validTypes) {
+                        for (String weaponType : new String[]{"sword", "bow", "crossbow", "shield"}) {
                             if (!data.weapons.containsKey(weaponType)) continue;
-                            GearData.WeaponData weaponData = data.weapons.get(weaponType);
-                            GearData derived = GearRegistry.buildWeaponDerived(data, weaponType, weaponData);
-                            String itemId = data.id + "_" + weaponType;
-                            GearRegistry.GEAR_MAP.put(
-                                    ResourceLocation.fromNamespaceAndPath("customgear", itemId), derived);
+                            GearData derived = GearRegistry.buildWeaponDerived(data, weaponType, data.weapons.get(weaponType));
+                            newGear.put(rl(data.id + "_" + weaponType), derived);
                         }
                     }
                 }
             }
         }
+
+        GearRegistry.atomicSwap(newGear, newToolType);
+    }
+
+    private static ResourceLocation rl(String id) {
+        return ResourceLocation.fromNamespaceAndPath("customgear", id);
     }
 }

@@ -15,9 +15,11 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class GearRegistry {
 
@@ -26,10 +28,46 @@ public class GearRegistry {
     public static final DeferredRegister<Item> ITEMS =
             DeferredRegister.create(BuiltInRegistries.ITEM, "customgear");
 
-    public static final Map<ResourceLocation, GearData> GEAR_MAP = new HashMap<>();
+    // FIX: ConcurrentHashMap para lectura segura en múltiples hilos.
+    // Se expone como mapa inmutable mediante getters para que otros mods no lo modifiquen directamente.
+    private static volatile Map<ResourceLocation, GearData> gearMap = new ConcurrentHashMap<>();
+    private static volatile Map<ResourceLocation, String>   toolTypeMap = new ConcurrentHashMap<>();
 
-    // Additional map: item id → tool type (for tool_set)
-    public static final Map<ResourceLocation, String> TOOL_TYPE_MAP = new HashMap<>();
+    /** Vista de solo lectura del GEAR_MAP para uso externo. */
+    public static Map<ResourceLocation, GearData> getGearMap() {
+        return Collections.unmodifiableMap(gearMap);
+    }
+
+    /** Vista de solo lectura del TOOL_TYPE_MAP para uso externo. */
+    public static Map<ResourceLocation, String> getToolTypeMap() {
+        return Collections.unmodifiableMap(toolTypeMap);
+    }
+
+    /**
+     * Acceso directo (paquete interno) para lookups de alto rendimiento en tick events.
+     * No expuesto como public para evitar modificaciones externas.
+     */
+    public static GearData lookupGear(ResourceLocation loc) {
+        return gearMap.get(loc);
+    }
+
+    static GearData lookupGearOrDefault(ResourceLocation loc, GearData fallback) {
+        GearData found = gearMap.get(loc);
+        return found != null ? found : fallback;
+    }
+
+    /**
+     * Reemplaza ambos mapas de forma atómica durante el reload.
+     * Los items que estén leyendo el mapa antiguo lo terminan de leer sin NPE;
+     * las lecturas posteriores ya usan el mapa nuevo.
+     */
+    public static void atomicSwap(Map<ResourceLocation, GearData> newGearMap,
+                                   Map<ResourceLocation, String>   newToolTypeMap) {
+        gearMap     = new ConcurrentHashMap<>(newGearMap);
+        toolTypeMap = new ConcurrentHashMap<>(newToolTypeMap);
+        LOGGER.info("[CustomGear] Registry updated atomically: {} gear entries, {} tool-type entries",
+                gearMap.size(), toolTypeMap.size());
+    }
 
     public static void register(IEventBus modEventBus, List<GearData> gearList) {
         for (GearData data : gearList) {
@@ -51,24 +89,23 @@ public class GearRegistry {
 
     private static void registerArmor(GearData data) {
         if (data.pieces == null) return;
-
         String[] pieces = {"helmet", "chestplate", "leggings", "boots"};
         for (String piece : pieces) {
             if (!data.pieces.containsKey(piece)) continue;
             String itemId = data.id + "_" + piece;
             ITEMS.register(itemId, () -> new CustomArmorItem(data, piece));
-            GEAR_MAP.put(ResourceLocation.fromNamespaceAndPath("customgear", itemId), data);
+            gearMap.put(ResourceLocation.fromNamespaceAndPath("customgear", itemId), data);
         }
     }
 
     private static void registerSword(GearData data) {
         ITEMS.register(data.id, () -> new CustomSwordItem(data));
-        GEAR_MAP.put(ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
+        gearMap.put(ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
     }
 
     private static void registerTool(GearData data) {
         ITEMS.register(data.id, () -> CustomToolItem.create(data));
-        GEAR_MAP.put(ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
+        gearMap.put(ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
     }
 
     private static void registerToolSet(GearData data) {
@@ -81,24 +118,24 @@ public class GearRegistry {
             GearData derived = buildDerived(data, toolType, toolData);
             ITEMS.register(itemId, () -> CustomToolItem.create(derived));
             ResourceLocation loc = ResourceLocation.fromNamespaceAndPath("customgear", itemId);
-            GEAR_MAP.put(loc, derived);
-            TOOL_TYPE_MAP.put(loc, toolType);
+            gearMap.put(loc, derived);
+            toolTypeMap.put(loc, toolType);
         }
     }
 
     private static void registerBow(GearData data) {
         ITEMS.register(data.id, () -> new CustomBowItem(data));
-        GEAR_MAP.put(ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
+        gearMap.put(ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
     }
 
     private static void registerCrossbow(GearData data) {
         ITEMS.register(data.id, () -> new CustomCrossbowItem(data));
-        GEAR_MAP.put(ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
+        gearMap.put(ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
     }
 
     private static void registerShield(GearData data) {
         ITEMS.register(data.id, () -> new CustomShieldItem(data));
-        GEAR_MAP.put(ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
+        gearMap.put(ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
     }
 
     private static void registerWeaponSet(GearData data) {
@@ -116,8 +153,7 @@ public class GearRegistry {
                 case "shield"   -> new CustomShieldItem(derived);
                 default -> throw new IllegalArgumentException("Invalid weapon type: " + weaponType);
             });
-            ResourceLocation loc = ResourceLocation.fromNamespaceAndPath("customgear", itemId);
-            GEAR_MAP.put(loc, derived);
+            gearMap.put(ResourceLocation.fromNamespaceAndPath("customgear", itemId), derived);
         }
     }
 
@@ -144,7 +180,6 @@ public class GearRegistry {
         return derived;
     }
 
-    // Builds a GearData for a specific tool from the tool_set and the tool's data'
     public static GearData buildDerived(GearData parent, String toolType,
                                          GearData.ToolData toolData) {
         GearData derived = new GearData();
@@ -159,12 +194,10 @@ public class GearRegistry {
         derived.miningSpeed = toolData.miningSpeed;
         derived.harvestLevel = toolData.harvestLevel;
         derived.tillRadius = toolData.tillRadius;
-        derived.enchantable = parent.enchantable;
         derived.damageMultiplier = toolData.damageMultiplier > 0 ? toolData.damageMultiplier : 1.0f;
+        derived.enchantable = parent.enchantable;
         derived.enchantability = parent.enchantability;
-        derived.heldEffects = toolData.heldEffects != null
-                ? toolData.heldEffects
-                : parent.heldEffects;
+        derived.heldEffects = toolData.heldEffects != null ? toolData.heldEffects : parent.heldEffects;
         derived.texture = parent.texture;
         return derived;
     }

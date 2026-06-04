@@ -29,7 +29,7 @@ public class FluidData {
     /**
      * Texture configuration.
      * - Default mode: no texture object needed
-     * - Custom mode: refs contains "still", "flowing", "bucket" paths
+     * - Custom mode: refs contain "still", "flowing", "bucket" paths
      * - Reference mode: refs contain resource locations
      */
     public TextureConfig texture;

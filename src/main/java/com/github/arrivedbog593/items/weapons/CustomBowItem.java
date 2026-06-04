@@ -1,11 +1,9 @@
 package com.github.arrivedbog593.items.weapons;
 
 import com.github.arrivedbog593.data.GearData;
-import com.github.arrivedbog593.loader.GearRegistry;
+import com.github.arrivedbog593.util.GearLookup;
 import com.github.arrivedbog593.util.TooltipHelper;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.Item;
@@ -19,13 +17,12 @@ public class CustomBowItem extends BowItem {
     private final GearData initialGearData;
 
     public CustomBowItem(GearData data) {
-        super(new Item.Properties().durability(data.durability));
+        super(new Properties().durability(data.durability));
         this.initialGearData = data;
     }
 
     private GearData getGearData() {
-        ResourceLocation loc = BuiltInRegistries.ITEM.getKey(this);
-        return GearRegistry.GEAR_MAP.getOrDefault(loc, initialGearData);
+        return GearLookup.getGearData(this, initialGearData);
     }
 
     @Override
@@ -44,8 +41,7 @@ public class CustomBowItem extends BowItem {
     @Override
     public @NotNull Component getName(@NotNull ItemStack stack) {
         GearData data = getGearData();
-        return Component.literal(
-                CustomSwordItem.buildName(data, CustomSwordItem.getCurrentLang(), "bow"));
+        return Component.literal(CustomSwordItem.buildName(data, GearLookup.getCurrentLang(), "bow"));
     }
 
     @Override

@@ -2,14 +2,12 @@ package com.github.arrivedbog593.items.weapons;
 
 import com.github.arrivedbog593.data.GearData;
 import com.github.arrivedbog593.items.gear.CustomTier;
-import com.github.arrivedbog593.loader.GearRegistry;
+import com.github.arrivedbog593.util.GearLookup;
 import com.github.arrivedbog593.util.TooltipHelper;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SwordItem;
-import net.neoforged.fml.loading.FMLEnvironment;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -26,23 +24,19 @@ public class CustomSwordItem extends SwordItem {
     private CustomSwordItem(GearData data, CustomTier tier) {
         super(
                 tier,
-                new Item.Properties()
+                new Properties()
                         .durability(data.durability)
                         .attributes(SwordItem.createAttributes(
                                 tier,
-                                (int) data.attackDamage-1,
-                                data.attackSpeed-4
+                                (int) data.attackDamage - 1,
+                                data.attackSpeed - 4
                         ))
         );
         this.initialGearData = data;
     }
 
     private GearData getGearData() {
-        ResourceLocation itemLocation = BuiltInRegistries.ITEM.getKey(this);
-        if (GearRegistry.GEAR_MAP.containsKey(itemLocation)) {
-            return GearRegistry.GEAR_MAP.get(itemLocation);
-        }
-        return initialGearData;
+        return GearLookup.getGearData(this, initialGearData);
     }
 
     @Override
@@ -52,27 +46,21 @@ public class CustomSwordItem extends SwordItem {
     }
 
     @Override
-    public @NotNull net.minecraft.network.chat.Component getName(@NotNull ItemStack stack) {
-        return net.minecraft.network.chat.Component.literal(
-                buildName(getGearData(), getCurrentLang(), "sword"));
+    public @NotNull Component getName(@NotNull ItemStack stack) {
+        return Component.literal(buildName(getGearData(), GearLookup.getCurrentLang(), "sword"));
     }
 
     /**
-     * Returns the currently selected client language, or "en_us" as a safe fallback
-     * when running on a dedicated server where Minecraft client classes are absent.
+     * @deprecated Use {@link GearLookup#getCurrentLang()} directly.
+     * Kept for compatibility with other item classes that still call this method.
      */
+    @Deprecated
     public static String getCurrentLang() {
-        if (FMLEnvironment.dist.isClient()) {
-            try {
-                return net.minecraft.client.Minecraft.getInstance()
-                        .getLanguageManager().getSelected();
-            } catch (Exception ignored) {}
-        }
-        return "en_us";
+        return GearLookup.getCurrentLang();
     }
 
     public static String buildName(GearData data, String lang, String toolType) {
-        // First try weaponNames (for weapon_set)
+        // 1. weapon_set names
         if (data.weaponNames != null) {
             Map<String, String> namesForLang = data.weaponNames.getOrDefault(lang,
                     data.weaponNames.get("en_us"));
@@ -80,8 +68,7 @@ public class CustomSwordItem extends SwordItem {
                 return namesForLang.get(toolType);
             }
         }
-
-        // Then try toolNames (for tool_set)
+        // 2. tool_set names
         if (data.toolNames != null) {
             Map<String, String> namesForLang = data.toolNames.getOrDefault(lang,
                     data.toolNames.get("en_us"));
@@ -89,19 +76,17 @@ public class CustomSwordItem extends SwordItem {
                 return namesForLang.get(toolType);
             }
         }
-
-        // Finally try name (for individual items)
+        // 3. individual item names
         if (data.names != null) {
             return data.names.getOrDefault(lang, data.names.getOrDefault("en_us", data.id));
         }
-
-        return "Unknown";
+        return data.id != null ? data.id : "unknown";
     }
 
     @Override
     public void appendHoverText(@NotNull ItemStack stack,
                                 @NotNull Item.TooltipContext context,
-                                @NotNull List<net.minecraft.network.chat.Component> tooltipComponents,
+                                @NotNull List<Component> tooltipComponents,
                                 @NotNull net.minecraft.world.item.TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
         TooltipHelper.addHeldEffectsTooltip(tooltipComponents, getGearData());

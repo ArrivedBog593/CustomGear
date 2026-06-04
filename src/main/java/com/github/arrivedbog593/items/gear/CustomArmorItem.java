@@ -1,11 +1,9 @@
 package com.github.arrivedbog593.items.gear;
 
 import com.github.arrivedbog593.data.GearData;
-import com.github.arrivedbog593.items.weapons.CustomSwordItem;
-import com.github.arrivedbog593.loader.GearRegistry;
+import com.github.arrivedbog593.util.GearLookup;
 import com.github.arrivedbog593.util.TooltipHelper;
 import net.minecraft.core.Holder;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.item.ArmorItem;
@@ -21,13 +19,13 @@ import java.util.Map;
 public class CustomArmorItem extends ArmorItem {
 
     private final GearData initialGearData;
-    private final String piece;
+    private final String   piece;
 
     public CustomArmorItem(GearData data, String piece) {
         super(
                 buildMaterial(data, piece),
                 pieceToType(piece),
-                new Item.Properties()
+                new Properties()
                         .durability(data.pieces.get(piece).durability)
         );
         this.initialGearData = data;
@@ -35,14 +33,17 @@ public class CustomArmorItem extends ArmorItem {
     }
 
     private GearData getGearData() {
-        ResourceLocation itemLocation = BuiltInRegistries.ITEM.getKey(this);
-        if (GearRegistry.GEAR_MAP.containsKey(itemLocation)) {
-            return GearRegistry.GEAR_MAP.get(itemLocation);
-        }
-        return initialGearData;
+        return GearLookup.getGearData(this, initialGearData);
     }
 
-    public GearData getGearDataDirect() { return getGearData(); }
+    /** Called by SetBonusHandler — keeps the existing public API. */
+    public GearData getGearDataDirect() {
+        return getGearData();
+    }
+
+    public String getPiece() {
+        return piece;
+    }
 
     @Override
     public int getMaxDamage(@NotNull ItemStack stack) {
@@ -56,16 +57,14 @@ public class CustomArmorItem extends ArmorItem {
 
     private static Holder<ArmorMaterial> buildMaterial(GearData data, String piece) {
         GearData.PieceData pieceData = data.pieces.get(piece);
-
-        // Build armor layers from texture data
         List<ArmorMaterial.Layer> layers = buildLayers(data);
 
         ArmorMaterial material = new ArmorMaterial(
                 Map.of(
-                        ArmorItem.Type.HELMET,     piece.equals("helmet")     ? pieceData.defense : 0,
-                        ArmorItem.Type.CHESTPLATE, piece.equals("chestplate") ? pieceData.defense : 0,
-                        ArmorItem.Type.LEGGINGS,   piece.equals("leggings")   ? pieceData.defense : 0,
-                        ArmorItem.Type.BOOTS,      piece.equals("boots")      ? pieceData.defense : 0
+                        Type.HELMET,     piece.equals("helmet")     ? pieceData.defense : 0,
+                        Type.CHESTPLATE, piece.equals("chestplate") ? pieceData.defense : 0,
+                        Type.LEGGINGS,   piece.equals("leggings")   ? pieceData.defense : 0,
+                        Type.BOOTS,      piece.equals("boots")      ? pieceData.defense : 0
                 ),
                 data.enchantability,
                 SoundEvents.ARMOR_EQUIP_IRON,
@@ -80,26 +79,17 @@ public class CustomArmorItem extends ArmorItem {
 
     private static List<ArmorMaterial.Layer> buildLayers(GearData data) {
         if (data.texture == null || data.texture.armorLayers == null) {
-            // Default — iron texture
-            return List.of(new ArmorMaterial.Layer(
-                    ResourceLocation.withDefaultNamespace("iron")));
+            return List.of(new ArmorMaterial.Layer(ResourceLocation.withDefaultNamespace("iron")));
         }
 
         if (data.texture.mode != null && data.texture.mode.equals("reference")) {
-            // Reference mode — use resource location from another mod
-            // layer_1 defines the base texture id
             String layer1Ref = data.texture.armorLayers.get("layer_1");
             if (layer1Ref != null) {
-                // Strip "textures/models/armor/" prefix and "_layer_1" suffix if present
-                // ArmorMaterial.Layer takes just the material id like "netherite"
                 ResourceLocation rl = ResourceLocation.parse(layer1Ref);
-                // Extract just the material name from path like "models/armor/netherite_layer_1"
                 String path = rl.getPath();
-                // Remove "models/armor/" prefix
                 if (path.startsWith("models/armor/")) {
                     path = path.substring("models/armor/".length());
                 }
-                // Remove "_layer_1" suffix
                 if (path.endsWith("_layer_1")) {
                     path = path.substring(0, path.length() - "_layer_1".length());
                 }
@@ -109,44 +99,33 @@ public class CustomArmorItem extends ArmorItem {
         }
 
         if (data.texture.mode != null && data.texture.mode.equals("custom")) {
-            // Custom mode — use customgear namespace with gear id
             return List.of(new ArmorMaterial.Layer(
                     ResourceLocation.fromNamespaceAndPath("customgear", data.id)));
         }
 
-        return List.of(new ArmorMaterial.Layer(
-                ResourceLocation.withDefaultNamespace("iron")));
+        return List.of(new ArmorMaterial.Layer(ResourceLocation.withDefaultNamespace("iron")));
     }
 
-    private static ArmorItem.Type pieceToType(String piece) {
+    private static Type pieceToType(String piece) {
         return switch (piece) {
-            case "helmet"     -> ArmorItem.Type.HELMET;
-            case "chestplate" -> ArmorItem.Type.CHESTPLATE;
-            case "leggings"   -> ArmorItem.Type.LEGGINGS;
-            case "boots"      -> ArmorItem.Type.BOOTS;
+            case "helmet"     -> Type.HELMET;
+            case "chestplate" -> Type.CHESTPLATE;
+            case "leggings"   -> Type.LEGGINGS;
+            case "boots"      -> Type.BOOTS;
             default -> throw new IllegalArgumentException("Invalid piece: " + piece);
         };
     }
 
-    public String getPiece() { return piece; }
-
     @Override
     public @NotNull net.minecraft.network.chat.Component getName(@NotNull ItemStack stack) {
         GearData data = getGearData();
+        if (data.pieceNames == null) return super.getName(stack);
 
-        if (data == null || data.pieceNames == null) {
-            return super.getName(stack);
-        }
-
-        String lang = CustomSwordItem.getCurrentLang();
-        Map<String, String> namesForLang = data.pieceNames.getOrDefault(lang,
-                data.pieceNames.get("en_us"));
-
+        String lang = GearLookup.getCurrentLang();
+        Map<String, String> namesForLang = data.pieceNames.getOrDefault(lang, data.pieceNames.get("en_us"));
         if (namesForLang != null && namesForLang.containsKey(piece)) {
-            String pieceName = namesForLang.get(piece);
-            return net.minecraft.network.chat.Component.literal(pieceName);
+            return net.minecraft.network.chat.Component.literal(namesForLang.get(piece));
         }
-
         return super.getName(stack);
     }
 

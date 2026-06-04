@@ -1,11 +1,10 @@
 package com.github.arrivedbog593.loader;
 
 import com.github.arrivedbog593.data.GearData;
+import com.github.arrivedbog593.util.ParserUtils;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
@@ -27,7 +26,6 @@ public class GearParser {
     private static final Logger LOGGER = LogManager.getLogger("CustomGear");
     private static final Gson GSON = new GsonBuilder().create();
 
-    // FIX: only valid gear types are processed — prevents parsing JSONs of block/item/fluid
     private static final Set<String> GEAR_TYPES = Set.of(
             "armor_set", "tool_set", "weapon_set",
             "sword", "bow", "crossbow", "shield",
@@ -35,51 +33,60 @@ public class GearParser {
     );
 
     public static List<GearData> loadAll(Path folder) {
-        List<GearData> result = new ArrayList<>();
+        List<GearData> result  = new ArrayList<>();
+        Set<String> seenIds    = new HashSet<>();
 
-        if (!Files.exists(folder)) {
-            try {
-                Files.createDirectories(folder);
-                LOGGER.info("[CustomGear] Folder created: {}", folder);
-            } catch (IOException e) {
-                LOGGER.error("[CustomGear] Could not create folder: {}", e.getMessage());
-                return result;
-            }
-        }
+        if (!ParserUtils.ensureFolderExists(folder)) return result;
+
+        Path canonicalFolder = ParserUtils.resolveCanonical(folder);
+        if (canonicalFolder == null) return result;
 
         GenericCache<GearData> cache = GenericCache.load(
                 folder,
                 "gear_cache.json",
                 new TypeToken<Map<String, GenericCache.CacheEntry<GearData>>>() {}.getType()
         );
-        Set<String> currentKeys = new HashSet<>();
-        AtomicBoolean cacheModified = new AtomicBoolean(false);
+        Set<String>    currentKeys   = new HashSet<>();
+        AtomicBoolean  cacheModified = new AtomicBoolean(false);
 
         try {
             Files.walk(folder)
                     .filter(p -> p.toString().endsWith(".json")
                             && !folder.relativize(p).startsWith(".cache"))
                     .forEach(path -> {
+                        if (!ParserUtils.isSafeChild(path, canonicalFolder)) {
+                            LOGGER.warn("[CustomGear] Skipping file outside customgear/ dir (possible symlink attack): {}", path);
+                            return;
+                        }
+
                         String relKey = folder.relativize(path).toString();
                         currentKeys.add(relKey);
 
                         try {
-                            // FIX: read the type of the JSON before trying to parse as GearData to avoid processing block/item/fluid files here
                             String json = Files.readString(path);
-                            String type = extractType(json);
+                            String type = ParserUtils.extractType(json);
                             if (type == null || !GEAR_TYPES.contains(type)) return;
 
-                            FileTime ft = Files.getLastModifiedTime(path);
-                            long lastModified = ft.toMillis();
+                            FileTime ft           = Files.getLastModifiedTime(path);
+                            long     lastModified = ft.toMillis();
                             GenericCache.CacheEntry<GearData> cached = cache.get(relKey);
 
-                            if (cached != null && cached.lastModified == lastModified
-                                    && cached.data != null) {
+                            if (cached != null && cached.lastModified == lastModified && cached.data != null) {
+                                if (!seenIds.add(cached.data.id)) {
+                                    LOGGER.error("[CustomGear] Duplicate ID '{}' found (cache) — skipping: {}",
+                                            cached.data.id, relKey);
+                                    return;
+                                }
                                 result.add(cached.data);
                                 LOGGER.debug("[CustomGear] Cache hit: {}", relKey);
                             } else {
                                 GearData data = GSON.fromJson(json, GearData.class);
                                 if (validate(data, path)) {
+                                    if (!seenIds.add(data.id)) {
+                                        LOGGER.error("[CustomGear] Duplicate ID '{}' — file '{}' will be ignored. "
+                                                + "Each gear ID must be unique across all JSON files.", data.id, relKey);
+                                        return;
+                                    }
                                     result.add(data);
                                     cache.put(relKey, lastModified, data);
                                     cacheModified.set(true);
@@ -98,7 +105,6 @@ public class GearParser {
         if (cache.removeStale(currentKeys)) {
             cacheModified.set(true);
         }
-
         if (cacheModified.get()) {
             cache.save();
         }
@@ -112,7 +118,7 @@ public class GearParser {
             return false;
         }
         if (!data.id.matches("^[a-z][a-z0-9_]{1,63}$")) {
-            LOGGER.warn("[CustomGear] ID does not match format: {}", data.id);
+            LOGGER.warn("[CustomGear] ID does not match format (lowercase, 2-64 chars): {}", data.id);
             return false;
         }
         if (data.type == null || data.type.isBlank()) {
@@ -120,15 +126,13 @@ public class GearParser {
             return false;
         }
 
+        if (!validateNumericRanges(data, path)) return false;
+
         if (data.pieceEffects != null) {
             for (Map.Entry<String, List<GearData.EffectData>> entry : data.pieceEffects.entrySet()) {
                 if (entry.getValue() != null) {
                     for (GearData.EffectData effectData : entry.getValue()) {
-                        if (!validateEffect(effectData.effect)) {
-                            LOGGER.warn("[CustomGear] Invalid effect in pieceEffects: {} ({})",
-                                    effectData.effect, data.id);
-                            return false;
-                        }
+                        if (!validateEffect(effectData, data.id)) return false;
                     }
                 }
             }
@@ -136,19 +140,84 @@ public class GearParser {
 
         if (data.heldEffects != null) {
             for (GearData.EffectData effectData : data.heldEffects) {
-                if (!validateEffect(effectData.effect)) {
-                    LOGGER.warn("[CustomGear] Invalid effect in heldEffects: {} ({})",
-                            effectData.effect, data.id);
-                    return false;
-                }
+                if (!validateEffect(effectData, data.id)) return false;
             }
         }
 
         if (data.setBonus != null && data.setBonus.effects != null) {
             for (GearData.EffectData effectData : data.setBonus.effects) {
-                if (!validateEffect(effectData.effect)) {
-                    LOGGER.warn("[CustomGear] Invalid effect in setBonus: {} ({})",
-                            effectData.effect, data.id);
+                if (!validateEffect(effectData, data.id)) return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Validates numeric ranges to avoid absurd or negative values that
+     * can cause undefined behavior in Minecraft (negative durability,
+     * NaN damage, etc.).
+     */
+    private static boolean validateNumericRanges(GearData data, Path path) {
+        String name = path.getFileName().toString();
+
+        // Durabilidad global
+        if (data.durability < 0) {
+            LOGGER.warn("[CustomGear] '{}': durability must be >= 0 (got {})", name, data.durability);
+            return false;
+        }
+
+        // Piezas de armadura
+        if (data.pieces != null) {
+            for (Map.Entry<String, GearData.PieceData> e : data.pieces.entrySet()) {
+                GearData.PieceData p = e.getValue();
+                if (p.durability < 0) {
+                    LOGGER.warn("[CustomGear] '{}': piece '{}' durability must be >= 0", name, e.getKey());
+                    return false;
+                }
+                if (p.defense < 0 || p.defense > 30) {
+                    LOGGER.warn("[CustomGear] '{}': piece '{}' defense must be 0-30 (got {})", name, e.getKey(), p.defense);
+                    return false;
+                }
+                if (p.toughness < 0 || p.toughness > 20) {
+                    LOGGER.warn("[CustomGear] '{}': piece '{}' toughness must be 0-20 (got {})", name, e.getKey(), p.toughness);
+                    return false;
+                }
+                if (p.knockback_resistance < 0 || p.knockback_resistance > 1) {
+                    LOGGER.warn("[CustomGear] '{}': piece '{}' knockback_resistance must be 0.0-1.0", name, e.getKey());
+                    return false;
+                }
+            }
+        }
+
+        // Tools
+        if (data.tools != null) {
+            for (Map.Entry<String, GearData.ToolData> e : data.tools.entrySet()) {
+                GearData.ToolData t = e.getValue();
+                if (t.durability < 0) {
+                    LOGGER.warn("[CustomGear] '{}': tool '{}' durability must be >= 0", name, e.getKey());
+                    return false;
+                }
+                if (t.miningSpeed < 0) {
+                    LOGGER.warn("[CustomGear] '{}': tool '{}' miningSpeed must be >= 0", name, e.getKey());
+                    return false;
+                }
+            }
+        }
+
+        // Effects - 0-255 amplifier
+        if (data.heldEffects != null) {
+            for (GearData.EffectData ed : data.heldEffects) {
+                if (ed.amplifier < 0 || ed.amplifier > 255) {
+                    LOGGER.warn("[CustomGear] '{}': heldEffect amplifier must be 0-255 (got {})", name, ed.amplifier);
+                    return false;
+                }
+            }
+        }
+        if (data.setBonus != null && data.setBonus.effects != null) {
+            for (GearData.EffectData ed : data.setBonus.effects) {
+                if (ed.amplifier < 0 || ed.amplifier > 255) {
+                    LOGGER.warn("[CustomGear] '{}': setBonus amplifier must be 0-255 (got {})", name, ed.amplifier);
                     return false;
                 }
             }
@@ -158,25 +227,24 @@ public class GearParser {
     }
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-    private static boolean validateEffect(String effectId) {
-        try {
-            ResourceLocation rl = ResourceLocation.parse(effectId);
-            return BuiltInRegistries.MOB_EFFECT.getHolder(rl).isPresent();
-        } catch (Exception e) {
+    private static boolean validateEffect(GearData.EffectData effectData, String gearId) {
+        if (effectData.effect == null || effectData.effect.isBlank()) {
+            LOGGER.warn("[CustomGear] Empty effect ID in gear '{}'", gearId);
             return false;
         }
+        try {
+            ResourceLocation rl = ResourceLocation.parse(effectData.effect);
+            if (BuiltInRegistries.MOB_EFFECT.getHolder(rl).isEmpty()) {
+                LOGGER.warn("[CustomGear] Effect not found in registry: '{}' (gear: '{}')",
+                        effectData.effect, gearId);
+                return false;
+            }
+        } catch (Exception e) {
+            LOGGER.warn("[CustomGear] Invalid effect ID format: '{}' (gear: '{}')",
+                    effectData.effect, gearId);
+            return false;
+        }
+        return true;
     }
 
-    /** Extract the "type" field from a JSON without parsing it completely. */
-    private static String extractType(String json) {
-        try {
-            JsonElement root = JsonParser.parseString(json);
-            if (!root.isJsonObject()) return null;
-            JsonElement typeEl = root.getAsJsonObject().get("type");
-            if (typeEl == null || !typeEl.isJsonPrimitive()) return null;
-            return typeEl.getAsString();
-        } catch (Exception e) {
-            return null;
-        }
-    }
 }
