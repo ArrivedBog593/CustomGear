@@ -23,7 +23,13 @@ public class EffectUtils {
         if (effects == null) return;
 
         for (GearData.EffectData effectData : effects) {
-            ResourceLocation rl = ResourceLocation.parse(effectData.effect);
+            ResourceLocation rl;
+            try {
+                rl = ResourceLocation.parse(effectData.effect);
+            } catch (Exception e) {
+                LOGGER.error("[CustomGear] Malformed effect ID skipped: {}", effectData.effect);
+                continue;
+            }
             Holder<MobEffect> effectHolder = BuiltInRegistries.MOB_EFFECT
                     .getHolder(rl)
                     .orElse(null);

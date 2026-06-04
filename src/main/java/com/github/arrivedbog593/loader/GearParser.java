@@ -154,9 +154,16 @@ public class GearParser {
     }
 
     /**
-     * Validates numeric ranges to avoid absurd or negative values that
-     * can cause undefined behavior in Minecraft (negative durability,
-     * NaN damage, etc.).
+     * Validates numeric ranges to avoid values that cause undefined behavior
+     * in Minecraft (negative durability, negative damage, etc.).
+     * <p>
+     * Hard limits (real Minecraft constraints):
+     *   - knockback_resistance: 0.0-1.0 (probabilistic, >1.0 causes physics glitches)
+     *   - amplifier: 0-255 (stored as byte internally by MobEffectInstance)
+     * <p>
+     * Soft lower bounds (>= 0 only, no upper cap):
+     *   - durability, defense, toughness, miningSpeed, damage values, multipliers, tillRadius
+     *     These are left uncapped so admins can freely configure powerful gear.
      */
     private static boolean validateNumericRanges(GearData data, Path path) {
         String name = path.getFileName().toString();
@@ -175,12 +182,12 @@ public class GearParser {
                     LOGGER.warn("[CustomGear] '{}': piece '{}' durability must be >= 0", name, e.getKey());
                     return false;
                 }
-                if (p.defense < 0 || p.defense > 30) {
-                    LOGGER.warn("[CustomGear] '{}': piece '{}' defense must be 0-30 (got {})", name, e.getKey(), p.defense);
+                if (p.defense < 0) {
+                    LOGGER.warn("[CustomGear] '{}': piece '{}' defense must be >= 0 (got {})", name, e.getKey(), p.defense);
                     return false;
                 }
-                if (p.toughness < 0 || p.toughness > 20) {
-                    LOGGER.warn("[CustomGear] '{}': piece '{}' toughness must be 0-20 (got {})", name, e.getKey(), p.toughness);
+                if (p.toughness < 0) {
+                    LOGGER.warn("[CustomGear] '{}': piece '{}' toughness must be >= 0 (got {})", name, e.getKey(), p.toughness);
                     return false;
                 }
                 if (p.knockback_resistance < 0 || p.knockback_resistance > 1) {
@@ -190,7 +197,6 @@ public class GearParser {
             }
         }
 
-        // Tools
         if (data.tools != null) {
             for (Map.Entry<String, GearData.ToolData> e : data.tools.entrySet()) {
                 GearData.ToolData t = e.getValue();
@@ -205,7 +211,59 @@ public class GearParser {
             }
         }
 
-        // Effects - 0-255 amplifier
+        if (data.attackDamage < 0) {
+            LOGGER.warn("[CustomGear] '{}': attackDamage must be >= 0 (got {})", name, data.attackDamage);
+            return false;
+        }
+        if (data.arrowDamage < 0) {
+            LOGGER.warn("[CustomGear] '{}': arrowDamage must be >= 0 (got {})", name, data.arrowDamage);
+            return false;
+        }
+        if (data.damageMultiplier < 0) {
+            LOGGER.warn("[CustomGear] '{}': damageMultiplier must be >= 0 (got {})", name, data.damageMultiplier);
+            return false;
+        }
+        if (data.arrowDamageMultiplier < 0) {
+            LOGGER.warn("[CustomGear] '{}': arrowDamageMultiplier must be >= 0 (got {})", name, data.arrowDamageMultiplier);
+            return false;
+        }
+        if (data.tillRadius < 0) {
+            LOGGER.warn("[CustomGear] '{}': tillRadius must be >= 0 (got {})", name, data.tillRadius);
+            return false;
+        }
+
+        if (data.weapons != null) {
+            for (Map.Entry<String, GearData.WeaponData> e : data.weapons.entrySet()) {
+                GearData.WeaponData w = e.getValue();
+                String wKey = e.getKey();
+                if (w.durability < 0) {
+                    LOGGER.warn("[CustomGear] '{}': weapon '{}' durability must be >= 0", name, wKey);
+                    return false;
+                }
+                if (w.attackDamage < 0) {
+                    LOGGER.warn("[CustomGear] '{}': weapon '{}' attackDamage must be >= 0", name, wKey);
+                    return false;
+                }
+                if (w.arrowDamage < 0) {
+                    LOGGER.warn("[CustomGear] '{}': weapon '{}' arrowDamage must be >= 0", name, wKey);
+                    return false;
+                }
+                if (w.damageMultiplier < 0) {
+                    LOGGER.warn("[CustomGear] '{}': weapon '{}' damageMultiplier must be >= 0", name, wKey);
+                    return false;
+                }
+                if (w.arrowDamageMultiplier < 0) {
+                    LOGGER.warn("[CustomGear] '{}': weapon '{}' arrowDamageMultiplier must be >= 0", name, wKey);
+                    return false;
+                }
+                if (w.chargeSpeed < 0) {
+                    LOGGER.warn("[CustomGear] '{}': weapon '{}' chargeSpeed must be >= 0", name, wKey);
+                    return false;
+                }
+            }
+        }
+
+        // Amplifier de efectos: 0-255 (límite real de MobEffectInstance)
         if (data.heldEffects != null) {
             for (GearData.EffectData ed : data.heldEffects) {
                 if (ed.amplifier < 0 || ed.amplifier > 255) {

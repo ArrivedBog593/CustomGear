@@ -2,7 +2,7 @@ package com.github.arrivedbog593.loader;
 
 import com.github.arrivedbog593.data.FluidData;
 import com.github.arrivedbog593.items.fluids.CustomFluid;
-import com.github.arrivedbog593.items.weapons.CustomSwordItem;
+import com.github.arrivedbog593.util.GearLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BucketItem;
@@ -187,7 +187,7 @@ public class FluidRegistry {
 
     public static String resolveFluidName(FluidData data) {
         if (data.names == null || data.names.isEmpty()) return data.id;
-        String lang = CustomSwordItem.getCurrentLang();
+        String lang = GearLookup.getCurrentLang();
         return data.names.getOrDefault(lang,
                 data.names.getOrDefault("en_us", data.id));
     }
