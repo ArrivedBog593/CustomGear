@@ -17,14 +17,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Registers the necessary item properties so that the bow (draw) and crossbow (load) animations work on mod items.
+ * Registers item properties for bow/crossbow animations and shield blocking.
+ * Also registers the BEWLR for custom shields so they render their 3D model.
  * <p>
- * Vanilla only registers "pull", "pulling", "charged" and "firework"
- * for Items.BOW and Items.CROSSBOW — mod items are distinct instances
- * and need to be registered explicitly.
- * <p>
- * It is intentionally kept as @EventBusSubscriber with Dist.CLIENT:
- * ItemProperties is client code and should not be loaded on the server.
+ * Vanilla only registers these properties for Items.BOW, Items.CROSSBOW and
+ * Items.SHIELD — mod items are distinct instances and need explicit registration.
  */
 public class ClientSetup {
 
@@ -34,7 +31,7 @@ public class ClientSetup {
     public static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
             int total = GearRegistry.ITEMS.getEntries().size();
-            LOGGER.info("[CustomGear] ClientSetup: scanning {} registered items for bow/crossbow properties", total);
+            LOGGER.info("[CustomGear] ClientSetup: scanning {} registered items for bow/crossbow/shield properties", total);
 
             GearRegistry.ITEMS.getEntries().forEach(holder -> {
                 if (!holder.isBound()) {
@@ -43,41 +40,39 @@ public class ClientSetup {
                 }
                 Item item = holder.get();
                 LOGGER.debug("[CustomGear] ClientSetup: checking {} -> {}", holder.getId(), item.getClass().getSimpleName());
-                if (item instanceof CustomBowItem) {
-                    LOGGER.info("[CustomGear] ClientSetup: registering bow properties for {}", holder.getId());
-                    registerBowProperties(item);
-                } else if (item instanceof CustomCrossbowItem) {
-                    LOGGER.info("[CustomGear] ClientSetup: registering crossbow properties for {}", holder.getId());
-                    registerCrossbowProperties(item);
+
+                switch (item) {
+                    case CustomBowItem ignored -> {
+                        LOGGER.info("[CustomGear] ClientSetup: registering bow properties for {}", holder.getId());
+                        registerBowProperties(item);
+                    }
+                    case CustomCrossbowItem ignored -> {
+                        LOGGER.info("[CustomGear] ClientSetup: registering crossbow properties for {}", holder.getId());
+                        registerCrossbowProperties(item);
+                    }
+                    case CustomShieldItem ignored -> {
+                        LOGGER.info("[CustomGear] ClientSetup: registering shield properties for {}", holder.getId());
+                        registerShieldProperties(item);
+                    }
+                    default -> {
+                    }
                 }
             });
         });
-        GearRegistry.ITEMS.getEntries().forEach(holder -> {
-            if (!holder.isBound()) return;
-            Item item = holder.get();
-            if (item instanceof CustomShieldItem) {
-                // Register the shield model so BEWLR can find it
-                net.minecraft.client.renderer.item.ItemProperties.register(
-                        item,
-                        ResourceLocation.withDefaultNamespace("blocking"),
-                        (stack, level, entity, seed) ->
-                                entity != null && entity.isUsingItem() && entity.getUseItem() == stack
-                                        ? 1.0F : 0.0F
-                );
-            }
-        });
     }
 
-    // ── Bow ─────────────────────────────────────────────────────────────────
+    // ── Bow ──────────────────────────────────────────────────────────────────
 
     private static void registerBowProperties(Item item) {
         ItemProperties.register(item,
                 ResourceLocation.withDefaultNamespace("pull"),
                 (stack, level, entity, seed) -> {
                     if (entity == null || entity.getUseItem() != stack) return 0.0F;
-                    int duration = stack.getUseDuration(entity); // 72000 / chargeSpeed
+                    int duration = stack.getUseDuration(entity);
                     int remaining = entity.getUseItemRemainingTicks();
                     int elapsed = duration - remaining;
+                    // Vanilla bow considers 20 ticks = full draw at chargeSpeed 1.0.
+                    // Scale by chargeSpeed: fullDrawTicks = 20 / (duration / 72000).
                     float fullDrawTicks = 20.0f / (duration / 72000.0f);
                     return Math.min(elapsed / fullDrawTicks, 1.0f);
                 });
@@ -89,7 +84,7 @@ public class ClientSetup {
                                 ? 1.0F : 0.0F);
     }
 
-    // ── Crossbow ─────────────────────────────────────────────────────────────
+    // ── Crossbow ──────────────────────────────────────────────────────────────
 
     private static void registerCrossbowProperties(Item item) {
         ItemProperties.register(item,
@@ -121,5 +116,17 @@ public class ClientSetup {
                     return !charged.isEmpty() && charged.contains(Items.FIREWORK_ROCKET)
                             ? 1.0F : 0.0F;
                 });
+    }
+
+    // ── Shield ────────────────────────────────────────────────────────────────
+
+    private static void registerShieldProperties(Item item) {
+        // Register the blocking predicate so the model switches to shield_blocking
+        // when the player right-clicks to block.
+        ItemProperties.register(item,
+                ResourceLocation.withDefaultNamespace("blocking"),
+                (stack, level, entity, seed) ->
+                        entity != null && entity.isUsingItem() && entity.getUseItem() == stack
+                                ? 1.0F : 0.0F);
     }
 }

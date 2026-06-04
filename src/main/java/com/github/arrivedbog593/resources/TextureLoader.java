@@ -8,6 +8,8 @@ import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -79,6 +81,13 @@ public class TextureLoader {
     private static final String DEFAULT_CROSSBOW_ARROW     = "minecraft:item/crossbow_arrow";
     private static final String DEFAULT_CROSSBOW_FIREWORK  = "minecraft:item/crossbow_firework";
 
+    // ========== SHIELD TEXTURE CONSTANT ==========
+    // The vanilla shield texture lives in the entity atlas (textures/entity/),
+    // not in the item atlas. We extract it from the classpath at runtime and
+    // register it in the item atlas so flat shield models can reference it.
+    private static final ResourceLocation SHIELD_TEXTURE_LOC =
+            ResourceLocation.fromNamespaceAndPath(NAMESPACE, "textures/item/shield_base_nopattern.png");
+
 
     // ========== PATH HELPER METHODS ==========
 
@@ -145,6 +154,9 @@ public class TextureLoader {
      */
     public static void loadAll(DynamicResourcePack pack, List<GearData> gearList,
                                List<ItemData> itemList, List<BlockData> blockList, List<FluidData> fluidList) {
+        // Load vanilla shield entity texture into the item atlas so flat shield models can use it
+        loadVanillaShieldTexture(pack);
+
         // Gear
         for (GearData data : gearList) {
             if (data.texture == null || data.texture.mode == null) {
@@ -190,12 +202,17 @@ public class TextureLoader {
                 if (data.weapons == null) return;
                 for (String weaponType : WEAPON_TYPES) {
                     if (!data.weapons.containsKey(weaponType)) continue;
-                    generateParentOnlyModel(pack, data.id + "_" + weaponType, getDefaultWeaponParent(weaponType));
+                    String itemId = data.id + "_" + weaponType;
+                    if (weaponType.equals("shield")) {
+                        generateShieldFlatModel(pack, itemId);
+                    } else {
+                        generateParentOnlyModel(pack, itemId, getDefaultWeaponParent(weaponType));
+                    }
                 }
             }
             case "bow"      -> generateBowModelWithRef(pack, data.id, DEFAULT_BOW, Map.of());
             case "crossbow" -> generateCrossbowModelWithRef(pack, data.id, DEFAULT_CROSSBOW, Map.of());
-            case "shield"   -> generateParentOnlyModel(pack, data.id, DEFAULT_SHIELD);
+            case "shield" -> generateShieldFlatModel(pack, data.id);
             case "sword"    -> generateParentOnlyModel(pack, data.id, DEFAULT_SWORD);
             default         -> generateParentOnlyModel(pack, data.id, getDefaultToolModelPath(data.type));
         }
@@ -874,24 +891,78 @@ public class TextureLoader {
     }
 
     /**
-     * Generates a flat handheld model for shields in reference mode.
-     * The vanilla shield uses SpecialModelRenderer which requires explicit
-     * BEWLR registration per item — not feasible for data-driven items.
-     * A flat model renders correctly in hand and inventory without a custom renderer.
+     * Loads the vanilla shield entity texture into the dynamic pack's item atlas.
+     * The texture lives in the Minecraft jar at textures/entity/shield_base_nopattern.png.
+     * It is re-registered under customgear:item/shield_base_nopattern so flat shield
+     * models can reference it via layer0 without touching the entity atlas.
+     */
+    private static void loadVanillaShieldTexture(DynamicResourcePack pack) {
+        try (InputStream is = TextureLoader.class.getResourceAsStream(
+                "/assets/minecraft/textures/entity/shield_base_nopattern.png")) {
+            if (is != null) {
+                pack.addRaw(SHIELD_TEXTURE_LOC, is.readAllBytes());
+            } else {
+                LOGGER.error("[CustomGear] Could not find vanilla shield texture in classpath");
+            }
+        } catch (IOException e) {
+            LOGGER.error("[CustomGear] Failed to load vanilla shield texture: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Generates shield item models using builtin/entity as parent — the same approach
+     * as the vanilla shield.json. This requires the BEWLR registered in
+     * CustomShieldItem.initializeClient() to render correctly.
+     * Display transforms and blocking override are copied verbatim from the vanilla
+     * shield.json and shield_blocking.json found in the Minecraft jar.
      */
     private static void generateShieldFlatModel(DynamicResourcePack pack,
                                                 String itemId) {
-        // In generateShieldFlatModel (TextureLoader):
-        // NOTE: Custom shields cannot reuse the vanilla SpecialModelRenderer in NeoForge 1.21.1.
-        // The shield renders invisible in hand — this is a known limitation.
-        // A proper fix requires implementing a dedicated SpecialModelRenderer per shield item,
-        // which is deferred until the shield rendering system is redesigned.
+        String blockingModelId = itemId + "_blocking";
+
+        // Main shield model — identical structure to vanilla shield.json
         String json = """
         {
-          "parent": "minecraft:item/shield"
+          "parent": "builtin/entity",
+          "gui_light": "front",
+          "textures": {
+            "particle": "block/dark_oak_planks"
+          },
+          "display": {
+            "thirdperson_righthand": { "rotation": [0,90,0],    "translation": [10,6,-4],     "scale": [1,1,1] },
+            "thirdperson_lefthand":  { "rotation": [0,90,0],    "translation": [10,6,12],     "scale": [1,1,1] },
+            "firstperson_righthand": { "rotation": [0,180,5],   "translation": [-10,2,-10],   "scale": [1.25,1.25,1.25] },
+            "firstperson_lefthand":  { "rotation": [0,180,5],   "translation": [10,0,-10],    "scale": [1.25,1.25,1.25] },
+            "gui":                   { "rotation": [15,-25,-5],  "translation": [2,3,0],       "scale": [0.65,0.65,0.65] },
+            "fixed":                 { "rotation": [0,180,0],   "translation": [-4.5,4.5,-5], "scale": [0.55,0.55,0.55] },
+            "ground":                { "rotation": [0,0,0],     "translation": [2,4,2],        "scale": [0.25,0.25,0.25] }
+          },
+          "overrides": [
+            { "predicate": { "blocking": 1 }, "model": "%s:item/%s" }
+          ]
+        }
+        """.formatted(NAMESPACE, blockingModelId);
+
+        // Blocking model — identical structure to vanilla shield_blocking.json
+        String blockingJson = """
+        {
+          "parent": "builtin/entity",
+          "gui_light": "front",
+          "textures": {
+            "particle": "block/dark_oak_planks"
+          },
+          "display": {
+            "thirdperson_righthand": { "rotation": [45,155,0],  "translation": [-3.49,11,-2],  "scale": [1,1,1] },
+            "thirdperson_lefthand":  { "rotation": [45,155,0],  "translation": [11.51,7,2.5],  "scale": [1,1,1] },
+            "firstperson_righthand": { "rotation": [0,180,-5],  "translation": [-15,5,-11],    "scale": [1.25,1.25,1.25] },
+            "firstperson_lefthand":  { "rotation": [0,180,-5],  "translation": [5,5,-11],      "scale": [1.25,1.25,1.25] },
+            "gui":                   { "rotation": [15,-25,-5], "translation": [2,3,0],        "scale": [0.65,0.65,0.65] }
+          }
         }
         """;
+
         pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
+        pack.addRaw(itemModelLoc(blockingModelId), blockingJson.getBytes(StandardCharsets.UTF_8));
     }
 
     // ========== LANGUAGE GENERATION ==========
