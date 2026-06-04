@@ -37,21 +37,21 @@ public class TextureLoader {
     private static final String LANG_PATH          = "lang/";
 
     // ========== JSON MODEL CONSTANTS ==========
-    private static final String HANDHELD_PARENT = "minecraft:item/handheld";
+    private static final String HANDHELD_PARENT  = "minecraft:item/handheld";
     private static final String GENERATED_PARENT = "minecraft:item/generated";
 
     // ========== ERROR MESSAGE CONSTANTS ==========
-    private static final String ERROR_ARMOR_LAYERS_REQUIRED    = "[CustomGear] 'armor_layers' is required for armor in custom mode: {}";
-    private static final String ERROR_LAYER_NOT_FOUND          = "[CustomGear] Layer {} not found: {}";
-    private static final String ERROR_LAYER_NOT_DEFINED        = "[CustomGear] 'layer_{}' not defined in armor_layers for: {}";
-    private static final String ERROR_REFS_REQUIRED            = "[CustomGear] 'refs' is required for {} in {} mode: {}";
-    private static final String ERROR_PIECE_TEXTURE_NOT_FOUND  = "[CustomGear] Piece texture not found: {}";
-    private static final String ERROR_TOOL_TEXTURE_NOT_FOUND   = "[CustomGear] Tool texture not found: {}";
-    private static final String ERROR_ITEM_TEXTURE_NOT_FOUND   = "[CustomGear] Item texture not found: {}";
-    private static final String ERROR_BLOCK_TEXTURE_NOT_FOUND  = "[CustomGear] Block texture not found: {}";
-    private static final String ERROR_REFS_MISSING_KEY         = "[CustomGear] 'refs' missing key '{}' for: {}";
-    private static final String ERROR_REFS_MISSING_KEY_IN      = "[CustomGear] 'refs' missing key '{}' in: {}";
-    private static final String ERROR_REFS_REQUIRED_SIMPLE     = "[CustomGear] 'refs' is required in reference mode: {}";
+    private static final String ERROR_ARMOR_LAYERS_REQUIRED   = "[CustomGear] 'armor_layers' is required for armor in custom mode: {}";
+    private static final String ERROR_LAYER_NOT_FOUND         = "[CustomGear] Layer {} not found: {}";
+    private static final String ERROR_LAYER_NOT_DEFINED       = "[CustomGear] 'layer_{}' not defined in armor_layers for: {}";
+    private static final String ERROR_REFS_REQUIRED           = "[CustomGear] 'refs' is required for {} in {} mode: {}";
+    private static final String ERROR_PIECE_TEXTURE_NOT_FOUND = "[CustomGear] Piece texture not found: {}";
+    private static final String ERROR_TOOL_TEXTURE_NOT_FOUND  = "[CustomGear] Tool texture not found: {}";
+    private static final String ERROR_ITEM_TEXTURE_NOT_FOUND  = "[CustomGear] Item texture not found: {}";
+    private static final String ERROR_BLOCK_TEXTURE_NOT_FOUND = "[CustomGear] Block texture not found: {}";
+    private static final String ERROR_REFS_MISSING_KEY        = "[CustomGear] 'refs' missing key '{}' for: {}";
+    private static final String ERROR_REFS_MISSING_KEY_IN     = "[CustomGear] 'refs' missing key '{}' in: {}";
+    private static final String ERROR_REFS_REQUIRED_SIMPLE    = "[CustomGear] 'refs' is required in reference mode: {}";
 
     // ========== DEFAULT TEXTURES CONSTANTS ==========
     private static final String DEFAULT_HELMET     = "minecraft:item/iron_helmet";
@@ -65,9 +65,19 @@ public class TextureLoader {
     private static final String DEFAULT_HOE        = "minecraft:item/iron_hoe";
     private static final String DEFAULT_ITEM       = "minecraft:item/paper";
     private static final String DEFAULT_BLOCK      = "minecraft:block/stone";
-    private static final String DEFAULT_BOW      = "minecraft:item/bow";
-    private static final String DEFAULT_CROSSBOW = "minecraft:item/crossbow";
-    private static final String DEFAULT_SHIELD   = "minecraft:item/shield";
+    private static final String DEFAULT_BOW        = "minecraft:item/bow";
+    private static final String DEFAULT_CROSSBOW   = "minecraft:item/crossbow";
+    private static final String DEFAULT_SHIELD     = "minecraft:item/shield";
+
+    // ========== DEFAULT PULLING MODEL CONSTANTS ==========
+    private static final String DEFAULT_BOW_PULLING_0      = "minecraft:item/bow_pulling_0";
+    private static final String DEFAULT_BOW_PULLING_1      = "minecraft:item/bow_pulling_1";
+    private static final String DEFAULT_BOW_PULLING_2      = "minecraft:item/bow_pulling_2";
+    private static final String DEFAULT_CROSSBOW_PULLING_0 = "minecraft:item/crossbow_pulling_0";
+    private static final String DEFAULT_CROSSBOW_PULLING_1 = "minecraft:item/crossbow_pulling_1";
+    private static final String DEFAULT_CROSSBOW_PULLING_2 = "minecraft:item/crossbow_pulling_2";
+    private static final String DEFAULT_CROSSBOW_ARROW     = "minecraft:item/crossbow_arrow";
+    private static final String DEFAULT_CROSSBOW_FIREWORK  = "minecraft:item/crossbow_firework";
 
 
     // ========== PATH HELPER METHODS ==========
@@ -183,8 +193,8 @@ public class TextureLoader {
                     generateParentOnlyModel(pack, data.id + "_" + weaponType, getDefaultWeaponParent(weaponType));
                 }
             }
-            case "bow"      -> generateBowModelWithRef(pack, data.id, DEFAULT_BOW);
-            case "crossbow" -> generateCrossbowModelWithRef(pack, data.id, DEFAULT_CROSSBOW);
+            case "bow"      -> generateBowModelWithRef(pack, data.id, DEFAULT_BOW, Map.of());
+            case "crossbow" -> generateCrossbowModelWithRef(pack, data.id, DEFAULT_CROSSBOW, Map.of());
             case "shield"   -> generateParentOnlyModel(pack, data.id, DEFAULT_SHIELD);
             case "sword"    -> generateParentOnlyModel(pack, data.id, DEFAULT_SWORD);
             default         -> generateParentOnlyModel(pack, data.id, getDefaultToolModelPath(data.type));
@@ -201,9 +211,8 @@ public class TextureLoader {
     }
 
     /**
-     * Retorna el path del MODELO vanilla para herramientas/armas.
-     * A diferencia de getDefaultToolTexture, este se usa como parent del modelo
-     * para heredar la orientación handheld correctamente.
+     * Returns the vanilla model path for tools/weapons.
+     * Used as the model parent to correctly inherit handheld orientation.
      */
     private static String getDefaultToolModelPath(String type) {
         return switch (type) {
@@ -330,6 +339,7 @@ public class TextureLoader {
             default -> generateBlockWithRef(pack, data.id, DEFAULT_BLOCK);
         }
     }
+
     // ========== FLUID BUCKET LOADING ==========
 
     /**
@@ -598,7 +608,6 @@ public class TextureLoader {
     private static void loadReferenceTool(DynamicResourcePack pack, GearData data) {
         String ref = data.texture.refs.get(data.type);
         if (ref != null) {
-            // FIX: mismo caso — ref es un modelo, no una textura
             generateParentOnlyModel(pack, data.id, ref);
         } else {
             LOGGER.error(ERROR_REFS_MISSING_KEY_IN, data.type, data.id);
@@ -612,10 +621,10 @@ public class TextureLoader {
             String itemId = data.id + "_" + weaponType;
             if (ref != null) {
                 switch (weaponType) {
-                    case "bow"      -> generateBowModelWithRef(pack, itemId, ref);
-                    case "crossbow" -> generateCrossbowModelWithRef(pack, itemId, ref);
-                    case "shield"   -> generateParentOnlyModel(pack, itemId, ref);
-                    default         -> generateParentOnlyModel(pack, itemId, ref); // FIX: sword hereda el modelo en vez de usar generated
+                    case "bow"      -> generateBowModelWithRef(pack, itemId, ref, data.texture.refs);
+                    case "crossbow" -> generateCrossbowModelWithRef(pack, itemId, ref, data.texture.refs);
+                    case "shield"   -> generateShieldFlatModel(pack, itemId);
+                    default         -> generateParentOnlyModel(pack, itemId, ref);
                 }
             } else {
                 LOGGER.error(ERROR_REFS_MISSING_KEY_IN, weaponType, data.id);
@@ -628,9 +637,9 @@ public class TextureLoader {
         String ref = data.texture.refs.get(data.type);
         if (ref != null) {
             switch (data.type) {
-                case "bow"      -> generateBowModelWithRef(pack, data.id, ref);
-                case "crossbow" -> generateCrossbowModelWithRef(pack, data.id, ref);
-                default         -> generateParentOnlyModel(pack, data.id, ref);
+                case "bow"      -> generateBowModelWithRef(pack, data.id, ref, data.texture.refs);
+                case "crossbow" -> generateCrossbowModelWithRef(pack, data.id, ref, data.texture.refs);
+                default         -> generateShieldFlatModel(pack, data.id);
             }
         } else {
             LOGGER.error(ERROR_REFS_MISSING_KEY_IN, data.type, data.id);
@@ -762,45 +771,80 @@ public class TextureLoader {
         generateBlockItemModel(pack, blockId);
     }
 
+    /**
+     * Generates a bow item model for reference mode.
+     * Pulling models are read from refs if declared; otherwise falls back to vanilla pulling models.
+     * This allows referencing a bow from another mod including its pulling animation frames.
+     *
+     * @param refs the full refs map from the gear JSON (may contain bow_pulling_0/1/2 keys)
+     */
     private static void generateBowModelWithRef(DynamicResourcePack pack,
-                                                String itemId, String ref) {
+                                                String itemId, String ref,
+                                                Map<String, String> refs) {
+        String p0 = refs.getOrDefault("bow_pulling_0", DEFAULT_BOW_PULLING_0);
+        String p1 = refs.getOrDefault("bow_pulling_1", DEFAULT_BOW_PULLING_1);
+        String p2 = refs.getOrDefault("bow_pulling_2", DEFAULT_BOW_PULLING_2);
+
         String json;
-        if (ref.equals("minecraft:item/bow")) {
-            json = """
-            {
-              "parent": "minecraft:item/bow"
-            }
-            """;
-        } else {
+        if (ref.equals(DEFAULT_BOW)
+                && p0.equals(DEFAULT_BOW_PULLING_0)
+                && p1.equals(DEFAULT_BOW_PULLING_1)
+                && p2.equals(DEFAULT_BOW_PULLING_2)) {
+            // Pure vanilla reference — no texture override needed, just declare overrides explicitly
             json = """
             {
               "parent": "minecraft:item/bow",
-              "textures": { "layer0": "%s" },
               "overrides": [
                 { "predicate": { "pulling": 1 },               "model": "minecraft:item/bow_pulling_0" },
                 { "predicate": { "pulling": 1, "pull": 0.65 }, "model": "minecraft:item/bow_pulling_1" },
                 { "predicate": { "pulling": 1, "pull": 0.9 },  "model": "minecraft:item/bow_pulling_2" }
               ]
             }
-            """.formatted(ref);
+            """;
+        } else {
+            // Custom or foreign mod ref — apply texture and pulling models from refs
+            json = """
+            {
+              "parent": "minecraft:item/bow",
+              "textures": { "layer0": "%s" },
+              "overrides": [
+                { "predicate": { "pulling": 1 },               "model": "%s" },
+                { "predicate": { "pulling": 1, "pull": 0.65 }, "model": "%s" },
+                { "predicate": { "pulling": 1, "pull": 0.9 },  "model": "%s" }
+              ]
+            }
+            """.formatted(ref, p0, p1, p2);
         }
         pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
     }
 
+    /**
+     * Generates a crossbow item model for reference mode.
+     * Pulling and charged models are read from refs if declared; otherwise falls back to vanilla models.
+     * Supported optional keys: crossbow_pulling_0/1/2, crossbow_arrow, crossbow_firework.
+     *
+     * @param refs the full refs map from the gear JSON
+     */
     private static void generateCrossbowModelWithRef(DynamicResourcePack pack,
-                                                     String itemId, String ref) {
+                                                     String itemId, String ref,
+                                                     Map<String, String> refs) {
+        String p0       = refs.getOrDefault("crossbow_pulling_0", DEFAULT_CROSSBOW_PULLING_0);
+        String p1       = refs.getOrDefault("crossbow_pulling_1", DEFAULT_CROSSBOW_PULLING_1);
+        String p2       = refs.getOrDefault("crossbow_pulling_2", DEFAULT_CROSSBOW_PULLING_2);
+        String arrow    = refs.getOrDefault("crossbow_arrow",     DEFAULT_CROSSBOW_ARROW);
+        String firework = refs.getOrDefault("crossbow_firework",  DEFAULT_CROSSBOW_FIREWORK);
+
         String json;
-        if (ref.equals("minecraft:item/crossbow")) {
-            json = """
-            {
-              "parent": "minecraft:item/crossbow"
-            }
-            """;
-        } else {
+        if (ref.equals(DEFAULT_CROSSBOW)
+                && p0.equals(DEFAULT_CROSSBOW_PULLING_0)
+                && p1.equals(DEFAULT_CROSSBOW_PULLING_1)
+                && p2.equals(DEFAULT_CROSSBOW_PULLING_2)
+                && arrow.equals(DEFAULT_CROSSBOW_ARROW)
+                && firework.equals(DEFAULT_CROSSBOW_FIREWORK)) {
+            // Pure vanilla reference
             json = """
             {
               "parent": "minecraft:item/crossbow",
-              "textures": { "layer0": "%s" },
               "overrides": [
                 { "predicate": { "pulling": 1 },                "model": "minecraft:item/crossbow_pulling_0" },
                 { "predicate": { "pulling": 1, "pull": 0.58 },  "model": "minecraft:item/crossbow_pulling_1" },
@@ -809,8 +853,44 @@ public class TextureLoader {
                 { "predicate": { "charged": 1, "firework": 1 }, "model": "minecraft:item/crossbow_firework" }
               ]
             }
-            """.formatted(ref);
+            """;
+        } else {
+            // Custom or foreign mod ref
+            json = """
+            {
+              "parent": "minecraft:item/crossbow",
+              "textures": { "layer0": "%s" },
+              "overrides": [
+                { "predicate": { "pulling": 1 },                "model": "%s" },
+                { "predicate": { "pulling": 1, "pull": 0.58 },  "model": "%s" },
+                { "predicate": { "pulling": 1, "pull": 1.0 },   "model": "%s" },
+                { "predicate": { "charged": 1 },                "model": "%s" },
+                { "predicate": { "charged": 1, "firework": 1 }, "model": "%s" }
+              ]
+            }
+            """.formatted(ref, p0, p1, p2, arrow, firework);
         }
+        pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Generates a flat handheld model for shields in reference mode.
+     * The vanilla shield uses SpecialModelRenderer which requires explicit
+     * BEWLR registration per item — not feasible for data-driven items.
+     * A flat model renders correctly in hand and inventory without a custom renderer.
+     */
+    private static void generateShieldFlatModel(DynamicResourcePack pack,
+                                                String itemId) {
+        // In generateShieldFlatModel (TextureLoader):
+        // NOTE: Custom shields cannot reuse the vanilla SpecialModelRenderer in NeoForge 1.21.1.
+        // The shield renders invisible in hand — this is a known limitation.
+        // A proper fix requires implementing a dedicated SpecialModelRenderer per shield item,
+        // which is deferred until the shield rendering system is redesigned.
+        String json = """
+        {
+          "parent": "minecraft:item/shield"
+        }
+        """;
         pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
     }
 
@@ -1011,7 +1091,6 @@ public class TextureLoader {
         } else if (lang.equals("es_es")) {
             return "Cubo de " + fluidName;
         }
-        // En_us y otros idiomas por defecto
         return fluidName + " Bucket";
     }
 
