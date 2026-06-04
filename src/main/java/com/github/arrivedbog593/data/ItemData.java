@@ -1,5 +1,6 @@
 package com.github.arrivedbog593.data;
 
+import java.util.List;
 import java.util.Map;
 
 public class ItemData {
@@ -18,4 +19,6 @@ public class ItemData {
      * e.g. {"en_us": "Ruby", "es_mx": "Rubí"}
      */
     public Map<String, String> names;
+
+    public List<RecipeData> recipe;
 }

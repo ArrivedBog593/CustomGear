@@ -6,12 +6,7 @@ import com.github.arrivedbog593.events.ArrowDamageHandler;
 import com.github.arrivedbog593.events.HeldEffectHandler;
 import com.github.arrivedbog593.events.SetBonusHandler;
 import com.github.arrivedbog593.data.GearData;
-import com.github.arrivedbog593.loader.BlockRegistry;
-import com.github.arrivedbog593.loader.FluidRegistry;
-import com.github.arrivedbog593.loader.GearParser;
-import com.github.arrivedbog593.loader.GearRegistry;
-import com.github.arrivedbog593.loader.ItemRegistry;
-import com.github.arrivedbog593.loader.UniversalParser;
+import com.github.arrivedbog593.loader.*;
 import com.github.arrivedbog593.resources.DynamicResourcePack;
 import com.github.arrivedbog593.resources.TextureLoader;
 import net.minecraft.network.chat.Component;
@@ -55,7 +50,7 @@ public class CustomGearMod {
         FluidRegistry.register(modEventBus, universalResult.fluids);
         CustomGearTab.register(modEventBus);
 
-        // 3. Create the dynamic resource pack
+        // 3. Create the dynamic resource pack (handles both client resources and server data)
         DYNAMIC_PACK = new DynamicResourcePack(
                 new PackLocationInfo(
                         "customgear_dynamic",
@@ -65,13 +60,18 @@ public class CustomGearMod {
                 )
         );
 
-        // 4. Load textures in the pack
+        // 4. Load textures and lang (client resources)
         TextureLoader.loadAll(DYNAMIC_PACK, gearList,
                 universalResult.items, universalResult.blocks, universalResult.fluids);
         TextureLoader.generateLang(DYNAMIC_PACK, gearList,
                 universalResult.items, universalResult.blocks, universalResult.fluids);
 
-        // 5. Register the pack
+        // 5. Generate recipe JSONs (server data) — injected into the dynamic pack
+        // so they are loaded by the normal data pack system and visible to JEI
+        RecipeLoader.loadAll(DYNAMIC_PACK, gearList,
+                universalResult.items, universalResult.blocks);
+
+        // 6. Register the pack for both client resources and server data
         modEventBus.addListener(this::onAddPackFinders);
         if (FMLEnvironment.dist.isClient()) {
             modEventBus.addListener(ClientSetup::onClientSetup);
@@ -83,7 +83,10 @@ public class CustomGearMod {
     }
 
     private void onAddPackFinders(AddPackFindersEvent event) {
-        if (event.getPackType() == PackType.CLIENT_RESOURCES) {
+        // Register for both CLIENT_RESOURCES (textures, models, lang)
+        // and SERVER_DATA (recipes) using the same dynamic pack instance
+        if (event.getPackType() == PackType.CLIENT_RESOURCES
+                || event.getPackType() == PackType.SERVER_DATA) {
             event.addRepositorySource(consumer -> {
                 PackLocationInfo info = new PackLocationInfo(
                         "customgear_dynamic",
@@ -102,11 +105,12 @@ public class CustomGearMod {
 
                             @Override
                             @NotNull
-                            public PackResources openFull(@NotNull PackLocationInfo info, Pack.@NotNull Metadata metadata) {
+                            public PackResources openFull(@NotNull PackLocationInfo info,
+                                                          Pack.@NotNull Metadata metadata) {
                                 return DYNAMIC_PACK;
                             }
                         },
-                        PackType.CLIENT_RESOURCES,
+                        event.getPackType(),
                         new PackSelectionConfig(true, Pack.Position.TOP, false)
                 );
                 if (pack != null) consumer.accept(pack);

@@ -1,5 +1,6 @@
 package com.github.arrivedbog593.data;
 
+import java.util.List;
 import java.util.Map;
 
 public class BlockData {
@@ -34,4 +35,6 @@ public class BlockData {
      * e.g. {"en_us": "Ruby Ore", "es_mx": "Mineral de Rubí"}
      */
     public Map<String, String> names;
+
+    public List<RecipeData> recipe;
 }

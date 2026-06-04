@@ -1,6 +1,6 @@
 package com.github.arrivedbog593.loader;
 
-import com.github.arrivedbog593.data.GearData;
+import com.github.arrivedbog593.data.*;
 import com.github.arrivedbog593.util.ParserUtils;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
@@ -24,7 +24,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class GearParser {
 
     private static final Logger LOGGER = LogManager.getLogger("CustomGear");
-    private static final Gson GSON = new GsonBuilder().create();
+    private static final Gson GSON = new GsonBuilder()
+            .registerTypeAdapter(
+                    new com.google.gson.reflect.TypeToken<List<RecipeData>>(){}.getType(),
+                    new RecipeListDeserializer()
+            )
+            .create();
 
     private static final Set<String> GEAR_TYPES = Set.of(
             "armor_set", "tool_set", "weapon_set",
@@ -168,13 +173,11 @@ public class GearParser {
     private static boolean validateNumericRanges(GearData data, Path path) {
         String name = path.getFileName().toString();
 
-        // Durabilidad global
         if (data.durability < 0) {
             LOGGER.warn("[CustomGear] '{}': durability must be >= 0 (got {})", name, data.durability);
             return false;
         }
 
-        // Piezas de armadura
         if (data.pieces != null) {
             for (Map.Entry<String, GearData.PieceData> e : data.pieces.entrySet()) {
                 GearData.PieceData p = e.getValue();
@@ -263,7 +266,6 @@ public class GearParser {
             }
         }
 
-        // Amplifier de efectos: 0-255 (límite real de MobEffectInstance)
         if (data.heldEffects != null) {
             for (GearData.EffectData ed : data.heldEffects) {
                 if (ed.amplifier < 0 || ed.amplifier > 255) {
@@ -304,5 +306,4 @@ public class GearParser {
         }
         return true;
     }
-
 }

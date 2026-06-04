@@ -1,9 +1,6 @@
 package com.github.arrivedbog593.loader;
 
-import com.github.arrivedbog593.data.AdvancementData;
-import com.github.arrivedbog593.data.BlockData;
-import com.github.arrivedbog593.data.FluidData;
-import com.github.arrivedbog593.data.ItemData;
+import com.github.arrivedbog593.data.*;
 import com.github.arrivedbog593.util.ParserUtils;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -25,7 +22,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class UniversalParser {
 
     private static final Logger LOGGER = LogManager.getLogger("CustomGear");
-    private static final Gson   GSON   = new GsonBuilder().create();
+    private static final Gson GSON = new GsonBuilder()
+            .registerTypeAdapter(
+                    new com.google.gson.reflect.TypeToken<List<RecipeData>>(){}.getType(),
+                    new RecipeListDeserializer()
+            )
+            .create();
 
     private static final Set<String> GEAR_TYPES = Set.of(
             "armor_set", "tool_set", "weapon_set",

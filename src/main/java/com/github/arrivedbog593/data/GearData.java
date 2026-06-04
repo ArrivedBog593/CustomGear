@@ -77,6 +77,10 @@ public class GearData {
     @SerializedName("charge_speed")
     public float chargeSpeed = 1.0f;
 
+    // Recipes (para sets: map por pieza, para individuales: lista)
+    public Map<String, List<RecipeData>> recipes;
+    public List<RecipeData> recipe;
+
     // Texture
     public TextureData texture;
 

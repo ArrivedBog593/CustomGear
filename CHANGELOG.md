@@ -2,6 +2,60 @@
 
 All important changelog notes for the CustomGear project.
 
+## [1.1.0] - 2026-06-04
+
+### ✨ BIG UPDATE - New Features
+
+#### Native Recipe System
+- CustomGear now supports **crafting recipes defined directly in JSON files** — no external mods required
+- Recipes are injected as server data via the dynamic pack, making them fully visible in JEI
+- Supported recipe types: `shaped`, `shapeless`, `smelting`, `blasting`, `smithing_transform`
+- Individual items use a single `recipe` field (object or array for multiple recipes)
+- Sets (armor, tool, weapon) use a `recipes` map with one entry per piece/tool/weapon
+- Ingredients and results support any item from any installed mod via resource location
+
+#### Bow and Crossbow Animation Fix
+- Custom bows now correctly animate through all three pull frames when drawing
+- Custom crossbows now correctly animate through loading and charged states
+- Animation timing scales correctly with custom `charge_speed` values
+- Fixed: overrides were not inherited from parent model — now declared explicitly in generated JSON
+
+#### Shield 3D Rendering
+- Custom shields now render their full 3D model in hand and inventory
+- Implemented `CustomShieldBEWLR` — a dedicated Block Entity Without Level Renderer for custom shields
+- Shield blocking animation works correctly with the correct transforms
+- Shield texture is read from the vanilla `shield_patterns` atlas
+
+### 🔧 Technical Changes
+
+- `RecipeData.java` — new POJO for recipe data deserialization
+- `RecipeListDeserializer.java` — custom Gson deserializer allowing `recipe` field to be either object or array
+- `RecipeLoader.java` — generates recipe JSON files and injects them into `DynamicResourcePack` as server data
+- `GearData.java` — added `recipe` (List) and `recipes` (Map) fields
+- `ItemData.java` — added `recipe` field
+- `BlockData.java` — added `recipe` field
+- `GearParser.java` — updated Gson instance to include `RecipeListDeserializer`
+- `UniversalParser.java` — updated Gson instance to include `RecipeListDeserializer`
+- `CustomGearMod.java` — registered dynamic pack for both `CLIENT_RESOURCES` and `SERVER_DATA`; added `RecipeLoader.loadAll()` call
+- `ClientSetup.java` — moved shield `blocking` property registration inside `enqueueWork`; added `registerShieldProperties()` method
+- `CustomShieldItem.java` — implemented `initializeClient()` using `CustomShieldBEWLR`
+- `CustomShieldBEWLR.java` — new class extending `BlockEntityWithoutLevelRenderer` for shield rendering
+- `TextureLoader.java` — `generateShieldFlatModel()` now generates `builtin/entity` models with vanilla display transforms and blocking override; `generateBowModelWithRef()` and `generateCrossbowModelWithRef()` now accept a `refs` map for optional custom pulling models; shield and bow/crossbow models in default/weapon_set modes corrected
+
+### 🐛 Bug Fixes
+
+- Fixed `SetBonusHandler`: ghost effects no longer persist after `/customgear reload` changes a set ID
+- Fixed `GearParser`: missing lower-bound validation for weapon damage fields (`attackDamage`, `arrowDamage`, `damageMultiplier`, `arrowDamageMultiplier`, `chargeSpeed`, `tillRadius`)
+- Fixed `EffectUtils`: added try-catch around `ResourceLocation.parse()` to prevent server crash on malformed effect IDs from stale cache
+- Fixed `ClientSetup`: shield `blocking` property was registered outside `enqueueWork`, causing potential race condition
+- Fixed dead state in `SetBonusHandler`: removed unused `activeSetBonuses` and `activePieceEffects` maps
+
+### 📦 Dependencies
+
+No new dependencies added.
+
+---
+
 ## [1.0.2] - 2026-04-13
 
 ### ✨ Improvements
@@ -29,74 +83,25 @@ All important changelog notes for the CustomGear project.
 
 ### 🔄 Technical Changes
 
-#### Items (Tools and Armor)
-- Implemented dynamic data lookup system from `GEAR_MAP`
-- All items now look up their updated data on each access instead of using cached local copies
-- Overridden `getMaxDamage(ItemStack)` method to update durability at runtime
-
-**Modified Files:**
-- `CustomSwordItem.java` - Added `getGearData()` and `getMaxDamage()`
-- `CustomPickaxeItem.java` - Added `getGearData()` and `getMaxDamage()`
-- `CustomAxeItem.java` - Added `getGearData()` and `getMaxDamage()`
-- `CustomShovelItem.java` - Added `getGearData()` and `getMaxDamage()`
-- `CustomHoeItem.java` - Added `getGearData()` and `getMaxDamage()`
-- `CustomArmorItem.java` - Added `getGearData()` and `getMaxDamage()`
-
-#### Reload Command
-- `CustomGearCommandHandler.java` - Implemented `updateGearRegistry()` method that updates `GEAR_MAP` and `TOOL_TYPE_MAP`
-- Item data is now fully reloaded without needing to restart the client
-
-#### Event Handlers
-- `SetBonusHandler.java` - Updated to use `getGearDataDirect()` from items
+- `CustomSwordItem.java` through `CustomArmorItem.java` — implemented dynamic data lookup via `getGearData()`
+- `CustomGearCommandHandler.java` — implemented `updateGearRegistry()`
+- `SetBonusHandler.java` — updated to use `getGearDataDirect()`
 
 ### 🧹 Code Cleanup
 
-#### GearData.java
-- ❌ Removed unused variable: `public float toughness;`
-- ❌ Removed unused variable: `public float knockbackResistance;`
-- ✅ Equivalent properties are still available within `PieceData` (where they are actually used)
-
-#### DynamicResourcePack.java
-- Improved comment in `close()` method to clarify that it's required by the `Closeable` interface
-- Verified that all methods are necessary (including `getRootResource()`)
-
-### 📝 What Gets Updated at Runtime
-
-✅ **Immediate Update (without restarting client):**
-- Item names (in all languages)
-- Durability
-- Held effects (`held_effects`)
-- Individual piece effects (`piece_effects`)
-- Full set bonuses (`set_bonus`)
-- Textures (with `F3 + T`)
-
-⚠️ **Requires Client Restart:**
-- Attack damage (`attack_damage`)
-- Attack speed (`attack_speed`)
-- Mining speed (`mining_speed`)
-- Harvest level (`harvest_level`)
-
-### 🔧 Improved Command Usage
-
-/customgear reload
-**Before:** Only reloaded textures and languages
-**Now:** Fully reloads:
-1. All JSON files
-2. Item data (names, durability, effects)
-3. Textures
-4. Languages
+- `GearData.java` — removed unused `toughness` and `knockbackResistance` root fields
+- `DynamicResourcePack.java` — improved `close()` comment
 
 ### 📦 Dependencies
 
-No new dependencies were added. Changes are internal to the mod.
+No new dependencies added.
 
 ---
 
 ## [1.0.0] - 2026-04-12
 
-### ✨ Initial Release (Not initially published)
+### ✨ Initial Release
 
-Initial version of CustomGear with:
 - Data-driven system based on JSON
 - Support for custom armor sets and tool sets
 - Held effects and set bonuses
