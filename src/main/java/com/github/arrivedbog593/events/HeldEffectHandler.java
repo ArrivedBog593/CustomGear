@@ -7,20 +7,21 @@ import com.github.arrivedbog593.util.EffectUtils;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
-import net.minecraft.world.item.Item;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class HeldEffectHandler {
 
-    // Tracks which items are currently held per player (main/offhand)
     private static final Map<UUID, ResourceLocation> lastMainHand = new ConcurrentHashMap<>();
-    private static final Map<UUID, ResourceLocation> lastOffHand = new ConcurrentHashMap<>();
+    private static final Map<UUID, ResourceLocation> lastOffHand  = new ConcurrentHashMap<>();
 
     @SubscribeEvent
     public static void onPlayerDisconnect(PlayerEvent.PlayerLoggedOutEvent event) {
@@ -39,17 +40,17 @@ public class HeldEffectHandler {
         UUID id = player.getUUID();
 
         ItemStack mainStack = player.getMainHandItem();
-        ItemStack offStack = player.getOffhandItem();
+        ItemStack offStack  = player.getOffhandItem();
 
         ResourceLocation currentMain = getItemId(mainStack);
-        ResourceLocation currentOff = getItemId(offStack);
+        ResourceLocation currentOff  = getItemId(offStack);
 
         ResourceLocation prevMain = lastMainHand.get(id);
-        ResourceLocation prevOff = lastOffHand.get(id);
+        ResourceLocation prevOff  = lastOffHand.get(id);
 
         // If main hand item changed, remove effects from previous item
         if (prevMain != null && !prevMain.equals(currentMain)) {
-            GearData prevData = GearRegistry.GEAR_MAP.get(prevMain);
+            GearData prevData = GearRegistry.lookupGear(prevMain);
             if (prevData != null && prevData.heldEffects != null) {
                 removeEffects(player, prevData.heldEffects);
             }
@@ -57,17 +58,15 @@ public class HeldEffectHandler {
 
         // If offhand item changed, remove effects from previous item
         if (prevOff != null && !prevOff.equals(currentOff)) {
-            GearData prevData = GearRegistry.GEAR_MAP.get(prevOff);
+            GearData prevData = GearRegistry.lookupGear(prevOff);
             if (prevData != null && prevData.heldEffects != null) {
                 removeEffects(player, prevData.heldEffects);
             }
         }
 
-        // Apply effects from current main hand item
         checkAndApply(player, mainStack);
         checkAndApply(player, offStack);
 
-        // Update tracking
         if (currentMain != null) lastMainHand.put(id, currentMain);
         else lastMainHand.remove(id);
 
@@ -77,10 +76,8 @@ public class HeldEffectHandler {
 
     private static void checkAndApply(Player player, ItemStack stack) {
         if (stack.isEmpty()) return;
-
         List<GearData.EffectData> effects = getHeldEffects(stack);
         if (effects == null || effects.isEmpty()) return;
-
         EffectUtils.applyEffects(player, effects);
     }
 
@@ -95,18 +92,11 @@ public class HeldEffectHandler {
 
     private static List<GearData.EffectData> getHeldEffects(ItemStack stack) {
         if (stack.isEmpty()) return null;
-
         Item item = stack.getItem();
         ResourceLocation id = BuiltInRegistries.ITEM.getKey(item);
-        GearData data = GearRegistry.GEAR_MAP.get(id);
-
-        if (data != null) {
-            if (item instanceof CustomArmorItem) {
-                return null;
-            }
-            return data.heldEffects;
-        }
-
-        return null;
+        GearData data = GearRegistry.lookupGear(id);
+        if (data == null) return null;
+        if (item instanceof CustomArmorItem) return null;
+        return data.heldEffects;
     }
 }

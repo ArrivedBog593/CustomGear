@@ -21,14 +21,13 @@ public class ArrowDamageHandler {
     public static void onArrowJoinLevel(EntityJoinLevelEvent event) {
         if (event.getLevel().isClientSide()) return;
         if (!(event.getEntity() instanceof AbstractArrow arrow)) return;
-
         if (!(arrow.getOwner() instanceof LivingEntity living)) return;
 
         ItemStack weapon = getWeaponStack(living);
         if (weapon.isEmpty()) return;
 
         ResourceLocation loc = BuiltInRegistries.ITEM.getKey(weapon.getItem());
-        GearData data = GearRegistry.GEAR_MAP.get(loc);
+        GearData data = GearRegistry.lookupGear(loc);
         if (data == null) return;
 
         if (weapon.getItem() instanceof CustomBowItem

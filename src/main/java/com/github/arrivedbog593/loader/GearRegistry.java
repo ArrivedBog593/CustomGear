@@ -15,8 +15,6 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,16 +31,6 @@ public class GearRegistry {
     private static volatile Map<ResourceLocation, GearData> gearMap = new ConcurrentHashMap<>();
     private static volatile Map<ResourceLocation, String>   toolTypeMap = new ConcurrentHashMap<>();
 
-    /** Vista de solo lectura del GEAR_MAP para uso externo. */
-    public static Map<ResourceLocation, GearData> getGearMap() {
-        return Collections.unmodifiableMap(gearMap);
-    }
-
-    /** Vista de solo lectura del TOOL_TYPE_MAP para uso externo. */
-    public static Map<ResourceLocation, String> getToolTypeMap() {
-        return Collections.unmodifiableMap(toolTypeMap);
-    }
-
     /**
      * Acceso directo (paquete interno) para lookups de alto rendimiento en tick events.
      * No expuesto como public para evitar modificaciones externas.
@@ -51,18 +39,13 @@ public class GearRegistry {
         return gearMap.get(loc);
     }
 
-    static GearData lookupGearOrDefault(ResourceLocation loc, GearData fallback) {
-        GearData found = gearMap.get(loc);
-        return found != null ? found : fallback;
-    }
-
     /**
      * Reemplaza ambos mapas de forma atómica durante el reload.
      * Los items que estén leyendo el mapa antiguo lo terminan de leer sin NPE;
      * las lecturas posteriores ya usan el mapa nuevo.
      */
     public static void atomicSwap(Map<ResourceLocation, GearData> newGearMap,
-                                   Map<ResourceLocation, String>   newToolTypeMap) {
+                                  Map<ResourceLocation, String>   newToolTypeMap) {
         gearMap     = new ConcurrentHashMap<>(newGearMap);
         toolTypeMap = new ConcurrentHashMap<>(newToolTypeMap);
         LOGGER.info("[CustomGear] Registry updated atomically: {} gear entries, {} tool-type entries",
@@ -181,7 +164,7 @@ public class GearRegistry {
     }
 
     public static GearData buildDerived(GearData parent, String toolType,
-                                         GearData.ToolData toolData) {
+                                        GearData.ToolData toolData) {
         GearData derived = new GearData();
         derived.id = parent.id + "_" + toolType;
         derived.type = toolType;

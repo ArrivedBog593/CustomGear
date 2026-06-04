@@ -59,12 +59,6 @@ public class GenericCache<T> {
         }
     }
 
-    /** On-disk wrapper that includes the schema version alongside the entries map. */
-    private static class CacheFile<T> {
-        public int schemaVersion;
-        public Map<String, CacheEntry<T>> entries;
-    }
-
     // -------------------------------------------------------------------------
     // Constructor (private – use load())
     // -------------------------------------------------------------------------
@@ -97,7 +91,7 @@ public class GenericCache<T> {
         try {
             String raw = Files.readString(cacheFile);
 
-            // Read schemaVersion first before deserializing the full entries map
+            // FIX: read schemaVersion first before deserializing the full entries map
             int storedVersion = extractSchemaVersion(raw);
             if (storedVersion != CURRENT_SCHEMA_VERSION) {
                 LOGGER.info("[CustomGear] Cache schema version mismatch (stored={}, current={}) — will re-parse all files: {}",
