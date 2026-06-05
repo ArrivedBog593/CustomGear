@@ -3,10 +3,10 @@ plugins {
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
-    id 'net.neoforged.gradle.userdev' version '7.0.171'
+    id 'net.neoforged.moddev' version '2.0.141'
 }
 
-version = "${mc_version}-${mod_version}-${tag_lanzador}"
+version = "${mc_version}-${mod_version}-${tag_lanzador}-test"
 group = "${author}.${modid}"
 base {
     archivesName = "${mod_name}"
@@ -14,30 +14,6 @@ base {
 
 // Java Version
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
-
-
-runs {
-    configureEach {
-        systemProperty 'forge.logging.markers', 'REGISTRIES'
-
-        systemProperty 'forge.logging.console.level', 'debug'
-        jvmArgument '-Xmx1G'
-        modSource project.sourceSets.main
-    }
-
-    client {
-        systemProperty 'forge.enabledGameTestNamespaces', "${modid}"
-    }
-
-    server {
-        systemProperty 'forge.enabledGameTestNamespaces', "${modid}"
-        argument '--nogui'
-    }
-
-    data {
-        arguments.addAll '--mod', "${modid}", '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
-    }
-}
 
 sourceSets.main.resources {
     srcDir 'src/generated/resources'
@@ -58,9 +34,9 @@ repositories {
         url = "https://maven.theillusivec4.top/"
     }
     maven {
-		name = "TerraformersMC"
-		url = "https://maven.terraformersmc.com/"
-	}
+        name = "TerraformersMC"
+        url = "https://maven.terraformersmc.com/"
+    }
     maven { url "https://maven.shedaniel.me" }
     maven {
         name = "Curse Maven"
@@ -78,12 +54,53 @@ repositories {
     }
 }
 
+neoForge {
+    version = "${neoversion}"
+
+    runs {
+        client {
+            client()
+            systemProperty 'neoforge.enabledGameTestNamespaces', "${modid}"
+        }
+
+        server {
+            server()
+            programArgument '--nogui'
+            systemProperty 'neoforge.enabledGameTestNamespaces', "${modid}"
+        }
+
+        data {
+            data()
+            programArguments.addAll '--mod', "${modid}", '--all',
+                '--output', file('src/generated/resources/').getAbsolutePath(),
+                '--existing', file('src/main/resources/').getAbsolutePath()
+        }
+
+        configureEach {
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            logLevel = org.slf4j.event.Level.DEBUG
+            jvmArgument '-Xmx1G'
+        }
+    }
+
+    mods {
+        "${modid}" {
+            sourceSet(sourceSets.main)
+        }
+    }
+}
+
+// localRuntime: dependencias opcionales en runtime que no se publican como dependencia del mod
+configurations {
+    runtimeClasspath.extendsFrom localRuntime
+}
+
 dependencies {
     implementation "net.neoforged:neoforge:${neoversion}"
 
-    //jei
-    implementation "mezz.jei:jei-${mc_version}-common-api:${jei_version}"
-
+    // JEI - API en compile, implementacion completa en localRuntime (no se publica como dependencia)
+    compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"
+    localRuntime "mezz.jei:jei-${mc_version}-neoforge:${jei_version}"
 }
 
 test {
@@ -93,12 +110,12 @@ test {
 jar {
     manifest {
         attributes([
-                "Specification-Title": archivesBaseName,
-                "Specification-Vendor": "${author}",
-                "Specification-Version": "1", // We are version 1 of ourselves
-                "Implementation-Title": archivesBaseName,
-                "Implementation-Version": "${version}",
-                "Implementation-Vendor" :"${author}",
+                "Specification-Title"     : archivesBaseName,
+                "Specification-Vendor"    : "${author}",
+                "Specification-Version"   : "1",
+                "Implementation-Title"    : archivesBaseName,
+                "Implementation-Version"  : "${version}",
+                "Implementation-Vendor"   : "${author}",
                 "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
         ])
     }
@@ -106,18 +123,18 @@ jar {
 
 tasks.withType(ProcessResources).configureEach {
     var replaceProperties = [
-            mc_version              : mc_version,
-            mod_version            : mod_version,
-            modid                  : modid,
-            author                 : author,
-            mod_named              : mod_named,
-            tag_lanzador           : tag_lanzador,
-            description            : description,
-            license                 : license,
-            displayURL             : displayURL,
-            neoversion             : neoversion,
-            loader_version        : loader_version,
-            jei_version            : jei_version,
+            mc_version    : mc_version,
+            mod_version   : mod_version,
+            modid         : modid,
+            author        : author,
+            mod_named     : mod_named,
+            tag_lanzador  : tag_lanzador,
+            description   : description,
+            license       : license,
+            displayURL    : displayURL,
+            neoversion    : neoversion,
+            loader_version: loader_version,
+            jei_version   : jei_version,
     ]
     inputs.properties replaceProperties
 
@@ -139,7 +156,6 @@ publishing {
     }
 }
 
-// IDEA no longer automatically downloads sources/javadoc jars for dependencies, so we need to explicitly enable the behavior.
 idea {
     module {
         downloadSources = true
@@ -148,6 +164,6 @@ idea {
 }
 
 tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+    options.encoding = 'UTF-8'
     options.getRelease().set(21)
 }
