@@ -1,0 +1,32 @@
+modLoader = "javafml"
+loaderVersion = "${loader_version}"
+license = "${license}"
+[[mods]]
+modId="${modid}"
+version="${mod_version}"
+displayName="${mod_named}"
+displayURL=${displayURL}"
+logoFile="logo.png"
+authors="${author}"
+description="${description}"
+
+[[dependencies.${modid}]]
+    modId="neoforge"
+    type="required"
+    versionRange="${neoversion}"
+    ordering = "NONE"
+    side="BOTH"
+[[dependencies.${modid}]]
+    modId="minecraft"
+    type="required"
+    versionRange="${mc_version}"
+    ordering = "NONE"
+    side="BOTH"
+
+# jei dependency 
+[[dependencies.${modid}]]
+    modId="jei"
+    type="optional"
+    versionRange="${jei_version}"
+    ordering="AFTER"
+    side = "BOTH"
