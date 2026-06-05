@@ -28,7 +28,7 @@
 ## Instalación
 
 1. Descarga e instala [NeoForge 1.21.1](https://neoforged.net/)
-2. Coloca `customgear-1.1.0.jar` en tu carpeta `mods/`
+2. Coloca `customgear-x.x.0.jar` en tu carpeta `mods/`
 3. Lanza el juego una vez para que se genere la carpeta `customgear/` dentro de `.minecraft/`
 4. Agrega tus archivos JSON a `.minecraft/customgear/`
 5. Reinicia el juego
