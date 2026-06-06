@@ -29,7 +29,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 
-@Mod("customgear")
+@Mod("ultimatecustomgear")
 public class CustomGearMod {
 
     @SuppressWarnings("unused")

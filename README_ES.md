@@ -1,6 +1,6 @@
-# CustomGear
+# UltimateCustomGear
 
-**CustomGear** es un mod de NeoForge para Minecraft 1.21.1 basado en datos, que permite a administradores de servidores, creadores de modpacks y jugadores agregar sets de armadura, armas y herramientas completamente personalizados — todo mediante simples archivos JSON. No se requiere programar.
+**UltimateCustomGear** es un mod de NeoForge para Minecraft 1.21.1 basado en datos, que permite a administradores de servidores, creadores de modpacks y jugadores agregar sets de armadura, armas, herramientas, comida, ítems, bloques y fluidos completamente personalizados — todo mediante simples archivos JSON. No se requiere programar.
 
 ---
 
@@ -12,13 +12,14 @@
 - Agrega **arcos** personalizados con daño de flecha y velocidad de carga configurables, con animación de tensado completa
 - Agrega **ballestas** personalizadas con daño de flecha y velocidad de carga configurables, con animación de carga completa
 - Agrega **escudos** personalizados con durabilidad configurable y renderizado 3D completo en mano e inventario
+- Agrega **ítems comestibles** con nutrición, saturación, tiempo de consumo, siempre comestible y efectos al consumir
 - Efectos por pieza de armadura al portarla individualmente (ej. el casco da Visión Nocturna)
 - Efectos de bonus de set al tener el número requerido de piezas equipadas
 - Efectos al sostener por herramienta/arma (ej. el pico da Prisa, la espada da Fuerza)
 - **Sistema de recetas nativo** — define recetas de crafteo directamente en los archivos JSON, sin mods externos
 - Soporte completo para nombres en múltiples idiomas — define el nombre completo por idioma sin restricciones de formato
 - Texturas personalizadas con sistema de rutas flexible, o reutiliza modelos de otros mods
-- Los archivos JSON pueden organizarse en cualquier estructura de subcarpetas dentro de `.minecraft/customgear/`
+- Los archivos JSON pueden organizarse en cualquier estructura de subcarpetas dentro de `.minecraft/ultimatecustomgear/`
 - Compatible con JEI — las recetas son completamente visibles
 - Todos los ítems son encantables con encantamientos de vanilla y de otros mods
 - Comando `/customgear reload` para recargar nombres, texturas y efectos sin reiniciar el juego
@@ -28,9 +29,9 @@
 ## Instalación
 
 1. Descarga e instala [NeoForge 1.21.1](https://neoforged.net/)
-2. Coloca `customgear-x.x.0.jar` en tu carpeta `mods/`
-3. Lanza el juego una vez para que se genere la carpeta `customgear/` dentro de `.minecraft/`
-4. Agrega tus archivos JSON a `.minecraft/customgear/`
+2. Coloca `ultimatecustomgear-1.x.x.jar` en tu carpeta `mods/`
+3. Lanza el juego una vez para que se genere la carpeta `ultimatecustomgear/` dentro de `.minecraft/`
+4. Agrega tus archivos JSON a `.minecraft/ultimatecustomgear/`
 5. Reinicia el juego
 
 > **Nota de sintaxis JSON:** El JSON estándar no permite comas al final del último elemento. Una coma sobrante al final de un objeto o lista hará que el archivo sea ignorado silenciosamente al cargar.
@@ -39,7 +40,64 @@
 
 ## Estructura de archivos JSON
 
-Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo define un ítem, set, bloque o fluido. Los archivos pueden organizarse en cualquier estructura de subcarpetas.
+Todos los archivos JSON van dentro de `.minecraft/ultimatecustomgear/`. Cada archivo define un ítem, set, bloque o fluido. Los archivos pueden organizarse en cualquier estructura de subcarpetas.
+
+### Tipos soportados
+
+| Tipo         | Descripción                                                  |
+|--------------|--------------------------------------------------------------|
+| `armor_set`  | Set de armadura completo (casco, pechera, pantalones, botas) |
+| `tool_set`   | Set de herramientas completo (pico, hacha, pala, azadón)     |
+| `weapon_set` | Set de armas completo (espada, arco, ballesta, escudo)       |
+| `sword`      | Espada individual                                            |
+| `bow`        | Arco individual                                              |
+| `crossbow`   | Ballesta individual                                          |
+| `shield`     | Escudo individual                                            |
+| `pickaxe`    | Pico individual                                              |
+| `axe`        | Hacha individual                                             |
+| `shovel`     | Pala individual                                              |
+| `hoe`        | Azadón individual                                            |
+| `food`       | Ítem comestible                                              |
+| `item`       | Ítem simple no consumible                                    |
+| `block`      | Bloque simple                                                |
+| `fluid`      | Fluido con cubeta                                            |
+
+---
+
+## Ejemplos de JSON
+
+### Ítem Comestible — Ejemplo completo
+
+```json
+{
+  "id": "magic_apple",
+  "type": "food",
+  "names": {
+    "en_us": "Magic Apple",
+    "es_mx": "Manzana Mágica"
+  },
+  "nutrition": 4,
+  "saturation": 1.2,
+  "always_edible": true,
+  "on_eat_effects": [
+    { "effect": "minecraft:regeneration",    "amplifier": 1, "duration": 10,  "probability": 1.0 },
+    { "effect": "minecraft:absorption",      "amplifier": 0, "duration": 120, "probability": 1.0 },
+    { "effect": "minecraft:fire_resistance", "amplifier": 0, "duration": 30,  "probability": 1.0 },
+    { "effect": "minecraft:resistance",      "amplifier": 0, "duration": 300, "probability": 1.0 }
+  ],
+  "texture": {
+    "mode": "reference",
+    "refs": { "item": "minecraft:item/golden_apple" }
+  },
+  "recipe": {
+    "type": "shaped",
+    "pattern": ["GGG","GAG","GGG"],
+    "key": { "G": "minecraft:gold_ingot", "A": "minecraft:apple" }
+  }
+}
+```
+
+También se soporta comida instantánea (`eat_duration: 0`) y comida lenta (`eat_duration: 200` = 10 segundos).
 
 ### Set de Armadura — Ejemplo completo
 
@@ -318,6 +376,100 @@ Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo def
 
 ---
 
+## Recetas
+
+CustomGear soporta recetas de crafteo nativas definidas directamente en JSON. No se requieren mods externos.
+
+### Tipos de receta
+
+| Tipo                 | Descripción                                      |
+|----------------------|--------------------------------------------------|
+| `shaped`             | Mesa de crafteo con patrón específico            |
+| `shapeless`          | Mesa de crafteo, ingredientes en cualquier orden |
+| `smelting`           | Horno                                            |
+| `blasting`           | Alto horno                                       |
+| `smithing_transform` | Mesa de herrería (template + base + adición)     |
+
+### Receta de ítem individual
+
+```json
+"recipe": {
+  "type": "shaped",
+  "pattern": [" G ", " G ", " S "],
+  "key": { "G": "mimod:mi_gema", "S": "minecraft:stick" }
+}
+```
+
+Para múltiples recetas, usa un array:
+
+```json
+"recipe": [
+  { "type": "shaped", ... },
+  { "type": "smelting", "ingredient": "mimod:mi_mineral", "experience": 1.0, "cooking_time": 200 }
+]
+```
+
+### Receta de set (armadura, herramientas, armas)
+
+```json
+"recipes": {
+  "helmet":     { "type": "shaped", "pattern": ["GGG","G G","   "], "key": {"G": "mimod:mi_gema"} },
+  "chestplate": { "type": "shaped", "pattern": ["G G","GGG","GGG"], "key": {"G": "mimod:mi_gema"} },
+  "leggings":   { "type": "shaped", "pattern": ["GGG","G G","G G"], "key": {"G": "mimod:mi_gema"} },
+  "boots":      { "type": "shaped", "pattern": ["   ","G G","G G"], "key": {"G": "mimod:mi_gema"} }
+}
+```
+
+### Receta de mesa de herrería
+
+```json
+"recipe": {
+  "type": "smithing_transform",
+  "template": "minecraft:netherite_upgrade_smithing_template",
+  "base": "mimod:mi_espada_diamante",
+  "addition": "minecraft:netherite_ingot"
+}
+```
+
+> Los ingredientes soportan cualquier ítem de cualquier mod instalado mediante resource location (ej. `"otromod:lingote_especial"`).
+
+---
+
+## Texturas
+
+Hay tres modos de textura disponibles:
+
+| Modo        | Descripción                                                                |
+|-------------|----------------------------------------------------------------------------|
+| `default`   | Usa texturas de hierro/madera de vanilla como placeholders                 |
+| `reference` | Reutiliza el modelo de otro ítem (vanilla o de otro mod)                   |
+| `custom`    | Usa tus propios archivos PNG colocados en la carpeta `ultimatecustomgear/` |
+
+### Ejemplo modo reference
+
+```json
+"texture": {
+  "mode": "reference",
+  "refs": { "sword": "minecraft:item/netherite_sword" }
+}
+```
+
+Para arcos y ballestas, opcionalmente puedes incluir modelos de frames de tensado/carga personalizados:
+
+```json
+"texture": {
+  "mode": "reference",
+  "refs": {
+    "bow":           "otromod:item/arco_epico",
+    "bow_pulling_0": "otromod:item/arco_epico_pulling_0",
+    "bow_pulling_1": "otromod:item/arco_epico_pulling_1",
+    "bow_pulling_2": "otromod:item/arco_epico_pulling_2"
+  }
+}
+```
+
+---
+
 ## Referencia de campos
 
 ### Campos comunes
@@ -325,10 +477,25 @@ Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo def
 | Campo            | Tipo    | Descripción                                                                                                            |
 |------------------|---------|------------------------------------------------------------------------------------------------------------------------|
 | `id`             | String  | Identificador único. Solo letras minúsculas, números y guiones bajos. 2–64 caracteres.                                 |
-| `type`           | String  | `armor_set`, `tool_set`, `weapon_set`, `sword`, `bow`, `crossbow`, `shield`, `pickaxe`, `axe`, `shovel`, o `hoe`       |
+| `type`           | String  | Tipo de ítem (ver tabla de Tipos soportados)                                                                           |
 | `names`          | Map     | Nombre completo por idioma (solo para ítems individuales — los sets usan `piece_names`, `tool_names` o `weapon_names`) |
 | `enchantable`    | Boolean | Si el ítem puede ser encantado                                                                                         |
 | `enchantability` | Int     | Mayor = mejores encantamientos. Hierro = 9, Oro = 25, Diamante = 10                                                    |
+
+### Campos de comida
+
+| Campo                          | Tipo    | Por defecto | Descripción                                                                                               |
+|--------------------------------|---------|-------------|-----------------------------------------------------------------------------------------------------------|
+| `nutrition`                    | Int     | 0           | Puntos de hambre restaurados. Pan=5, Carne cocida=8, Manzana de oro=4                                     |
+| `saturation`                   | Float   | 0.6         | Modificador de saturación. Pan=0.6, Carne=0.8, Manzana de oro=1.2                                         |
+| `always_edible`                | Boolean | false       | Se puede comer aunque la barra de hambre esté llena                                                       |
+| `fast_food`                    | Boolean | false       | Se consume más rápido como el alga seca (16 ticks)                                                        |
+| `eat_duration`                 | Int     | -1          | Tiempo de consumo en ticks. 0=instantáneo, 32=normal, 200=10s. Sobreescribe `fast_food` cuando se define. |
+| `on_eat_effects`               | List    | —           | Efectos aplicados al consumir                                                                             |
+| `on_eat_effects[].effect`      | String  | —           | ID del efecto, ej. `"minecraft:regeneration"`                                                             |
+| `on_eat_effects[].amplifier`   | Int     | 0           | Nivel del efecto menos 1. 0=Nivel I, 1=Nivel II                                                           |
+| `on_eat_effects[].duration`    | Int     | 5           | Duración en segundos                                                                                      |
+| `on_eat_effects[].probability` | Float   | 1.0         | Probabilidad de aplicarse (0.0–1.0)                                                                       |
 
 ### Campos de armadura
 
@@ -338,7 +505,7 @@ Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo def
 | `pieces.durability`           | Int    | Durabilidad de esta pieza                                                                              |
 | `pieces.defense`              | Int    | Puntos de armadura que provee esta pieza                                                               |
 | `pieces.toughness`            | Float  | Resistencia de armadura por pieza. Netherite = 3.0                                                     |
-| `pieces.knockback_resistance` | Float  | Resistencia al retroceso. Máximo 1.0 (resistencia total)                                               |
+| `pieces.knockback_resistance` | Float  | Resistencia al retroceso. Máximo 1.0. Valores mayores causan glitches de física                        |
 | `piece_names`                 | Map    | Nombre completo de cada pieza por idioma. Cada idioma define las cuatro piezas de forma independiente. |
 | `piece_effects`               | Map    | Efectos aplicados al portar una pieza específica individualmente                                       |
 | `set_bonus`                   | Object | Efectos aplicados al tener el número requerido de piezas equipadas                                     |
@@ -353,11 +520,11 @@ Todos los archivos JSON van dentro de `.minecraft/customgear/`. Cada archivo def
 | `tools.durability`          | Int   | Durabilidad de esta herramienta                                                                                   |
 | `tools.attack_damage`       | Float | Daño de ataque base                                                                                               |
 | `tools.attack_damage_bonus` | Float | Daño adicional sumado a `attack_damage`                                                                           |
-| `tools.attack_speed`        | Float | Velocidad de ataque. Valores referencia: espada = 1.6, hacha = 0.9, pala = 1.0                                    |
-| `tools.mining_speed`        | Float | Velocidad de minado. Netherite = 9.0, Diamante = 8.0, Hierro = 6.0                                                |
+| `tools.attack_speed`        | Float | Velocidad de ataque. Espada=1.6, Hacha=0.9, Pala=1.0                                                              |
+| `tools.mining_speed`        | Float | Velocidad de minado. Netherite=9.0, Diamante=8.0, Hierro=6.0                                                      |
 | `tools.harvest_level`       | Int   | 0=Madera, 1=Piedra, 2=Hierro, 3=Diamante, 4=Netherite                                                             |
 | `tools.held_effects`        | List  | Efectos aplicados al sostener esta herramienta en la mano                                                         |
-| `tools.till_radius`         | Int   | (Solo azadón) Radio de bloques a arar alrededor del bloque objetivo. 0 = sin arado en área                        |
+| `tools.till_radius`         | Int   | (Solo azadón) Radio de bloques a arar alrededor del objetivo. 0 = sin arado en área                               |
 | `tool_names`                | Map   | Nombre completo de cada herramienta por idioma. Cada idioma define todas las herramientas de forma independiente. |
 
 ### Campos de armas
@@ -400,37 +567,11 @@ Los ítems individuales (`type: "sword"`, `type: "bow"`, etc.) usan los mismos c
 
 ### Campos de textura
 
-| Campo          | Tipo   | Descripción                                                                                                                                   |
-|----------------|--------|-----------------------------------------------------------------------------------------------------------------------------------------------|
-| `texture.mode` | String | `default`, `custom`, o `reference`                                                                                                            |
-| `texture.refs` | Map    | Para `custom`: ruta relativa a un PNG dentro de `.minecraft/customgear/`. Para `reference`: resource location completo del modelo de otro mod |
-| `armor_layers` | Map    | (Solo sets de armadura) `layer_1` y `layer_2` para la textura de armadura en el mundo                                                         |
-
-**Ejemplo de estructura de archivos:**
-```
-.minecraft/customgear/
-├── models/
-│   └── mi_armadura/
-│       ├── layer_1.png
-│       └── layer_2.png
-├── item/
-│   ├── armor/
-│   │   ├── casco.png
-│   │   ├── pechera.png
-│   │   ├── pantalones.png
-│   │   └── botas.png
-│   ├── herramientas/
-│   │   ├── pico.png
-│   │   └── ...
-│   └── armas/
-│       ├── espada.png
-│       └── ...
-├── armadura1.json
-├── herramientas1.json
-└── armas/
-    └── armas1.json
-```
-
+| Campo          | Tipo   | Descripción                                                                                                                                |
+|----------------|--------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| `texture.mode` | String | `default`, `custom`, o `reference`                                                                                                         |
+| `texture.refs` | Map    | Para `custom`: ruta relativa a un PNG dentro de `ultimatecustomgear/`. Para `reference`: resource location completo del modelo de otro mod |
+| `armor_layers` | Map    | (Solo sets de armadura) `layer_1` y `layer_2` para la textura de armadura en el mundo                                                      |
 
 ### Campos de receta
 

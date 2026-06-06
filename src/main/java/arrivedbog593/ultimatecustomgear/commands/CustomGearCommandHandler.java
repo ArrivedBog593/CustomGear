@@ -56,7 +56,7 @@ public class CustomGearCommandHandler {
 
                             try {
                                 // 1. Reload all JSONs
-                                Path customgear = Paths.get(".", "customgear");
+                                Path customgear = Paths.get(".", CustomGearMod.MOD_ID);
                                 List<GearData> gearList = GearParser.loadAll(customgear);
                                 UniversalParser.LoadResult universalResult = UniversalParser.loadAll(customgear);
 

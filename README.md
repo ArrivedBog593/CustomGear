@@ -1,6 +1,6 @@
-# CustomGear
+# UltimateCustomGear
 
-**CustomGear** is a data-driven NeoForge mod for Minecraft 1.21.1 that allows server owners, modpack creators, and players to add fully custom armor sets, weapons, and tools — all through simple JSON files. No coding required.
+**UltimateCustomGear** is a data-driven NeoForge mod for Minecraft 1.21.1 that allows server owners, modpack creators, and players to add fully custom armor sets, weapons, tools, food items, items, blocks, and fluids — all through simple JSON files. No coding required.
 
 ---
 
@@ -12,13 +12,14 @@
 - Add custom **bows** with configurable arrow damage and charge speed, with full drawing animation
 - Add custom **crossbows** with configurable arrow damage and charge speed, with full loading animation
 - Add custom **shields** with configurable durability and full 3D rendering in hand and inventory
+- Add custom **food items** with nutrition, saturation, eating duration, always-edible flag, and on-eat effects
 - Per-piece armor effects (e.g., helmet gives Night Vision when worn individually)
 - Set bonus effects when wearing the required number of armor pieces
 - Held effects per tool/weapon (e.g., pickaxe gives Haste, sword gives Strength)
 - **Native recipe system** — define crafting recipes directly in JSON files, no external mods needed
 - Full multi-language support — define the full item name per language with no format restrictions
 - Custom textures with a flexible path system, or reuse models from other mods
-- JSON files can be organized in any subfolder structure inside `.minecraft/customgear/`
+- JSON files can be organized in any subfolder structure inside `.minecraft/ultimatecustomgear/`
 - Compatible with JEI — recipes are fully visible
 - All items are enchantable with vanilla and modded enchantments
 - `/customgear reload` command to reload names, textures, and effects without restarting
@@ -28,9 +29,9 @@
 ## Installation
 
 1. Download and install [NeoForge 1.21.1](https://neoforged.net/)
-2. Place `customgear-x.x.x.jar` in your `mods/` folder
-3. Launch the game once to generate the `customgear/` folder inside `.minecraft/`
-4. Add your JSON files to `.minecraft/customgear/`
+2. Place `ultimatecustomgear-1.x.x.jar` in your `mods/` folder
+3. Launch the game once to generate the `ultimatecustomgear/` folder inside `.minecraft/`
+4. Add your JSON files to `.minecraft/ultimatecustomgear/`
 5. Restart the game
 
 > **JSON syntax note:** Standard JSON does not allow trailing commas. A trailing comma after the last element in an object or array will cause the file to be silently skipped on load.
@@ -39,7 +40,64 @@
 
 ## JSON File Structure
 
-All JSON files go inside `.minecraft/customgear/`. Each file defines one item, set, block, or fluid. Files can be organized in any subfolder structure you prefer.
+All JSON files go inside `.minecraft/ultimatecustomgear/`. Each file defines one item, set, block, or fluid. Files can be organized in any subfolder structure you prefer.
+
+### Supported types
+
+| Type         | Description                                          |
+|--------------|------------------------------------------------------|
+| `armor_set`  | Full armor set (helmet, chestplate, leggings, boots) |
+| `tool_set`   | Full tool set (pickaxe, axe, shovel, hoe)            |
+| `weapon_set` | Full weapon set (sword, bow, crossbow, shield)       |
+| `sword`      | Individual sword                                     |
+| `bow`        | Individual bow                                       |
+| `crossbow`   | Individual crossbow                                  |
+| `shield`     | Individual shield                                    |
+| `pickaxe`    | Individual pickaxe                                   |
+| `axe`        | Individual axe                                       |
+| `shovel`     | Individual shovel                                    |
+| `hoe`        | Individual hoe                                       |
+| `food`       | Consumable food item                                 |
+| `item`       | Simple non-consumable item                           |
+| `block`      | Simple block                                         |
+| `fluid`      | Fluid with bucket                                    |
+
+---
+
+## JSON Examples
+
+### Food Item — Full Example
+
+```json
+{
+  "id": "magic_apple",
+  "type": "food",
+  "names": {
+    "en_us": "Magic Apple",
+    "es_mx": "Manzana Mágica"
+  },
+  "nutrition": 4,
+  "saturation": 1.2,
+  "always_edible": true,
+  "on_eat_effects": [
+    { "effect": "minecraft:regeneration",    "amplifier": 1, "duration": 10,  "probability": 1.0 },
+    { "effect": "minecraft:absorption",      "amplifier": 0, "duration": 120, "probability": 1.0 },
+    { "effect": "minecraft:fire_resistance", "amplifier": 0, "duration": 30,  "probability": 1.0 },
+    { "effect": "minecraft:resistance",      "amplifier": 0, "duration": 300, "probability": 1.0 }
+  ],
+  "texture": {
+    "mode": "reference",
+    "refs": { "item": "minecraft:item/golden_apple" }
+  },
+  "recipe": {
+    "type": "shaped",
+    "pattern": ["GGG","GAG","GGG"],
+    "key": { "G": "minecraft:gold_ingot", "A": "minecraft:apple" }
+  }
+}
+```
+
+Instant food (`eat_duration: 0`) and slow food (`eat_duration: 200` = 10 seconds) are also supported.
 
 ### Armor Set — Full Example
 
@@ -138,8 +196,7 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one item, s
       "attack_damage": 8.0,
       "attack_speed": 0.9,
       "mining_speed": 15.0,
-      "harvest_level": 4,
-      "held_effects": [ { "effect": "minecraft:strength", "amplifier": 1 } ]
+      "harvest_level": 4
     },
     "shovel": {
       "durability": 6000,
@@ -154,8 +211,7 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one item, s
       "attack_speed": 1.0,
       "mining_speed": 16.0,
       "harvest_level": 4,
-      "till_radius": 3,
-      "held_effects": [ { "effect": "minecraft:regeneration", "amplifier": 0 } ]
+      "till_radius": 3
     }
   },
   "enchantable": true,
@@ -170,7 +226,7 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one item, s
     }
   },
   "recipes": {
-    "pickaxe": { "type": "smithing_transform", "template": "minecraft:netherite_upgrade_smithing_template", "base": "mymod:my_diamond_pickaxe", "addition": "minecraft:netherite_ingot" },
+    "pickaxe": { "type": "smithing_transform", "template": "minecraft:netherite_upgrade_smithing_template", "base": "mymod:my_diamond_pickaxe",  "addition": "minecraft:netherite_ingot" },
     "axe":     { "type": "smithing_transform", "template": "minecraft:netherite_upgrade_smithing_template", "base": "mymod:my_diamond_axe",     "addition": "minecraft:netherite_ingot" },
     "shovel":  { "type": "smithing_transform", "template": "minecraft:netherite_upgrade_smithing_template", "base": "mymod:my_diamond_shovel",  "addition": "minecraft:netherite_ingot" },
     "hoe":     { "type": "smithing_transform", "template": "minecraft:netherite_upgrade_smithing_template", "base": "mymod:my_diamond_hoe",     "addition": "minecraft:netherite_ingot" }
@@ -232,7 +288,8 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one item, s
     }
   },
   "recipes": {
-    "sword": { "type": "smithing_transform", "template": "minecraft:netherite_upgrade_smithing_template", "base": "mymod:my_diamond_sword", "addition": "minecraft:netherite_ingot" }
+    "sword": { "type": "smithing_transform", "template": "minecraft:netherite_upgrade_smithing_template", "base": "mymod:my_diamond_sword", "addition": "minecraft:netherite_ingot" },
+    "bow":   { "type": "smithing_transform", "template": "minecraft:netherite_upgrade_smithing_template", "base": "mymod:my_bow",          "addition": "minecraft:netherite_ingot" }
   }
 }
 ```
@@ -320,17 +377,126 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one item, s
 
 ---
 
+## Recipes
+
+CustomGear supports native crafting recipes defined directly in JSON. No external mods are required.
+
+### Recipe types
+
+| Type                 | Description                                 |
+|----------------------|---------------------------------------------|
+| `shaped`             | Crafting table with a specific pattern      |
+| `shapeless`          | Crafting table, ingredients in any order    |
+| `smelting`           | Furnace                                     |
+| `blasting`           | Blast furnace                               |
+| `smithing_transform` | Smithing table (template + base + addition) |
+
+### Individual item recipe
+
+```json
+"recipe": {
+  "type": "shaped",
+  "pattern": [" G ", " G ", " S "],
+  "key": { "G": "mymod:my_gem", "S": "minecraft:stick" }
+}
+```
+
+For multiple recipes, use an array:
+
+```json
+"recipe": [
+  { "type": "shaped", ... },
+  { "type": "smelting", "ingredient": "mymod:my_ore", "experience": 1.0, "cooking_time": 200 }
+]
+```
+
+### Set recipe (armor, tools, weapons)
+
+```json
+"recipes": {
+  "helmet":     { "type": "shaped", "pattern": ["GGG","G G","   "], "key": {"G": "mymod:my_gem"} },
+  "chestplate": { "type": "shaped", "pattern": ["G G","GGG","GGG"], "key": {"G": "mymod:my_gem"} },
+  "leggings":   { "type": "shaped", "pattern": ["GGG","G G","G G"], "key": {"G": "mymod:my_gem"} },
+  "boots":      { "type": "shaped", "pattern": ["   ","G G","G G"], "key": {"G": "mymod:my_gem"} }
+}
+```
+
+### Smithing table recipe
+
+```json
+"recipe": {
+  "type": "smithing_transform",
+  "template": "minecraft:netherite_upgrade_smithing_template",
+  "base": "mymod:my_diamond_sword",
+  "addition": "minecraft:netherite_ingot"
+}
+```
+
+> Ingredients support any item from any installed mod via resource location (e.g. `"othermod:special_ingot"`).
+
+---
+
+## Textures
+
+Three texture modes are available:
+
+| Mode        | Description                                                        |
+|-------------|--------------------------------------------------------------------|
+| `default`   | Uses vanilla iron/wood textures as placeholders                    |
+| `reference` | Reuses the model of another item (vanilla or modded)               |
+| `custom`    | Uses your own PNG files placed in the `ultimatecustomgear/` folder |
+
+### Reference mode example
+
+```json
+"texture": {
+  "mode": "reference",
+  "refs": { "sword": "minecraft:item/netherite_sword" }
+}
+```
+
+For bows and crossbows, you can optionally include custom pulling/loading frame models:
+
+```json
+"texture": {
+  "mode": "reference",
+  "refs": {
+    "bow":           "othermod:item/epic_bow",
+    "bow_pulling_0": "othermod:item/epic_bow_pulling_0",
+    "bow_pulling_1": "othermod:item/epic_bow_pulling_1",
+    "bow_pulling_2": "othermod:item/epic_bow_pulling_2"
+  }
+}
+```
+
+---
+
 ## Field Reference
 
 ### Common Fields
 
-| Field            | Type    | Description                                                                                                       |
-|------------------|---------|-------------------------------------------------------------------------------------------------------------------|
-| `id`             | String  | Unique identifier. Lowercase letters, numbers, and underscores only. 2–64 characters.                             |
-| `type`           | String  | `armor_set`, `tool_set`, `weapon_set`, `sword`, `bow`, `crossbow`, `shield`, `pickaxe`, `axe`, `shovel`, or `hoe` |
-| `names`          | Map     | Full item name per language (for individual items only — sets use `piece_names`, `tool_names`, or `weapon_names`) |
-| `enchantable`    | Boolean | Whether the item can be enchanted                                                                                 |
-| `enchantability` | Int     | Higher = better enchantments. Iron = 9, Gold = 25, Diamond = 10                                                   |
+| Field            | Type    | Description                                                                                                   |
+|------------------|---------|---------------------------------------------------------------------------------------------------------------|
+| `id`             | String  | Unique identifier. Lowercase letters, numbers, and underscores only. 2–64 characters.                         |
+| `type`           | String  | Item type (see Supported Types table)                                                                         |
+| `names`          | Map     | Full item name per language (individual items only — sets use `piece_names`, `tool_names`, or `weapon_names`) |
+| `enchantable`    | Boolean | Whether the item can be enchanted                                                                             |
+| `enchantability` | Int     | Higher = better enchantments. Iron = 9, Gold = 25, Diamond = 10                                               |
+
+### Food Fields
+
+| Field                          | Type    | Default | Description                                                                               |
+|--------------------------------|---------|---------|-------------------------------------------------------------------------------------------|
+| `nutrition`                    | Int     | 0       | Hunger points restored. Bread=5, Cooked beef=8, Golden apple=4                            |
+| `saturation`                   | Float   | 0.6     | Saturation modifier. Bread=0.6, Cooked beef=0.8, Golden apple=1.2                         |
+| `always_edible`                | Boolean | false   | Can eat even when the hunger bar is full                                                  |
+| `fast_food`                    | Boolean | false   | Consumed faster like dried kelp (16 ticks)                                                |
+| `eat_duration`                 | Int     | -1      | Consumption time in ticks. 0=instant, 32=normal, 200=10s. Overrides `fast_food` when set. |
+| `on_eat_effects`               | List    | —       | Effects applied on consumption                                                            |
+| `on_eat_effects[].effect`      | String  | —       | Effect ID, e.g. `"minecraft:regeneration"`                                                |
+| `on_eat_effects[].amplifier`   | Int     | 0       | Effect level minus 1. 0=Level I, 1=Level II                                               |
+| `on_eat_effects[].duration`    | Int     | 5       | Duration in seconds                                                                       |
+| `on_eat_effects[].probability` | Float   | 1.0     | Probability of applying (0.0–1.0)                                                         |
 
 ### Armor Fields
 
@@ -340,7 +506,7 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one item, s
 | `pieces.durability`           | Int    | Durability of this piece                                                                    |
 | `pieces.defense`              | Int    | Armor points this piece provides                                                            |
 | `pieces.toughness`            | Float  | Armor toughness per piece. Netherite = 3.0                                                  |
-| `pieces.knockback_resistance` | Float  | Knockback resistance. Max is 1.0 (full resistance)                                          |
+| `pieces.knockback_resistance` | Float  | Knockback resistance. Max is 1.0. Values above 1.0 cause physics glitches                   |
 | `piece_names`                 | Map    | Full name for each piece per language. Each language defines all four pieces independently. |
 | `piece_effects`               | Map    | Effects applied when a specific piece is worn individually                                  |
 | `set_bonus`                   | Object | Effects applied when the required number of pieces are worn                                 |
@@ -349,35 +515,35 @@ All JSON files go inside `.minecraft/customgear/`. Each file defines one item, s
 
 ### Tool Fields
 
-| Field                       | Type  | Description                                                                               |
-|-----------------------------|-------|-------------------------------------------------------------------------------------------|
-| `tools`                     | Map   | Defines each tool. Keys: `pickaxe`, `axe`, `shovel`, `hoe`                                |
-| `tools.durability`          | Int   | Durability of this tool                                                                   |
-| `tools.attack_damage`       | Float | Base attack damage                                                                        |
-| `tools.attack_damage_bonus` | Float | Additional damage added on top of `attack_damage`                                         |
-| `tools.attack_speed`        | Float | Attack speed. Standard values: sword = 1.6, axe = 0.9, shovel = 1.0                       |
-| `tools.mining_speed`        | Float | Mining speed. Netherite = 9.0, Diamond = 8.0, Iron = 6.0                                  |
-| `tools.harvest_level`       | Int   | 0=Wood, 1=Stone, 2=Iron, 3=Diamond, 4=Netherite                                           |
-| `tools.held_effects`        | List  | Effects applied when this tool is held in hand                                            |
-| `tools.till_radius`         | Int   | (Hoe only) Radius of blocks to till around the target block. 0 = no area tilling          |
-| `tool_names`                | Map   | Full name for each tool per language. Each language defines all tools independently.      |
+| Field                       | Type  | Description                                                                          |
+|-----------------------------|-------|--------------------------------------------------------------------------------------|
+| `tools`                     | Map   | Defines each tool. Keys: `pickaxe`, `axe`, `shovel`, `hoe`                           |
+| `tools.durability`          | Int   | Durability of this tool                                                              |
+| `tools.attack_damage`       | Float | Base attack damage                                                                   |
+| `tools.attack_damage_bonus` | Float | Additional damage added on top of `attack_damage`                                    |
+| `tools.attack_speed`        | Float | Attack speed. Sword=1.6, Axe=0.9, Shovel=1.0                                         |
+| `tools.mining_speed`        | Float | Mining speed. Netherite=9.0, Diamond=8.0, Iron=6.0                                   |
+| `tools.harvest_level`       | Int   | 0=Wood, 1=Stone, 2=Iron, 3=Diamond, 4=Netherite                                      |
+| `tools.held_effects`        | List  | Effects applied when this tool is held in hand                                       |
+| `tools.till_radius`         | Int   | (Hoe only) Radius of blocks to till around the target. 0 = no area tilling           |
+| `tool_names`                | Map   | Full name for each tool per language. Each language defines all tools independently. |
 
 ### Weapon Fields
 
-| Field                             | Type  | Description                                                                                      |
-|-----------------------------------|-------|--------------------------------------------------------------------------------------------------|
-| `weapons`                         | Map   | Defines each weapon. Keys: `sword`, `bow`, `crossbow`, `shield`                                  |
-| `weapons.durability`              | Int   | Durability of this weapon                                                                        |
-| `weapons.attack_damage`           | Float | Base attack damage (sword only)                                                                  |
-| `weapons.attack_damage_bonus`     | Float | Additional damage (sword only)                                                                   |
-| `weapons.attack_speed`            | Float | Attack speed (sword only)                                                                        |
-| `weapons.damage_multiplier`       | Float | Final attack damage multiplier. Default: 1.0                                                     |
-| `weapons.arrow_damage`            | Float | Base arrow damage (bow/crossbow). If 0, uses vanilla calculation                                 |
-| `weapons.arrow_damage_bonus`      | Float | Flat bonus added to arrow damage (bow/crossbow)                                                  |
-| `weapons.arrow_damage_multiplier` | Float | Arrow damage multiplier (bow/crossbow). Default: 1.0                                             |
-| `weapons.charge_speed`            | Float | Charge speed multiplier (bow/crossbow). Values < 1.0 = slower. Default: 1.0                      |
-| `weapons.held_effects`            | List  | Effects applied when this weapon is held in hand                                                 |
-| `weapon_names`                    | Map   | Full name for each weapon per language.                                                          |
+| Field                             | Type  | Description                                                                 |
+|-----------------------------------|-------|-----------------------------------------------------------------------------|
+| `weapons`                         | Map   | Defines each weapon. Keys: `sword`, `bow`, `crossbow`, `shield`             |
+| `weapons.durability`              | Int   | Durability of this weapon                                                   |
+| `weapons.attack_damage`           | Float | Base attack damage (sword only)                                             |
+| `weapons.attack_damage_bonus`     | Float | Additional damage (sword only)                                              |
+| `weapons.attack_speed`            | Float | Attack speed (sword only)                                                   |
+| `weapons.damage_multiplier`       | Float | Final attack damage multiplier. Default: 1.0                                |
+| `weapons.arrow_damage`            | Float | Base arrow damage (bow/crossbow). If 0, uses vanilla calculation            |
+| `weapons.arrow_damage_bonus`      | Float | Flat bonus added to arrow damage (bow/crossbow)                             |
+| `weapons.arrow_damage_multiplier` | Float | Arrow damage multiplier (bow/crossbow). Default: 1.0                        |
+| `weapons.charge_speed`            | Float | Charge speed multiplier (bow/crossbow). Values < 1.0 = slower. Default: 1.0 |
+| `weapons.held_effects`            | List  | Effects applied when this weapon is held in hand                            |
+| `weapon_names`                    | Map   | Full name for each weapon per language.                                     |
 
 ### Individual Weapon/Tool Fields
 
@@ -385,13 +551,13 @@ Individual items (`type: "sword"`, `type: "bow"`, etc.) use the same fields as a
 
 ### Attack Damage Reference
 
-| Vanilla weapon      | attack_damage |
-|---------------------|---------------|
-| Wood sword          | 4.0           |
-| Stone sword         | 5.0           |
-| Iron sword          | 6.0           |
-| Diamond sword       | 7.0           |
-| Netherite sword     | 8.0           |
+| Vanilla weapon  | attack_damage |
+|-----------------|---------------|
+| Wood sword      | 4.0           |
+| Stone sword     | 5.0           |
+| Iron sword      | 6.0           |
+| Diamond sword   | 7.0           |
+| Netherite sword | 8.0           |
 
 ### Effect Object
 
@@ -402,37 +568,11 @@ Individual items (`type: "sword"`, `type: "bow"`, etc.) use the same fields as a
 
 ### Texture Fields
 
-| Field          | Type   | Description                                                                                                                          |
-|----------------|--------|--------------------------------------------------------------------------------------------------------------------------------------|
-| `texture.mode` | String | `default`, `custom`, or `reference`                                                                                                  |
-| `texture.refs` | Map    | For `custom`: relative path to a PNG inside `.minecraft/customgear/`. For `reference`: full resource location of another mod's model |
-| `armor_layers` | Map    | (Armor sets only) `layer_1` and `layer_2` paths for the in-world armor texture                                                       |
-
-**Example file structure:**
-```
-.minecraft/customgear/
-├── models/
-│   └── my_armor/
-│       ├── layer_1.png
-│       └── layer_2.png
-├── item/
-│   ├── armor/
-│   │   ├── helmet.png
-│   │   ├── chestplate.png
-│   │   ├── leggings.png
-│   │   └── boots.png
-│   ├── tools/
-│   │   ├── pickaxe.png
-│   │   └── ...
-│   └── weapons/
-│       ├── sword.png
-│       └── ...
-├── armor1.json
-├── tools1.json
-└── weapons/
-    └── weapons1.json
-```
-
+| Field          | Type   | Description                                                                                                |
+|----------------|--------|------------------------------------------------------------------------------------------------------------|
+| `texture.mode` | String | `default`, `custom`, or `reference`                                                                        |
+| `texture.refs` | Map    | For `custom`: relative path to a PNG inside `ultimatecustomgear/`. For `reference`: full resource location |
+| `armor_layers` | Map    | (Armor sets only) `layer_1` and `layer_2` paths for the in-world armor texture                             |
 
 ### Recipe Fields
 

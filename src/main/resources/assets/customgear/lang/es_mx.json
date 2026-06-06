@@ -8,5 +8,8 @@
   "tooltip.customgear.held_effects": "Cuando se sostiene:",
   "tooltip.customgear.set_bonus": "Bono de conjunto (%s piezas):",
   "tooltip.customgear.till_radius": "Radio de arado",
-  "tooltip.customgear.till_area": "área de %sx%s"
+  "tooltip.customgear.till_area": "área de %sx%s",
+  "tooltip.ultimatecustomgear.instant": "Consumo instantáneo",
+  "tooltip.ultimatecustomgear.eat_duration": "Toma %s segundos para comer",
+  "tooltip.ultimatecustomgear.on_eat": "Al consumir:"
 }

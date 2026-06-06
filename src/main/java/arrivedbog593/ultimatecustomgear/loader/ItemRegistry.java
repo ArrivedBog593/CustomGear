@@ -1,6 +1,7 @@
 package arrivedbog593.ultimatecustomgear.loader;
 
 import arrivedbog593.ultimatecustomgear.data.ItemData;
+import arrivedbog593.ultimatecustomgear.items.items.CustomFoodItem;
 import arrivedbog593.ultimatecustomgear.items.items.CustomItem;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -15,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Registers simple items loaded from JSON.
+ * Registers simple items and food items loaded from JSON.
  * Does not handle tools or armor — those are managed by GearRegistry.
  */
 public class ItemRegistry {
@@ -30,10 +31,15 @@ public class ItemRegistry {
 
     public static void register(IEventBus modEventBus, List<ItemData> itemList) {
         for (ItemData data : itemList) {
-            ITEMS.register(data.id, () -> new CustomItem(data));
+            if ("food".equals(data.type)) {
+                ITEMS.register(data.id, () -> new CustomFoodItem(data));
+                LOGGER.info("[CustomGear] Food item registered: {}", data.id);
+            } else {
+                ITEMS.register(data.id, () -> new CustomItem(data));
+                LOGGER.info("[CustomGear] Item registered: {}", data.id);
+            }
             ITEM_MAP.put(
                     ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
-            LOGGER.info("[CustomGear] Item registered: {}", data.id);
         }
         ITEMS.register(modEventBus);
     }

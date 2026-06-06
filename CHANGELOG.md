@@ -1,10 +1,42 @@
 # Changelog
 
-All important changelog notes for the CustomGear project.
+All important changelog notes for the UltimateCustomGear project.
+
+## [1.2.3] - 2026-06-05
+
+### ✨ New Features
+
+#### Food Items (`type: "food"`)
+- New item type `food` — consumable items with custom nutrition, saturation and effects
+- Configurable `nutrition` and `saturation` values
+- `always_edible` — allows eating even when the hunger bar is full (like golden apples)
+- `fast_food` — item is consumed faster (like dried kelp)
+- `eat_duration` — fine-grained control over consumption time in ticks (0 = instant, 200 = 10 seconds)
+- `on_eat_effects` — list of effects applied on consumption, each with `effect`, `amplifier`, `duration` (seconds) and `probability`
+- Tooltip support via `TooltipHelper.addFoodEffectsTooltip()` showing eat duration and all on-eat effects with duration and level
+- Ingredients from any installed mod are supported
+
+### 🔧 Technical Changes
+
+- `ItemData.java` — added `nutrition`, `saturation`, `alwaysEdible`, `fastFood`, `eatDuration`, `onEatEffects` fields and `FoodEffectData` inner class
+- `CustomFoodItem.java` — new class extending `Item` with `FoodProperties` built from `ItemData`; overrides `getUseDuration` for custom eat timing; delegates tooltip to `TooltipHelper`
+- `ItemRegistry.java` — detects `type = "food"` and creates `CustomFoodItem` instead of `CustomItem`
+- `UniversalParser.java` — `case "item", "food"` now handles both types in the same branch
+- `TooltipHelper.java` — added `addFoodEffectsTooltip()` method reusing existing `getEffectName()` and `toRoman()`
+
+### 🐛 Bug Fixes
+
+- Fixed `/customgear reload` command using hardcoded `"customgear"` folder path instead of `CustomGearMod.MOD_ID` — caused all textures to revert to the magenta/black placeholder after reload
+
+### 📦 Dependencies
+
+No new dependencies added.
+
+---
 
 ## [1.1.0] - 2026-06-04
 
-### ✨ BIG UPDATE - New Features
+### ✨ New Features
 
 #### Native Recipe System
 - CustomGear now supports **crafting recipes defined directly in JSON files** — no external mods required
@@ -66,10 +98,10 @@ No new dependencies added.
 
 ### 🔧 Technical Changes
 
-- `CustomSwordItem.java` & `CustomArmorItem.java` - Prioritize specific item names over format placeholders
-- `TextureLoader.java` - Added support for armor layers in reference mode
-- `GearData.java` - Added `armor_layers` field for texture configuration
-- `DynamicResourcePack.java` - Added `addReferenceTexture()` method
+- `CustomSwordItem.java` & `CustomArmorItem.java` — Prioritize specific item names over format placeholders
+- `TextureLoader.java` — Added support for armor layers in reference mode
+- `GearData.java` — Added `armor_layers` field for texture configuration
+- `DynamicResourcePack.java` — Added `addReferenceTexture()` method
 
 ---
 
@@ -77,7 +109,7 @@ No new dependencies added.
 
 ### ✨ Improvements
 
-#### `/customgear reload` Command - Now Fully Functional
+#### `/customgear reload` Command — Now Fully Functional
 - **Before:** The command only reloaded textures, but didn't update names, durability, effects, or attributes
 - **Now:** The command reloads all item data dynamically at runtime
 

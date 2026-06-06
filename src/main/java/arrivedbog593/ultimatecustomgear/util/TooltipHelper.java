@@ -114,4 +114,36 @@ public class TooltipHelper {
                 .append(Component.literal(")"))
                 .withStyle(ChatFormatting.GRAY));
     }
+
+    // Tooltip for food on-eat effects
+    public static void addFoodEffectsTooltip(List<Component> tooltipComponents,
+                                             arrivedbog593.ultimatecustomgear.data.ItemData data) {
+        // Eat duration line
+        if (data.eatDuration == 0) {
+            tooltipComponents.add(Component.translatable("tooltip.ultimatecustomgear.instant")
+                    .withStyle(ChatFormatting.GRAY));
+        } else if (data.eatDuration > 0) {
+            float seconds = data.eatDuration / 20.0f;
+            tooltipComponents.add(Component.translatable("tooltip.ultimatecustomgear.eat_duration",
+                            String.format("%.1f", seconds))
+                    .withStyle(ChatFormatting.GRAY));
+        }
+
+        // On eat effects
+        if (data.onEatEffects == null || data.onEatEffects.isEmpty()) return;
+
+        tooltipComponents.add(Component.literal(""));
+        tooltipComponents.add(Component.translatable("tooltip.ultimatecustomgear.on_eat")
+                .withStyle(ChatFormatting.GOLD));
+
+        for (arrivedbog593.ultimatecustomgear.data.ItemData.FoodEffectData ed : data.onEatEffects) {
+            String effectName = getEffectName(ed.effect);
+            String level      = ed.amplifier > 0 ? " " + toRoman(ed.amplifier + 1) : "";
+            String duration   = ed.duration >= 60
+                    ? (ed.duration / 60) + "m " + (ed.duration % 60) + "s"
+                    : ed.duration + "s";
+            tooltipComponents.add(Component.literal("• " + effectName + level + " (" + duration + ")")
+                    .withStyle(ChatFormatting.BLUE));
+        }
+    }
 }

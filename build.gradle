@@ -6,7 +6,7 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.141'
 }
 
-version = "${mc_version}-${mod_version}-${tag_lanzador}-test"
+version = "${mc_version}-${mod_version}-${tag_lanzador}"
 group = "${author}.${modid}"
 base {
     archivesName = "${mod_name}"

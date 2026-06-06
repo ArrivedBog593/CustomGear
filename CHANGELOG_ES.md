@@ -1,10 +1,42 @@
 # Changelog
 
-Todas las notas de cambios importantes para el proyecto CustomGear.
+Todas las notas de cambios importantes para el proyecto UltimateCustomGear.
+
+## [1.2.3] - 2026-06-05
+
+### ✨ Nuevas Características
+
+#### Ítems Comestibles (`type: "food"`)
+- Nuevo tipo de ítem `food` — ítems consumibles con nutrición, saturación y efectos personalizados
+- Valores configurables de `nutrition` y `saturation`
+- `always_edible` — permite comer aunque la barra de hambre esté llena (como las manzanas de oro)
+- `fast_food` — el ítem se consume más rápido (como el alga seca)
+- `eat_duration` — control fino del tiempo de consumo en ticks (0 = instantáneo, 200 = 10 segundos)
+- `on_eat_effects` — lista de efectos aplicados al consumir, cada uno con `effect`, `amplifier`, `duration` (en segundos) y `probability`
+- Soporte de tooltip via `TooltipHelper.addFoodEffectsTooltip()` mostrando el tiempo de consumo y todos los efectos con duración y nivel
+- Se soportan ingredientes de cualquier mod instalado
+
+### 🔧 Cambios Técnicos
+
+- `ItemData.java` — se agregaron los campos `nutrition`, `saturation`, `alwaysEdible`, `fastFood`, `eatDuration`, `onEatEffects` y la clase interna `FoodEffectData`
+- `CustomFoodItem.java` — nueva clase que extiende `Item` con `FoodProperties` construidas desde `ItemData`; sobreescribe `getUseDuration` para control de tiempo de consumo; delega el tooltip a `TooltipHelper`
+- `ItemRegistry.java` — detecta `type = "food"` y crea `CustomFoodItem` en vez de `CustomItem`
+- `UniversalParser.java` — `case "item", "food"` ahora maneja ambos tipos en la misma rama
+- `TooltipHelper.java` — se agregó `addFoodEffectsTooltip()` reutilizando los métodos existentes `getEffectName()` y `toRoman()`
+
+### 🐛 Corrección de Bugs
+
+- Corregido el comando `/customgear reload` que usaba la ruta hardcodeada `"customgear"` en vez de `CustomGearMod.MOD_ID` — causaba que todas las texturas volvieran al placeholder magenta/negro después del reload
+
+### 📦 Dependencias
+
+No se agregaron nuevas dependencias.
+
+---
 
 ## [1.1.0] - 2026-06-04
 
-### ✨ GRAN ACTUALIZACION - Nuevas Características
+### ✨ Nuevas Características
 
 #### Sistema de Recetas Nativo
 - CustomGear ahora soporta **recetas de crafteo definidas directamente en los archivos JSON** — sin necesidad de mods externos
@@ -44,11 +76,11 @@ Todas las notas de cambios importantes para el proyecto CustomGear.
 
 ### 🐛 Corrección de Bugs
 
-- Se corrigió `SetBonusHandler`: los efectos fantasma ya no persisten después de que `/customgear reload` cambia el ID de un set
-- Se corrigió `GearParser`: faltaba validación de límite inferior para campos de daño de armas (`attackDamage`, `arrowDamage`, `damageMultiplier`, `arrowDamageMultiplier`, `chargeSpeed`, `tillRadius`)
-- Se corrigió `EffectUtils`: se agregó try-catch alrededor de `ResourceLocation.parse()` para prevenir crash del servidor con IDs de efecto malformados de caché desactualizada
-- Se corrigió `ClientSetup`: la propiedad `blocking` del escudo se registraba fuera de `enqueueWork`, causando una posible condición de carrera
-- Se corrigió estado muerto en `SetBonusHandler`: se eliminaron los mapas sin usar `activeSetBonuses` y `activePieceEffects`
+- Corregido `SetBonusHandler`: los efectos fantasma ya no persisten después de que `/customgear reload` cambia el ID de un set
+- Corregido `GearParser`: faltaba validación de límite inferior para campos de daño de armas
+- Corregido `EffectUtils`: se agregó try-catch alrededor de `ResourceLocation.parse()`
+- Corregido `ClientSetup`: la propiedad `blocking` del escudo se registraba fuera de `enqueueWork`
+- Corregido estado muerto en `SetBonusHandler`: se eliminaron los mapas sin usar `activeSetBonuses` y `activePieceEffects`
 
 ### 📦 Dependencias
 
@@ -60,9 +92,9 @@ No se agregaron nuevas dependencias.
 
 ### ✨ Mejoras
 
-- **Soporte Multi-Idioma:** El sistema de nombres de items ahora soporta mejor idiomas complejos (chino, ruso, japonés, etc.)
+- **Soporte Multi-Idioma:** El sistema de nombres de items ahora soporta mejor idiomas complejos
 - **Texturas de Armadura en Modo Referencia:** Los sets de armadura ahora pueden referenciar capas de otros mods usando el campo `armor_layers`
-- **Actualizaciones en la Documentación:** README actualizado con ejemplos multi-idioma y soporte para capas de armadura en modo referencia
+- **Actualizaciones en la Documentación:** README actualizado
 
 ### 🔧 Cambios Técnicos
 
@@ -81,8 +113,8 @@ No se agregaron nuevas dependencias.
 
 ### ✨ Mejoras
 
-#### Comando `/customgear reload` - Ahora Funcional Completamente
-- **Antes:** El comando solo recargaba texturas, pero no actualizaba nombres, durabilidad, efectos ni atributos
+#### Comando `/customgear reload` — Ahora Funcional Completamente
+- **Antes:** El comando solo recargaba texturas
 - **Ahora:** El comando recarga todos los datos de los items dinámicamente en runtime
 
 ### 🔄 Cambios Técnicos

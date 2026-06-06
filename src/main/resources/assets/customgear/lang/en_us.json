@@ -8,5 +8,8 @@
   "tooltip.customgear.held_effects": "When held:",
   "tooltip.customgear.set_bonus": "Set Bonus (%s pieces):",
   "tooltip.customgear.till_radius": "Till Radius",
-  "tooltip.customgear.till_area": "%sx%s area"
+  "tooltip.customgear.till_area": "%sx%s area",
+  "tooltip.ultimatecustomgear.instant": "Instant consumption",
+  "tooltip.ultimatecustomgear.eat_duration": "Takes %s seconds to eat",
+  "tooltip.ultimatecustomgear.on_eat": "When eaten:"
 }

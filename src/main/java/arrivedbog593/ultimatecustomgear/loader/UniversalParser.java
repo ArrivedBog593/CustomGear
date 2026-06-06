@@ -139,7 +139,7 @@ public class UniversalParser {
                                         }
                                     }
                                 }
-                                case "item" -> {
+                                case "item", "food" -> {
                                     GenericCache.CacheEntry<ItemData> cached = itemCache.get(relKey);
                                     if (cached != null && cached.lastModified == lastModified && cached.data != null) {
                                         if (!seenItems.add(cached.data.id)) {
