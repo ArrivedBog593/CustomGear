@@ -44,23 +44,23 @@ All JSON files go inside `.minecraft/ultimatecustomgear/`. Each file defines one
 
 ### Supported types
 
-| Type         | Description                                          |
-|--------------|------------------------------------------------------|
-| `armor_set`  | Full armor set (helmet, chestplate, leggings, boots) |
-| `tool_set`   | Full tool set (pickaxe, axe, shovel, hoe)            |
-| `weapon_set` | Full weapon set (sword, bow, crossbow, shield)       |
-| `sword`      | Individual sword                                     |
-| `bow`        | Individual bow                                       |
-| `crossbow`   | Individual crossbow                                  |
-| `shield`     | Individual shield                                    |
-| `pickaxe`    | Individual pickaxe                                   |
-| `axe`        | Individual axe                                       |
-| `shovel`     | Individual shovel                                    |
-| `hoe`        | Individual hoe                                       |
-| `food`       | Consumable food item                                 |
-| `item`       | Simple non-consumable item                           |
-| `block`      | Simple block                                         |
-| `fluid`      | Fluid with bucket                                    |
+| Type         | Description                                                |
+|--------------|------------------------------------------------------------|
+| `armor_set`  | Full armor set (helmet, chestplate, leggings, boots)       |
+| `tool_set`   | Full tool set (pickaxe, axe, shovel, hoe)                  |
+| `weapon_set` | Full weapon set (sword, bow, crossbow, shield)             |
+| `sword`      | Individual sword                                           |
+| `bow`        | Individual bow                                             |
+| `crossbow`   | Individual crossbow                                        |
+| `shield`     | Individual shield                                          |
+| `pickaxe`    | Individual pickaxe                                         |
+| `axe`        | Individual axe                                             |
+| `shovel`     | Individual shovel                                          |
+| `hoe`        | Individual hoe                                             |
+| `food`       | Consumable food item                                       |
+| `item`       | Simple non-consumable item                                 |
+| `block`      | Simple block                                               |
+| `fluid`      | Fluid with bucket, configurable spread and contact effects |
 
 ---
 
@@ -92,12 +92,12 @@ All JSON files go inside `.minecraft/ultimatecustomgear/`. Each file defines one
   "recipe": {
     "type": "shaped",
     "pattern": ["GGG","GAG","GGG"],
-    "key": { "G": "minecraft:gold_ingot", "A": "minecraft:apple" }
+    "key": { "G": "minecraft:gold_block", "A": "minecraft:apple" }
   }
 }
 ```
 
-Instant food (`eat_duration: 0`) and slow food (`eat_duration: 200` = 10 seconds) are also supported.
+Instant food (`eat_duration: 0`) and slow food (`eat_duration: 10` = 10 seconds) are also supported.
 
 ### Armor Set — Full Example
 
@@ -375,6 +375,67 @@ Instant food (`eat_duration: 0`) and slow food (`eat_duration: 200` = 10 seconds
 }
 ```
 
+### Fluid with Contact Effects — Full Example
+
+```json
+{
+  "id": "poison_lake",
+  "type": "fluid",
+  "names": {
+    "en_us": "Poison Lake",
+    "es_mx": "Lago Venenoso"
+  },
+  "bucket_names": {
+    "en_us": "{fluid_name} Bucket",
+    "es_mx": "Cubeta de {fluid_name}"
+  },
+  "light_level": 3,
+  "color": "0xFF4CAF50",
+  "tick_rate": 10,
+  "spread_distance": 6,
+  "burns_entities": false,
+  "contact_effect_interval": 2.0,
+  "contact_effects": [
+    { "effect": "minecraft:poison",   "amplifier": 0, "duration": 3 },
+    { "effect": "minecraft:slowness", "amplifier": 1, "duration": 3 }
+  ],
+  "texture": {
+    "mode": "default"
+  }
+}
+```
+
+### Lava-like Fluid — Full Example
+
+```json
+{
+  "id": "magma_fluid",
+  "type": "fluid",
+  "names": {
+    "en_us": "Magma Flow",
+    "es_mx": "Flujo de Magma"
+  },
+  "bucket_names": {
+    "en_us": "{fluid_name} Bucket",
+    "es_mx": "Cubeta de {fluid_name}"
+  },
+  "light_level": 15,
+  "color": "0xFFFF6600",
+  "tick_rate": 30,
+  "spread_distance": 4,
+  "burns_entities": true,
+  "burn_duration": 8,
+  "contact_effect_interval": 1.0,
+  "contact_effects": [
+    { "effect": "minecraft:weakness",       "amplifier": 1, "duration": 5 },
+    { "effect": "minecraft:mining_fatigue", "amplifier": 0, "duration": 5 }
+  ],
+  "texture": {
+    "mode": "default"
+  }
+}
+```
+
 ---
 
 ## Recipes
@@ -485,18 +546,18 @@ For bows and crossbows, you can optionally include custom pulling/loading frame 
 
 ### Food Fields
 
-| Field                          | Type    | Default | Description                                                                               |
-|--------------------------------|---------|---------|-------------------------------------------------------------------------------------------|
-| `nutrition`                    | Int     | 0       | Hunger points restored. Bread=5, Cooked beef=8, Golden apple=4                            |
-| `saturation`                   | Float   | 0.6     | Saturation modifier. Bread=0.6, Cooked beef=0.8, Golden apple=1.2                         |
-| `always_edible`                | Boolean | false   | Can eat even when the hunger bar is full                                                  |
-| `fast_food`                    | Boolean | false   | Consumed faster like dried kelp (16 ticks)                                                |
-| `eat_duration`                 | Int     | -1      | Consumption time in ticks. 0=instant, 32=normal, 200=10s. Overrides `fast_food` when set. |
-| `on_eat_effects`               | List    | —       | Effects applied on consumption                                                            |
-| `on_eat_effects[].effect`      | String  | —       | Effect ID, e.g. `"minecraft:regeneration"`                                                |
-| `on_eat_effects[].amplifier`   | Int     | 0       | Effect level minus 1. 0=Level I, 1=Level II                                               |
-| `on_eat_effects[].duration`    | Int     | 5       | Duration in seconds                                                                       |
-| `on_eat_effects[].probability` | Float   | 1.0     | Probability of applying (0.0–1.0)                                                         |
+| Field                          | Type    | Default | Description                                                                                               |
+|--------------------------------|---------|---------|-----------------------------------------------------------------------------------------------------------|
+| `nutrition`                    | Int     | 0       | Hunger points restored. Bread=5, Cooked beef=8, Golden apple=4                                            |
+| `saturation`                   | Float   | 0.6     | Saturation modifier. Bread=0.6, Cooked beef=0.8, Golden apple=1.2                                         |
+| `always_edible`                | Boolean | false   | Can eat even when the hunger bar is full                                                                  |
+| `fast_food`                    | Boolean | false   | Consumed faster like dried kelp (16 ticks)                                                                |
+| `eat_duration`                 | Float   | -1      | Consumption time in seconds. 0=instant, 1.6=normal vanilla, 10=very slow. Overrides `fast_food` when set. |
+| `on_eat_effects`               | List    | —       | Effects applied on consumption                                                                            |
+| `on_eat_effects[].effect`      | String  | —       | Effect ID, e.g. `"minecraft:regeneration"`                                                                |
+| `on_eat_effects[].amplifier`   | Int     | 0       | Effect level minus 1. 0=Level I, 1=Level II                                                               |
+| `on_eat_effects[].duration`    | Int     | 5       | Duration in seconds                                                                                       |
+| `on_eat_effects[].probability` | Float   | 1.0     | Probability of applying (0.0–1.0)                                                                         |
 
 ### Armor Fields
 
@@ -591,6 +652,22 @@ Individual items (`type: "sword"`, `type: "bow"`, etc.) use the same fields as a
 | `base`         | String       | (smithing_transform) Base item ID to upgrade                                         |
 | `addition`     | String       | (smithing_transform) Upgrade material item ID                                        |
 | `result_count` | Int          | Number of items produced. Default: 1. Only applies to shaped/shapeless               |
+
+### Fluid Fields
+
+| Field                         | Type    | Default        | Description                                                      |
+|-------------------------------|---------|----------------|------------------------------------------------------------------|
+| `light_level`                 | Int     | 0              | Light emitted by the fluid block (0–15)                          |
+| `color`                       | String  | `"0xFFFFFFFF"` | Tint color in ARGB hex format, e.g. `"0xFF3F76E4"`               |
+| `tick_rate`                   | Int     | 5              | Ticks between each spread step. Lower = faster. Water=5, Lava=30 |
+| `spread_distance`             | Int     | 8              | Max horizontal spread in blocks. Water=8, Lava=4                 |
+| `burns_entities`              | Boolean | false          | Sets entities on fire like lava                                  |
+| `burn_duration`               | Int     | 5              | Seconds the entity burns. Only if `burns_entities` is true       |
+| `contact_effect_interval`     | Float   | 1.0            | Seconds between each effect application while in the fluid       |
+| `contact_effects`             | List    | —              | Effects applied while submerged                                  |
+| `contact_effects[].effect`    | String  | —              | Effect ID, e.g. `"minecraft:poison"`                             |
+| `contact_effects[].amplifier` | Int     | 0              | Effect level minus 1                                             |
+| `contact_effects[].duration`  | Int     | 3              | Duration in seconds per application                              |
 
 ---
 

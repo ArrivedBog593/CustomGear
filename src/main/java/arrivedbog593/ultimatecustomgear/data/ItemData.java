@@ -53,14 +53,13 @@ public class ItemData {
     public boolean fastFood = false;
 
     /**
-     * Time in ticks to fully consume this food item.
-     * 20 ticks = 1 second. Default: 32 (vanilla normal speed).
+     * Time in seconds to fully consume this food item.
+     * Default: -1 (uses vanilla default: 1.6s normal, 0.8s fast_food).
      * Set to 0 for instant consumption.
-     * fast_food overrides this to 16 if eat_duration is not set.
-     * Examples: 16 = fast, 32 = normal, 100 = 5 seconds, 200 = 10 seconds
+     * Examples: 1 = fast, 1.6 = normal vanilla, 5 = slow, 10 = very slow
      */
     @SerializedName("eat_duration")
-    public int eatDuration = -1; // -1 = use vanilla default
+    public float eatDuration = -1;
 
     /**
      * Effects applied when the item is eaten.

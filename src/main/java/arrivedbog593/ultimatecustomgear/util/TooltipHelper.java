@@ -123,7 +123,7 @@ public class TooltipHelper {
             tooltipComponents.add(Component.translatable("tooltip.ultimatecustomgear.instant")
                     .withStyle(ChatFormatting.GRAY));
         } else if (data.eatDuration > 0) {
-            float seconds = data.eatDuration / 20.0f;
+            float seconds = data.eatDuration;
             tooltipComponents.add(Component.translatable("tooltip.ultimatecustomgear.eat_duration",
                             String.format("%.1f", seconds))
                     .withStyle(ChatFormatting.GRAY));

@@ -82,10 +82,10 @@ public class FluidRegistry {
         DeferredHolder<Item, BucketItem>[] bucketRef = new DeferredHolder[1];
 
         sourceRef[0] = FLUIDS.register(data.id, () ->
-                new CustomFluid.Source(buildProps(typeHolder, sourceRef, flowingRef, blockRef, bucketRef)));
+                new CustomFluid.Source(buildProps(typeHolder, sourceRef, flowingRef, blockRef, bucketRef, data)));
 
         flowingRef[0] = FLUIDS.register(data.id + "_flowing", () ->
-                new CustomFluid.Flowing(buildProps(typeHolder, sourceRef, flowingRef, blockRef, bucketRef)));
+                new CustomFluid.Flowing(buildProps(typeHolder, sourceRef, flowingRef, blockRef, bucketRef, data)));
 
         blockRef[0] = FLUID_BLOCKS.register(data.id, () ->
                 CustomFluid.createBlock(sourceRef[0], data));
@@ -103,11 +103,19 @@ public class FluidRegistry {
             DeferredHolder<Fluid, CustomFluid.Source>[] sourceRef,
             DeferredHolder<Fluid, CustomFluid.Flowing>[] flowingRef,
             DeferredHolder<Block, LiquidBlock>[] blockRef,
-            DeferredHolder<Item, BucketItem>[] bucketRef) {
+            DeferredHolder<Item, BucketItem>[] bucketRef,
+            FluidData data) {
+
+        // levelDecreasePerBlock controls spread distance:
+        // water uses 1 (reaches 8 blocks), lava uses 4 (reaches 4 blocks)
+        // formula: levelDecreasePerBlock = 8 - spreadDistance (clamped 1-7)
+        int levelDecrease = Math.clamp(8 - data.spreadDistance, 1, 7);
 
         return new BaseFlowingFluid.Properties(type, sourceRef[0], flowingRef[0])
                 .block(blockRef[0])
-                .bucket(bucketRef[0]);
+                .bucket(bucketRef[0])
+                .tickRate(Math.max(1, data.tickRate))
+                .levelDecreasePerBlock(levelDecrease);
     }
 
     private static FluidType buildFluidType(FluidData data) {

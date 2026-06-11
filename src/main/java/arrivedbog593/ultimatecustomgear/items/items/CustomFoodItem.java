@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Consumable item built from an ItemData JSON with type "food".
+ * Consumable item built from an ItemData JSON with the type "food".
  * <p>
  * Supports:
  *   - nutrition and saturation
@@ -107,11 +107,9 @@ public class CustomFoodItem extends Item {
 
     @Override
     public int getUseDuration(@NotNull ItemStack stack, @NotNull net.minecraft.world.entity.LivingEntity entity) {
-        // If eat_duration is explicitly set, use it (0 = instant)
         if (itemData.eatDuration >= 0) {
-            return itemData.eatDuration;
+            return (int)(itemData.eatDuration * 20); // seconds to ticks
         }
-        // Otherwise fall back to vanilla behavior (fast_food = 16, normal = 32)
         return itemData.fastFood ? 16 : 32;
     }
 

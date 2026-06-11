@@ -2,6 +2,35 @@
 
 All important changelog notes for the UltimateCustomGear project.
 
+## [1.2.4] - 2026-06-11
+
+### ✨ New Features
+
+#### Fluid Contact Effects & Behavior
+- `burns_entities` — fluid sets entities on fire like lava
+- `burn_duration` — seconds the entity burns after touching the fluid. Default: 5
+- `contact_effects` — list of effects applied while submerged, each with `effect`, `amplifier` and `duration` (seconds)
+- `contact_effect_interval` — how often effects are applied in seconds. Default: 1.0
+- `tick_rate` — controls how fast the fluid spreads. Lower = faster. Water=5, Lava=30. Default: 5
+- `spread_distance` — max horizontal blocks the fluid reaches. Water=8, Lava=4. Default: 8
+
+### 🐛 Bug Fixes
+- Fixed `eat_duration` field — now declared in seconds instead of ticks, consistent with `burn_duration` and `contact_effect_interval`
+
+### 🔧 Technical Changes
+- `FluidData.java` — added `tickRate`, `spreadDistance`, `burnsEntities`, `burnDuration`, `contactEffects`, `contactEffectInterval`
+- `FluidRegistry.java` — `buildProps` now applies `tickRate` and `levelDecreasePerBlock` derived from `spreadDistance`
+- `FluidContactHandler.java` — new event handler using `PlayerTickEvent.Post` for fluid contact effects and fire
+- `CustomGearMod.java` — registers `FluidContactHandler`
+- `ItemData.java` — `eatDuration` changed from `int` (ticks) to `float` (seconds)
+- `CustomFoodItem.java` — `getUseDuration` now converts seconds to ticks
+
+### 📦 Dependencies
+
+No new dependencies added.
+
+---
+
 ## [1.2.3] - 2026-06-05
 
 ### ✨ New Features

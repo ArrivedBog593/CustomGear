@@ -3,6 +3,7 @@ package arrivedbog593.ultimatecustomgear;
 import arrivedbog593.ultimatecustomgear.client.ClientSetup;
 import arrivedbog593.ultimatecustomgear.commands.CustomGearCommandHandler;
 import arrivedbog593.ultimatecustomgear.events.ArrowDamageHandler;
+import arrivedbog593.ultimatecustomgear.events.FluidContactHandler;
 import arrivedbog593.ultimatecustomgear.events.HeldEffectHandler;
 import arrivedbog593.ultimatecustomgear.events.SetBonusHandler;
 import arrivedbog593.ultimatecustomgear.data.GearData;
@@ -77,6 +78,7 @@ public class CustomGearMod {
             modEventBus.addListener(ClientSetup::onClientSetup);
         }
         NeoForge.EVENT_BUS.register(CustomGearCommandHandler.class);
+        NeoForge.EVENT_BUS.register(FluidContactHandler.class);
         NeoForge.EVENT_BUS.register(SetBonusHandler.class);
         NeoForge.EVENT_BUS.register(HeldEffectHandler.class);
         NeoForge.EVENT_BUS.register(ArrowDamageHandler.class);

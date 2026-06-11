@@ -2,6 +2,35 @@
 
 Todas las notas de cambios importantes para el proyecto UltimateCustomGear.
 
+## [1.2.4] - 2026-06-11
+
+### ✨ Nuevas Características
+
+#### Efectos y Comportamiento del Fluido al Contacto
+- `burns_entities` — el fluido prende fuego a las entidades como la lava
+- `burn_duration` — segundos que dura el fuego al tocar el fluido. Por defecto: 5
+- `contact_effects` — efectos aplicados mientras se está sumergido, con `effect`, `amplifier` y `duration` (segundos)
+- `contact_effect_interval` — cada cuántos segundos se aplican los efectos. Por defecto: 1.0
+- `tick_rate` — controla qué tan rápido se expande el fluido. Menor = más rápido. Agua=5, Lava=30. Por defecto: 5
+- `spread_distance` — bloques horizontales máximos que alcanza el fluido. Agua=8, Lava=4. Por defecto: 8
+
+### 🐛 Corrección de Bugs
+- Corregido el campo `eat_duration` — ahora se declara en segundos en vez de ticks, consistente con `burn_duration` y `contact_effect_interval`
+
+### 🔧 Cambios Técnicos
+- `FluidData.java` — se agregaron `tickRate`, `spreadDistance`, `burnsEntities`, `burnDuration`, `contactEffects`, `contactEffectInterval`
+- `FluidRegistry.java` — `buildProps` ahora aplica `tickRate` y `levelDecreasePerBlock` derivado de `spreadDistance`
+- `FluidContactHandler.java` — nuevo manejador de eventos usando `PlayerTickEvent.Post` para efectos de contacto y fuego
+- `CustomGearMod.java` — registra `FluidContactHandler`
+- `ItemData.java` — `eatDuration` cambiado de `int` (ticks) a `float` (segundos)
+- `CustomFoodItem.java` — `getUseDuration` ahora convierte segundos a ticks
+
+### 📦 Dependencias
+
+No se agregaron nuevas dependencias.
+
+---
+
 ## [1.2.3] - 2026-06-05
 
 ### ✨ Nuevas Características
