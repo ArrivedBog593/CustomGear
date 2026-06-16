@@ -1,22 +1,23 @@
 plugins {
-    id 'java-library'
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
     id 'net.neoforged.moddev' version '2.0.141'
 }
 
-version = "${mc_version}-${mod_version}-${tag_lanzador}"
-group = "${author}.${modid}"
-base {
-    archivesName = "${mod_name}"
+tasks.named('wrapper', Wrapper).configure {
+    distributionType = Wrapper.DistributionType.BIN
 }
 
-// Java Version
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+version = "${minecraft_version}-${mod_version}-NeoForge"
+group = mod_group_id
 
 sourceSets.main.resources {
-    srcDir 'src/generated/resources'
+    srcDir('src/generated/resources')
+
+    exclude("**/*.bbmodel")
+    exclude("src/generated/**/.cache")
 }
 
 repositories {
@@ -54,104 +55,99 @@ repositories {
     }
 }
 
+base {
+    archivesName = mod_id
+}
+
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
 neoForge {
-    version = "${neoversion}"
+    version = project.neo_version
+
+    parchment {
+        mappingsVersion = project.parchment_mappings_version
+        minecraftVersion = project.parchment_minecraft_version
+    }
 
     runs {
         client {
             client()
-            systemProperty 'neoforge.enabledGameTestNamespaces', "${modid}"
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
 
         server {
             server()
             programArgument '--nogui'
-            systemProperty 'neoforge.enabledGameTestNamespaces', "${modid}"
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+
+        gameTestServer {
+            type = "gameTestServer"
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
 
         data {
             data()
-            programArguments.addAll '--mod', "${modid}", '--all',
-                '--output', file('src/generated/resources/').getAbsolutePath(),
-                '--existing', file('src/main/resources/').getAbsolutePath()
+            programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
         }
 
         configureEach {
             systemProperty 'forge.logging.markers', 'REGISTRIES'
             logLevel = org.slf4j.event.Level.DEBUG
-            jvmArgument '-Xmx1G'
         }
     }
 
     mods {
-        "${modid}" {
+        "${mod_id}" {
             sourceSet(sourceSets.main)
         }
     }
 }
 
-// localRuntime: dependencias opcionales en runtime que no se publican como dependencia del mod
 configurations {
     runtimeClasspath.extendsFrom localRuntime
 }
 
 dependencies {
-    implementation "net.neoforged:neoforge:${neoversion}"
-
-    // JEI - API en compile, implementacion completa en localRuntime (no se publica como dependencia)
-    compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"
-    localRuntime "mezz.jei:jei-${mc_version}-neoforge:${jei_version}"
+    compileOnly "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
+    compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
+    localRuntime "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
 }
 
-test {
-    enabled = false
-}
-
-jar {
-    manifest {
-        attributes([
-                "Specification-Title"     : archivesBaseName,
-                "Specification-Vendor"    : "${author}",
-                "Specification-Version"   : "1",
-                "Implementation-Title"    : archivesBaseName,
-                "Implementation-Version"  : "${version}",
-                "Implementation-Vendor"   : "${author}",
-                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
-        ])
-    }
-}
-
-tasks.withType(ProcessResources).configureEach {
+var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
     var replaceProperties = [
-            mc_version    : mc_version,
-            mod_version   : mod_version,
-            modid         : modid,
-            author        : author,
-            mod_named     : mod_named,
-            tag_lanzador  : tag_lanzador,
-            description   : description,
-            license       : license,
-            displayURL    : displayURL,
-            neoversion    : neoversion,
-            loader_version: loader_version,
-            jei_version   : jei_version,
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            author                 : author,
+            displayURL             : displayURL,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+            description            : project.description,
+            jei_version            : jei_version
     ]
     inputs.properties replaceProperties
-
-    filesMatching(['META-INF/neoforge.mods.toml']) {
-        expand replaceProperties
-    }
+    expand replaceProperties
+    from "src/main/templates"
+    into "build/generated/sources/modMetadata"
 }
+
+sourceSets.main.resources.srcDir generateModMetadata
+neoForge.ideSyncTask generateModMetadata
 
 publishing {
     publications {
-        mavenJava(MavenPublication) {
-            artifact jar
+        register('mavenJava', MavenPublication) {
+            from components.java
         }
     }
     repositories {
         maven {
-            url "file:///${project.projectDir}/mcmodsrepo"
+            url "file://${project.projectDir}/repo"
         }
     }
 }
