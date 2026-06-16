@@ -10,7 +10,7 @@ displayURL="${displayURL}"
 logoFile="logo.png"
 authors="${author}"
 description='''
-${description}
+${mod_description}
 '''
 
 [[dependencies.${mod_id}]]
