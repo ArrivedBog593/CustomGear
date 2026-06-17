@@ -51,5 +51,6 @@ public class CustomBowItem extends BowItem {
                                 @NotNull net.minecraft.world.item.TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltipComponents, flag);
         TooltipHelper.addHeldEffectsTooltip(tooltipComponents, getGearData());
+        TooltipHelper.addBowTooltip(tooltipComponents, getGearData());
     }
 }

@@ -66,6 +66,7 @@ public class CustomHoeItem extends HoeItem {
         GearData data = getGearData();
         TooltipHelper.addHeldEffectsTooltip(tooltipComponents, data);
         TooltipHelper.addTillRadiusTooltip(tooltipComponents, data);
+        TooltipHelper.addToolStatsTooltip(tooltipComponents, getGearData());
     }
 
     @Override

@@ -11,5 +11,11 @@
   "tooltip.customgear.till_area": "área de %sx%s",
   "tooltip.ultimatecustomgear.instant": "Consumo instantáneo",
   "tooltip.ultimatecustomgear.eat_duration": "Toma %s segundos para comer",
-  "tooltip.ultimatecustomgear.on_eat": "Al consumir:"
+  "tooltip.ultimatecustomgear.on_eat": "Al consumir:",
+  "tooltip.ultimatecustomgear.arrow_damage": "Daño de flecha: %s",
+  "tooltip.ultimatecustomgear.arrow_damage_bonus": "Bonus de daño de flecha: %s",
+  "tooltip.ultimatecustomgear.arrow_damage_multiplier": "Multiplicador de daño de flecha: %s",
+  "tooltip.ultimatecustomgear.charge_speed": "Velocidad de carga: %s",
+  "tooltip.ultimatecustomgear.harvest_level": "Nivel de cosecha: %s",
+  "tooltip.ultimatecustomgear.mining_speed": "Velocidad de minado: %s"
 }

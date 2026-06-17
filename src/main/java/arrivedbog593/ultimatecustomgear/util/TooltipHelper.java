@@ -146,4 +146,50 @@ public class TooltipHelper {
                     .withStyle(ChatFormatting.BLUE));
         }
     }
+
+    // Tooltip for bow/crossbow stats
+    public static void addBowTooltip(List<Component> tooltipComponents, GearData data) {
+        tooltipComponents.add(Component.literal(""));
+
+        if (data.arrowDamage > 0) {
+            tooltipComponents.add(Component.translatable("tooltip.ultimatecustomgear.arrow_damage",
+                            String.format("%.1f", data.arrowDamage))
+                    .withStyle(ChatFormatting.DARK_GREEN));
+        }
+        if (data.arrowDamageBonus > 0) {
+            tooltipComponents.add(Component.translatable("tooltip.ultimatecustomgear.arrow_damage_bonus",
+                            String.format("+%.1f", data.arrowDamageBonus))
+                    .withStyle(ChatFormatting.DARK_GREEN));
+        }
+        if (data.arrowDamageMultiplier > 0 && data.arrowDamageMultiplier != 1.0f) {
+            tooltipComponents.add(Component.translatable("tooltip.ultimatecustomgear.arrow_damage_multiplier",
+                            String.format("x%.2f", data.arrowDamageMultiplier))
+                    .withStyle(ChatFormatting.DARK_GREEN));
+        }
+        if (data.chargeSpeed > 0 && data.chargeSpeed != 1.0f) {
+            tooltipComponents.add(Component.translatable("tooltip.ultimatecustomgear.charge_speed",
+                            String.format("%.2f", data.chargeSpeed))
+                    .withStyle(ChatFormatting.DARK_GREEN));
+        }
+    }
+
+    // Tooltip for tool mining stats (harvest level and mining speed)
+    public static void addToolStatsTooltip(List<Component> tooltipComponents, GearData data) {
+        tooltipComponents.add(Component.literal(""));
+
+        String harvestName = switch (data.harvestLevel) {
+            case 0  -> "Wood";
+            case 1  -> "Stone";
+            case 2  -> "Iron";
+            case 3  -> "Diamond";
+            case 4  -> "Netherite";
+            default -> String.valueOf(data.harvestLevel);
+        };
+        tooltipComponents.add(Component.translatable("tooltip.ultimatecustomgear.harvest_level",
+                        harvestName)
+                .withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable("tooltip.ultimatecustomgear.mining_speed",
+                        String.format("%.1f", data.miningSpeed))
+                .withStyle(ChatFormatting.GRAY));
+    }
 }

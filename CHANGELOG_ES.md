@@ -2,6 +2,33 @@
 
 Todas las notas de cambios importantes para el proyecto UltimateCustomGear.
 
+## [1.2.5] - 2026-06-16
+
+### ✨ Nuevas Características
+
+#### Tooltips de Arco y Ballesta
+- Los arcos y ballestas ahora muestran `arrow_damage`, `arrow_damage_bonus`, `arrow_damage_multiplier` y `charge_speed` en el tooltip
+
+#### Tooltips de Herramientas
+- Los picos, hachas, palas y azadones ahora muestran `harvest_level` y `mining_speed` en el tooltip
+
+### 🐛 Corrección de Bugs
+- Corregido: los fluidos que no queman ahora apagan el fuego del jugador — fluidos con `burns_entities: false` ahora llaman `player.clearFire()` al contacto
+
+### 🔧 Cambios Técnicos
+- `TextureLoader.java` — dividido en `GearModelGenerator`, `BlockModelGenerator`, `LangGenerator` y `ModelConstants`
+- `TooltipHelper.java` — se agregaron `addBowTooltip()` y `addToolStatsTooltip()`
+- `CustomBowItem.java` / `CustomCrossbowItem.java` — llaman `addBowTooltip()` en `appendHoverText`
+- `CustomPickaxeItem.java` / `CustomAxeItem.java` / `CustomShovelItem.java` / `CustomHoeItem.java` — llaman `addToolStatsTooltip()` en `appendHoverText`
+- `FluidContactHandler.java` — se agregó `player.clearFire()` para fluidos que no queman
+- Limpieza del build: `build.gradle`, `gradle.properties` y `neoforge.mods.toml` actualizados a convenciones estándar de `moddev`
+
+### 📦 Dependencias
+
+No se agregaron nuevas dependencias.
+
+---
+
 ## [1.2.4] - 2026-06-11
 
 ### ✨ Nuevas Características

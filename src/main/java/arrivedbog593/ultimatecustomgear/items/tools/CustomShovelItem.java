@@ -58,5 +58,6 @@ public class CustomShovelItem extends ShovelItem {
                                 @NotNull net.minecraft.world.item.TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
         TooltipHelper.addHeldEffectsTooltip(tooltipComponents, getGearData());
+        TooltipHelper.addToolStatsTooltip(tooltipComponents, getGearData());
     }
 }

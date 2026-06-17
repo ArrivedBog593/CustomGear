@@ -2,6 +2,33 @@
 
 All important changelog notes for the UltimateCustomGear project.
 
+## [1.2.5] - 2026-06-16
+
+### ✨ New Features
+
+#### Bow & Crossbow Tooltips
+- Bows and crossbows now show `arrow_damage`, `arrow_damage_bonus`, `arrow_damage_multiplier` and `charge_speed` in the tooltip
+
+#### Tool Tooltips
+- Pickaxes, axes, shovels and hoes now show `harvest_level` and `mining_speed` in the tooltip
+
+### 🐛 Bug Fixes
+- Fixed non-burning fluids not extinguishing fire — fluids with `burns_entities: false` now call `player.clearFire()` on contact
+
+### 🔧 Technical Changes
+- `TextureLoader.java` — split into `GearModelGenerator`, `BlockModelGenerator`, `LangGenerator` and `ModelConstants`
+- `TooltipHelper.java` — added `addBowTooltip()` and `addToolStatsTooltip()`
+- `CustomBowItem.java` / `CustomCrossbowItem.java` — call `addBowTooltip()` in `appendHoverText`
+- `CustomPickaxeItem.java` / `CustomAxeItem.java` / `CustomShovelItem.java` / `CustomHoeItem.java` — call `addToolStatsTooltip()` in `appendHoverText`
+- `FluidContactHandler.java` — added `player.clearFire()` for non-burning fluids
+- Build system cleanup: `build.gradle`, `gradle.properties` and `neoforge.mods.toml` updated to standard `moddev` conventions
+
+### 📦 Dependencies
+
+No new dependencies added.
+
+---
+
 ## [1.2.4] - 2026-06-11
 
 ### ✨ New Features

@@ -65,9 +65,11 @@ public class FluidContactHandler {
                 int ticks = TICK_COUNTERS.getOrDefault(key, 0) + 1;
                 TICK_COUNTERS.put(key, ticks);
 
-                // Apply fire damage if configured
+                // Apply fire damage if configured, otherwise extinguish fire
                 if (data.burnsEntities) {
                     player.setRemainingFireTicks(data.burnDuration * 20);
+                } else {
+                    player.clearFire();
                 }
 
                 // Apply contact effects at the configured interval
