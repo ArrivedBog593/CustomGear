@@ -7,15 +7,24 @@
   "tooltip.customgear.piece_effects": "When worn:",
   "tooltip.customgear.held_effects": "When held:",
   "tooltip.customgear.set_bonus": "Set Bonus (%s pieces):",
+
   "tooltip.customgear.till_radius": "Till Radius",
   "tooltip.customgear.till_area": "%sx%s area",
+
   "tooltip.ultimatecustomgear.instant": "Instant consumption",
   "tooltip.ultimatecustomgear.eat_duration": "Takes %s seconds to eat",
   "tooltip.ultimatecustomgear.on_eat": "When eaten:",
+
   "tooltip.ultimatecustomgear.arrow_damage": "Arrow Damage: %s",
   "tooltip.ultimatecustomgear.arrow_damage_bonus": "Arrow Damage Bonus: %s",
   "tooltip.ultimatecustomgear.arrow_damage_multiplier": "Arrow Damage Multiplier: %s",
   "tooltip.ultimatecustomgear.charge_speed": "Charge Speed: %s",
-  "tooltip.ultimatecustomgear.harvest_level": "Harvest Level: %s",
-  "tooltip.ultimatecustomgear.mining_speed": "Mining Speed: %s"
+
+  "tooltip.ultimatecustomgear.mining_speed": "Mining Speed: %s",
+  "tooltip.ultimatecustomgear.harvest_level": "Harvest Level",
+  "tooltip.ultimatecustomgear.harvest_wood": "Wood",
+  "tooltip.ultimatecustomgear.harvest_stone": "Stone",
+  "tooltip.ultimatecustomgear.harvest_iron": "Iron",
+  "tooltip.ultimatecustomgear.harvest_diamond": "Diamond",
+  "tooltip.ultimatecustomgear.harvest_netherite": "Netherite"
 }

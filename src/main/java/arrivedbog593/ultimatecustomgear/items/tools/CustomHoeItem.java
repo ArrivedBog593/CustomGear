@@ -64,9 +64,9 @@ public class CustomHoeItem extends HoeItem {
                                 @NotNull net.minecraft.world.item.TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
         GearData data = getGearData();
+        TooltipHelper.addToolStatsTooltip(tooltipComponents, getGearData());
         TooltipHelper.addHeldEffectsTooltip(tooltipComponents, data);
         TooltipHelper.addTillRadiusTooltip(tooltipComponents, data);
-        TooltipHelper.addToolStatsTooltip(tooltipComponents, getGearData());
     }
 
     @Override

@@ -7,6 +7,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.core.Holder;
 import net.minecraft.ChatFormatting;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
@@ -177,19 +178,29 @@ public class TooltipHelper {
     public static void addToolStatsTooltip(List<Component> tooltipComponents, GearData data) {
         tooltipComponents.add(Component.literal(""));
 
-        String harvestName = switch (data.harvestLevel) {
-            case 0  -> "Wood";
-            case 1  -> "Stone";
-            case 2  -> "Iron";
-            case 3  -> "Diamond";
-            case 4  -> "Netherite";
-            default -> String.valueOf(data.harvestLevel);
-        };
-        tooltipComponents.add(Component.translatable("tooltip.ultimatecustomgear.harvest_level",
-                        harvestName)
+        Component harvestValue = getHarvestValue(data);
+
+        tooltipComponents.add(Component.translatable("tooltip.ultimatecustomgear.harvest_level")
+                .append(Component.literal(": "))
+                .append(harvestValue)
                 .withStyle(ChatFormatting.GRAY));
         tooltipComponents.add(Component.translatable("tooltip.ultimatecustomgear.mining_speed",
                         String.format("%.1f", data.miningSpeed))
                 .withStyle(ChatFormatting.GRAY));
+    }
+
+    private static @NotNull Component getHarvestValue(GearData data) {
+        String harvestKey = switch (data.harvestLevel) {
+            case 0  -> "tooltip.ultimatecustomgear.harvest_wood";
+            case 1  -> "tooltip.ultimatecustomgear.harvest_stone";
+            case 2  -> "tooltip.ultimatecustomgear.harvest_iron";
+            case 3  -> "tooltip.ultimatecustomgear.harvest_diamond";
+            case 4  -> "tooltip.ultimatecustomgear.harvest_netherite";
+            default -> null;
+        };
+
+        return harvestKey != null
+                ? Component.translatable(harvestKey)
+                : Component.literal(String.valueOf(data.harvestLevel));
     }
 }
