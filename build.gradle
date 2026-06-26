@@ -114,8 +114,8 @@ dependencies {
     compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
     localRuntime "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
 }
-
-tasks.withType(ProcessResources).configureEach {
+    
+var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
     var replaceProperties = [
             minecraft_version      : minecraft_version,
             minecraft_version_range: minecraft_version_range,
@@ -130,9 +130,9 @@ tasks.withType(ProcessResources).configureEach {
             mod_description        : mod_description,
             jei_version            : jei_version
     ]
-    filesMatching(['META-INF/neoforge.mods.toml']) {
-        expand replaceProperties
-       }
+inputs.properties replaceProperties
+    expand replaceProperties
+    from "META-INF/neoforge.mods.toml"
 }
 
 sourceSets.main.resources.srcDir generateModMetadata
