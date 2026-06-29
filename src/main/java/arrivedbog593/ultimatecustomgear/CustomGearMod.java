@@ -2,11 +2,8 @@ package arrivedbog593.ultimatecustomgear;
 
 import arrivedbog593.ultimatecustomgear.client.ClientSetup;
 import arrivedbog593.ultimatecustomgear.commands.CustomGearCommandHandler;
-import arrivedbog593.ultimatecustomgear.events.ArrowDamageHandler;
-import arrivedbog593.ultimatecustomgear.events.FluidContactHandler;
-import arrivedbog593.ultimatecustomgear.events.HeldEffectHandler;
-import arrivedbog593.ultimatecustomgear.events.SetBonusHandler;
 import arrivedbog593.ultimatecustomgear.data.GearData;
+import arrivedbog593.ultimatecustomgear.events.*;
 import arrivedbog593.ultimatecustomgear.loader.*;
 import arrivedbog593.ultimatecustomgear.resources.DynamicResourcePack;
 import arrivedbog593.ultimatecustomgear.resources.TextureLoader;

@@ -6,9 +6,9 @@ import arrivedbog593.ultimatecustomgear.items.weapons.CustomSwordItem;
 import arrivedbog593.ultimatecustomgear.util.GearLookup;
 import arrivedbog593.ultimatecustomgear.util.TooltipHelper;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.PickaxeItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.PickaxeItem;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;

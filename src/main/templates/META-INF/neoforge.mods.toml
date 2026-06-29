@@ -7,7 +7,7 @@ modId="${mod_id}"
 version="${mod_version}"
 displayName="${mod_name}"
 displayURL="${displayURL}"
-logoFile="logo.png"
+logoFile= "../../resources/logo.png"
 authors="${author}"
 description='''
 ${mod_description}

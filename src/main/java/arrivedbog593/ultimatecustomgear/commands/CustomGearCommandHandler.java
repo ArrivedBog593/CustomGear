@@ -2,12 +2,7 @@ package arrivedbog593.ultimatecustomgear.commands;
 
 import arrivedbog593.ultimatecustomgear.CustomGearMod;
 import arrivedbog593.ultimatecustomgear.data.GearData;
-import arrivedbog593.ultimatecustomgear.loader.BlockRegistry;
-import arrivedbog593.ultimatecustomgear.loader.FluidRegistry;
-import arrivedbog593.ultimatecustomgear.loader.GearParser;
-import arrivedbog593.ultimatecustomgear.loader.GearRegistry;
-import arrivedbog593.ultimatecustomgear.loader.ItemRegistry;
-import arrivedbog593.ultimatecustomgear.loader.UniversalParser;
+import arrivedbog593.ultimatecustomgear.loader.*;
 import arrivedbog593.ultimatecustomgear.resources.TextureLoader;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.commands.CommandSourceStack;

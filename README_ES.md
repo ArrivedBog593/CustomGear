@@ -1,5 +1,8 @@
 # UltimateCustomGear
 
+[![CurseForge](https://cf.way2muchnoise.eu/versions/ultimate-custom-gear.svg)](https://www.curseforge.com/minecraft/mc-mods/ultimate-custom-gear)
+[![CurseForge](https://cf.way2muchnoise.eu/ultimate-custom-gear.svg)](https://www.curseforge.com/minecraft/mc-mods/ultimate-custom-gear)
+
 **UltimateCustomGear** es un mod de NeoForge para Minecraft 1.21.1 basado en datos, que permite a administradores de servidores, creadores de modpacks y jugadores agregar sets de armadura, armas, herramientas, comida, ítems, bloques y fluidos completamente personalizados — todo mediante simples archivos JSON. No se requiere programar.
 
 ---
@@ -13,6 +16,8 @@
 - Agrega **ballestas** personalizadas con daño de flecha y velocidad de carga configurables, con animación de carga completa
 - Agrega **escudos** personalizados con durabilidad configurable y renderizado 3D completo en mano e inventario
 - Agrega **ítems comestibles** con nutrición, saturación, tiempo de consumo, siempre comestible y efectos al consumir
+- Agrega **bloques** con texturas por cara — textura diferente en cada una de las 6 caras
+- Agrega **bloques direccionales** que rotan para apuntar al jugador al colocarse, como un horno
 - Efectos por pieza de armadura al portarla individualmente (ej. el casco da Visión Nocturna)
 - Efectos de bonus de set al tener el número requerido de piezas equipadas
 - Efectos al sostener por herramienta/arma (ej. el pico da Prisa, la espada da Fuerza)
@@ -44,23 +49,23 @@ Todos los archivos JSON van dentro de `.minecraft/ultimatecustomgear/`. Cada arc
 
 ### Tipos soportados
 
-| Tipo         | Descripción                                                  |
-|--------------|--------------------------------------------------------------|
-| `armor_set`  | Set de armadura completo (casco, pechera, pantalones, botas) |
-| `tool_set`   | Set de herramientas completo (pico, hacha, pala, azadón)     |
-| `weapon_set` | Set de armas completo (espada, arco, ballesta, escudo)       |
-| `sword`      | Espada individual                                            |
-| `bow`        | Arco individual                                              |
-| `crossbow`   | Ballesta individual                                          |
-| `shield`     | Escudo individual                                            |
-| `pickaxe`    | Pico individual                                              |
-| `axe`        | Hacha individual                                             |
-| `shovel`     | Pala individual                                              |
-| `hoe`        | Azadón individual                                            |
-| `food`       | Ítem comestible                                              |
-| `item`       | Ítem simple no consumible                                    |
-| `block`      | Bloque simple                                                |
-| `fluid`      | Fluido con cubeta                                            |
+| Tipo         | Descripción                                                      |
+|--------------|------------------------------------------------------------------|
+| `armor_set`  | Set de armadura completo (casco, pechera, pantalones, botas)     |
+| `tool_set`   | Set de herramientas completo (pico, hacha, pala, azadón)         |
+| `weapon_set` | Set de armas completo (espada, arco, ballesta, escudo)           |
+| `sword`      | Espada individual                                                |
+| `bow`        | Arco individual                                                  |
+| `crossbow`   | Ballesta individual                                              |
+| `shield`     | Escudo individual                                                |
+| `pickaxe`    | Pico individual                                                  |
+| `axe`        | Hacha individual                                                 |
+| `shovel`     | Pala individual                                                  |
+| `hoe`        | Azadón individual                                                |
+| `food`       | Ítem comestible                                                  |
+| `item`       | Ítem simple no consumible                                        |
+| `block`      | Bloque con texturas por cara opcionales y colocación direccional |
+| `fluid`      | Fluido con cubeta                                                |
 
 ---
 
@@ -378,7 +383,7 @@ También se soporta comida instantánea (`eat_duration: 0`) y comida lenta (`eat
 
 ```json
 {
-  "id": "poison_lake",
+  "id": "lago_venenoso",
   "type": "fluid",
   "names": {
     "en_us": "Poison Lake",
@@ -408,7 +413,7 @@ También se soporta comida instantánea (`eat_duration: 0`) y comida lenta (`eat
 
 ```json
 {
-  "id": "magma_fluid",
+  "id": "fluido_de_magma",
   "type": "fluid",
   "names": {
     "en_us": "Magma Flow",
@@ -434,6 +439,77 @@ También se soporta comida instantánea (`eat_duration: 0`) y comida lenta (`eat
   }
 }
 ```
+
+### Bloque — Ejemplo Simple
+
+```json
+{
+  "id": "mi_mineral",
+  "type": "block",
+  "names": {
+    "en_us": "My Ore",
+    "es_mx": "Mi Mineral"
+  },
+  "light_level": 0,
+  "texture": {
+    "mode": "reference",
+    "refs": {
+      "block": "minecraft:block/diamond_ore"
+    }
+  }
+}
+```
+
+### Bloque con Texturas por Cara — Ejemplo
+
+```json
+{
+  "id": "multi_mineral",
+  "type": "block",
+  "names": {
+    "en_us": "Multi Ore",
+    "es_mx": "Mineral Multi"
+  },
+  "texture": {
+    "mode": "reference",
+    "faces": {
+      "top":    "minecraft:block/coal_ore",
+      "bottom": "minecraft:block/iron_ore",
+      "north":  "minecraft:block/gold_ore",
+      "south":  "minecraft:block/redstone_ore",
+      "east":   "minecraft:block/emerald_ore",
+      "west":   "minecraft:block/diamond_ore"
+    }
+  }
+}
+```
+
+Usa `"side"` como atajo para aplicar la misma textura a las 4 caras horizontales.
+
+### Bloque Direccional — Ejemplo
+
+```json
+{
+  "id": "bloque_direccional",
+  "type": "block",
+  "directional": true,
+  "names": {
+    "en_us": "My Machine",
+    "es_mx": "Mi Máquina"
+  },
+  "texture": {
+    "mode": "reference",
+    "faces": {
+      "top":    "minecraft:block/stone",
+      "bottom": "minecraft:block/stone",
+      "side":   "minecraft:block/stone",
+      "north":  "minecraft:block/furnace_front_on"
+    }
+  }
+}
+```
+
+La cara `"north"` es la cara frontal — apunta hacia el jugador al colocar el bloque.
 
 ---
 
@@ -628,11 +704,14 @@ Los ítems individuales (`type: "sword"`, `type: "bow"`, etc.) usan los mismos c
 
 ### Campos de textura
 
-| Campo          | Tipo   | Descripción                                                                                                                                |
-|----------------|--------|--------------------------------------------------------------------------------------------------------------------------------------------|
-| `texture.mode` | String | `default`, `custom`, o `reference`                                                                                                         |
-| `texture.refs` | Map    | Para `custom`: ruta relativa a un PNG dentro de `ultimatecustomgear/`. Para `reference`: resource location completo del modelo de otro mod |
-| `armor_layers` | Map    | (Solo sets de armadura) `layer_1` y `layer_2` para la textura de armadura en el mundo                                                      |
+| Campo                | Tipo   | Descripción                                                                                                                                |
+|----------------------|--------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| `texture.mode`       | String | `default`, `custom`, o `reference`                                                                                                         |
+| `texture.refs`       | Map    | Para `custom`: ruta relativa a un PNG dentro de `ultimatecustomgear/`. Para `reference`: resource location completo del modelo de otro mod |
+| `armor_layers`       | Map    | (Solo sets de armadura) `layer_1` y `layer_2` para la textura de armadura en el mundo                                                      |
+| `texture.refs.block` | String | (Bloques simples) Resource location aplicada a las 6 caras mediante `cube_all`                                                             |
+| `texture.faces`      | Objeto | (Solo bloques) Textura por cara. Claves: `top`, `bottom`, `north`, `south`, `east`, `west`, `side`                                         |
+| `texture.faces.side` | String | Atajo: aplica a `north`, `south`, `east`, `west` si no están definidas individualmente                                                     |
 
 ### Campos de receta
 
@@ -667,6 +746,13 @@ Los ítems individuales (`type: "sword"`, `type: "bow"`, etc.) usan los mismos c
 | `contact_effects[].effect`    | String  | —              | ID del efecto, ej. `"minecraft:poison"`                                 |
 | `contact_effects[].amplifier` | Int     | 0              | Nivel del efecto menos 1                                                |
 | `contact_effects[].duration`  | Int     | 3              | Duración en segundos por aplicación                                     |
+
+### Campos de Bloques
+
+| Campo         | Tipo    | Por defecto | Descripción                                                                                               |
+|---------------|---------|-------------|-----------------------------------------------------------------------------------------------------------|
+| `light_level` | Int     | 0           | Luz emitida por el bloque (0–15)                                                                          |
+| `directional` | Boolean | false       | Si es true, el bloque rota para apuntar al jugador al colocarse. Requiere `texture.faces.north` definido  |
 
 ---
 

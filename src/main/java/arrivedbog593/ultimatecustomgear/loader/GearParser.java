@@ -1,6 +1,8 @@
 package arrivedbog593.ultimatecustomgear.loader;
 
-import arrivedbog593.ultimatecustomgear.data.*;
+import arrivedbog593.ultimatecustomgear.data.GearData;
+import arrivedbog593.ultimatecustomgear.data.RecipeData;
+import arrivedbog593.ultimatecustomgear.data.RecipeListDeserializer;
 import arrivedbog593.ultimatecustomgear.util.ParserUtils;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
@@ -14,11 +16,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class GearParser {

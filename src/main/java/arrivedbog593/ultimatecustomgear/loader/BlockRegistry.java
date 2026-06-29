@@ -1,7 +1,7 @@
 package arrivedbog593.ultimatecustomgear.loader;
 
 import arrivedbog593.ultimatecustomgear.data.BlockData;
-import arrivedbog593.ultimatecustomgear.items.blocks.CustomBlock;
+import arrivedbog593.ultimatecustomgear.items.blocks.*;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BlockItem;
@@ -54,17 +54,21 @@ public class BlockRegistry {
     }
 
     private static void registerBlock(BlockData data) {
-        // Register the Block and keep a reference via DeferredHolder
-        DeferredHolder<Block, CustomBlock> blockHolder =
-                BLOCKS.register(data.id, () -> new CustomBlock(data));
-
-        // Register the BlockItem using the DeferredHolder — avoids null lookup
-        BLOCK_ITEMS.register(data.id, () ->
-                new BlockItem(blockHolder.get(), new Item.Properties()));
-
+        if (data.directional) {
+            DeferredHolder<Block, CustomDirectionalBlock> blockHolder =
+                    BLOCKS.register(data.id, () -> new CustomDirectionalBlock(data));
+            BLOCK_ITEMS.register(data.id, () ->
+                    new BlockItem(blockHolder.get(), new Item.Properties()));
+            LOGGER.info("[CustomGear] Directional block registered: {}", data.id);
+        } else {
+            DeferredHolder<Block, CustomBlock> blockHolder =
+                    BLOCKS.register(data.id, () -> new CustomBlock(data));
+            BLOCK_ITEMS.register(data.id, () ->
+                    new BlockItem(blockHolder.get(), new Item.Properties()));
+            LOGGER.info("[CustomGear] Block registered: {}", data.id);
+        }
         ResourceLocation loc = ResourceLocation.fromNamespaceAndPath("customgear", data.id);
         BLOCK_MAP.put(loc, data);
-        LOGGER.info("[CustomGear] Block registered: {}", data.id);
     }
 
     /**

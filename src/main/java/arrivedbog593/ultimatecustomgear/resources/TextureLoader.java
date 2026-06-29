@@ -12,7 +12,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-import static arrivedbog593.ultimatecustomgear.resources.ModelConstants.*;
+import static arrivedbog593.ultimatecustomgear.resources.ModelConstants.DEFAULT_ITEM;
+import static arrivedbog593.ultimatecustomgear.resources.ModelConstants.itemTextureLoc;
 
 /**
  * Public coordinator for all resource generation.

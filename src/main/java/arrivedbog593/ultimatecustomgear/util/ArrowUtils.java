@@ -11,9 +11,19 @@ public class ArrowUtils {
      * Then apply the multiplier and the bonus.
      */
     public static void applyArrowDamage(AbstractArrow arrow, GearData data) {
-        float base = data.arrowDamage > 0 ? data.arrowDamage : (float) arrow.getBaseDamage();
+        double vanillaBase = arrow.getBaseDamage();
+
+        double finalDamage;
+        if (data.arrowDamage > 0) {
+            double scale = data.arrowDamage / 9.0;
+            finalDamage = vanillaBase * scale;
+        } else {
+            finalDamage = vanillaBase;
+        }
+
         float multiplier = data.arrowDamageMultiplier > 0 ? data.arrowDamageMultiplier : 1.0f;
         float bonus = data.arrowDamageBonus;
-        arrow.setBaseDamage((base * multiplier) + bonus);
+
+        arrow.setBaseDamage((finalDamage * multiplier) + bonus);
     }
 }

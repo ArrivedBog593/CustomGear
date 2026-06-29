@@ -21,8 +21,8 @@ public class CustomBlock extends Block {
         super(buildProperties(data));
     }
 
-    private static BlockBehaviour.Properties buildProperties(BlockData data) {
-        BlockBehaviour.Properties props = BlockBehaviour.Properties.of()
+    public static Properties buildProperties(BlockData data) {
+        Properties props = BlockBehaviour.Properties.of()
                 .mapColor(MapColor.STONE)
                 .strength(3.0f, 3.0f)
                 .sound(SoundType.STONE)

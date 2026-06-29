@@ -2,6 +2,30 @@
 
 All important changelog notes for the UltimateCustomGear project.
 
+## [1.2.6] - 2026-06-28
+
+### ✨ New Features
+
+#### Blocks — Per-Face Textures
+- Blocks now support different textures per face via `texture.faces` in the JSON
+- Keys: `top`, `bottom`, `north`, `south`, `east`, `west`
+- Shortcut `side` applies to all 4 horizontal faces if not individually defined
+- Works in both `reference` mode (resource locations) and `custom` mode (PNG files)
+
+#### Blocks — Directional Placement
+- New `directional: true` field makes a block rotate to face the player when placed, like a furnace
+- The `texture.faces.north` face is treated as the front face
+- Only horizontal directions supported (north, south, east, west)
+
+### 🔧 Technical Changes
+- `BlockData.java` — replaced `GearData.TextureData texture` with new `BlockTextureData` class containing `mode`, `refs` and `faces`; `BlockFaces` moved inside `BlockTextureData`
+- `CustomDirectionalBlock.java` — new class extending `HorizontalDirectionalBlock`
+- `BlockRegistry.java` — detects `directional: true` and creates `CustomDirectionalBlock`
+- `BlockModelGenerator.java` — added `loadReferenceFacesBlock`, `loadCustomFacesBlock`, `generateCubeModel`, `generateDirectionalBlockState`
+
+### 📦 Dependencies
+No new dependencies added.
+
 ## [1.2.5] - 2026-06-16
 
 ### ✨ New Features

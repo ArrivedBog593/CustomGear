@@ -1,5 +1,6 @@
 package arrivedbog593.ultimatecustomgear.client;
 
+import arrivedbog593.ultimatecustomgear.items.weapons.CustomShieldItem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
@@ -19,7 +20,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BannerPatternLayers;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import arrivedbog593.ultimatecustomgear.items.weapons.CustomShieldItem;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;

@@ -1,12 +1,12 @@
 package arrivedbog593.ultimatecustomgear.util;
 
 import arrivedbog593.ultimatecustomgear.data.GearData;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
-import net.minecraft.core.Holder;
-import net.minecraft.ChatFormatting;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;

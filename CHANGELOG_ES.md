@@ -2,6 +2,30 @@
 
 Todas las notas de cambios importantes para el proyecto UltimateCustomGear.
 
+## [1.2.6] - 2026-06-28
+
+### ✨ Nuevas Características
+
+#### Bloques — Texturas por Cara
+- Los bloques ahora soportan texturas diferentes por cara mediante `texture.faces` en el JSON
+- Claves: `top`, `bottom`, `north`, `south`, `east`, `west`
+- El atajo `side` aplica a las 4 caras horizontales si no están definidas individualmente
+- Funciona en modo `reference` (resource locations) y modo `custom` (archivos PNG)
+
+#### Bloques — Colocación Direccional
+- El nuevo campo `directional: true` hace que el bloque rote para apuntar al jugador al colocarse, como un horno
+- La cara `texture.faces.north` se trata como la cara frontal
+- Solo se soportan las 4 direcciones horizontales (norte, sur, este, oeste)
+
+### 🔧 Cambios Técnicos
+- `BlockData.java` — reemplazado `GearData.TextureData texture` por la nueva clase `BlockTextureData` con `mode`, `refs` y `faces`; `BlockFaces` movido dentro de `BlockTextureData`
+- `CustomDirectionalBlock.java` — nueva clase que extiende `HorizontalDirectionalBlock`
+- `BlockRegistry.java` — detecta `directional: true` y crea `CustomDirectionalBlock`
+- `BlockModelGenerator.java` — añadidos `loadReferenceFacesBlock`, `loadCustomFacesBlock`, `generateCubeModel`, `generateDirectionalBlockState`
+
+### 📦 Dependencias
+No se agregaron nuevas dependencias.
+
 ## [1.2.5] - 2026-06-16
 
 ### ✨ Nuevas Características

@@ -14,10 +14,28 @@ public class BlockData {
     /** Light emission (0-15) */
     public int lightLevel = 0;
 
-    /** Texture path, e.g. "customgear:block/ruby_ore" */
-    public GearData.TextureData texture;
+    /**
+     * If true, the block rotates to face the player when placed,
+     * like a furnace or dispenser. Requires faces.north (or front) to be defined
+     * as the face that will point toward the player.
+     * Only the 4 horizontal directions are supported (north, south, east, west).
+     */
+    public boolean directional = false;
 
-    public BlockFaces faces;
+    /** Texture path, e.g. "customgear:block/ruby_ore" */
+    public BlockTextureData texture;
+
+    /**
+     * Per-face texture configuration.
+     * In custom mode: each value is a path to a PNG file inside the customgear folder.
+     * In reference mode: each value is a resource location (e.g. "minecraft:block/stone").
+     * <p>
+     * Shortcuts:
+     *   - "side" applies to north, south, east, west if they are not individually defined
+     *   - "all"  applies to all 6 faces if none are individually defined (same as cube_all)
+     * <p>
+     * For directional blocks, "north" is treated as the front face.
+     */
 
     public static class BlockFaces {
         public String top;
@@ -26,7 +44,7 @@ public class BlockData {
         public String south;
         public String east;
         public String west;
-        // Optional "side" field for blocks that use the same texture on all faces
+        /** Shortcut: applies to north/south/east/west if not individually defined */
         public String side;
     }
 
@@ -37,4 +55,10 @@ public class BlockData {
     public Map<String, String> names;
 
     public List<RecipeData> recipe;
+
+    public static class BlockTextureData {
+        public String mode;
+        public Map<String, String> refs;
+        public BlockFaces faces;
+    }
 }

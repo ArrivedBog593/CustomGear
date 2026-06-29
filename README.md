@@ -1,5 +1,8 @@
 # UltimateCustomGear
 
+[![CurseForge](https://cf.way2muchnoise.eu/versions/ultimate-custom-gear.svg)](https://www.curseforge.com/minecraft/mc-mods/ultimate-custom-gear)
+[![CurseForge](https://cf.way2muchnoise.eu/ultimate-custom-gear.svg)](https://www.curseforge.com/minecraft/mc-mods/ultimate-custom-gear)
+
 **UltimateCustomGear** is a data-driven NeoForge mod for Minecraft 1.21.1 that allows server owners, modpack creators, and players to add fully custom armor sets, weapons, tools, food items, items, blocks, and fluids — all through simple JSON files. No coding required.
 
 ---
@@ -13,6 +16,8 @@
 - Add custom **crossbows** with configurable arrow damage and charge speed, with full loading animation
 - Add custom **shields** with configurable durability and full 3D rendering in hand and inventory
 - Add custom **food items** with nutrition, saturation, eating duration, always-edible flag, and on-eat effects
+- Add custom **blocks** with per-face textures — different texture on each of the 6 faces
+- Add custom **directional blocks** that rotate to face the player when placed, like a furnace
 - Per-piece armor effects (e.g., helmet gives Night Vision when worn individually)
 - Set bonus effects when wearing the required number of armor pieces
 - Held effects per tool/weapon (e.g., pickaxe gives Haste, sword gives Strength)
@@ -44,23 +49,23 @@ All JSON files go inside `.minecraft/ultimatecustomgear/`. Each file defines one
 
 ### Supported types
 
-| Type         | Description                                                |
-|--------------|------------------------------------------------------------|
-| `armor_set`  | Full armor set (helmet, chestplate, leggings, boots)       |
-| `tool_set`   | Full tool set (pickaxe, axe, shovel, hoe)                  |
-| `weapon_set` | Full weapon set (sword, bow, crossbow, shield)             |
-| `sword`      | Individual sword                                           |
-| `bow`        | Individual bow                                             |
-| `crossbow`   | Individual crossbow                                        |
-| `shield`     | Individual shield                                          |
-| `pickaxe`    | Individual pickaxe                                         |
-| `axe`        | Individual axe                                             |
-| `shovel`     | Individual shovel                                          |
-| `hoe`        | Individual hoe                                             |
-| `food`       | Consumable food item                                       |
-| `item`       | Simple non-consumable item                                 |
-| `block`      | Simple block                                               |
-| `fluid`      | Fluid with bucket, configurable spread and contact effects |
+| Type         | Description                                                     |
+|--------------|-----------------------------------------------------------------|
+| `armor_set`  | Full armor set (helmet, chestplate, leggings, boots)            |
+| `tool_set`   | Full tool set (pickaxe, axe, shovel, hoe)                       |
+| `weapon_set` | Full weapon set (sword, bow, crossbow, shield)                  |
+| `sword`      | Individual sword                                                |
+| `bow`        | Individual bow                                                  |
+| `crossbow`   | Individual crossbow                                             |
+| `shield`     | Individual shield                                               |
+| `pickaxe`    | Individual pickaxe                                              |
+| `axe`        | Individual axe                                                  |
+| `shovel`     | Individual shovel                                               |
+| `hoe`        | Individual hoe                                                  |
+| `food`       | Consumable food item                                            |
+| `item`       | Simple non-consumable item                                      |
+| `block`      | Block with optional per-face textures and directional placement |
+| `fluid`      | Fluid with bucket, configurable spread and contact effects      |
 
 ---
 
@@ -289,7 +294,6 @@ Instant food (`eat_duration: 0`) and slow food (`eat_duration: 10` = 10 seconds)
   },
   "recipes": {
     "sword": { "type": "smithing_transform", "template": "minecraft:netherite_upgrade_smithing_template", "base": "mymod:my_diamond_sword", "addition": "minecraft:netherite_ingot" },
-    "bow":   { "type": "smithing_transform", "template": "minecraft:netherite_upgrade_smithing_template", "base": "mymod:my_bow",          "addition": "minecraft:netherite_ingot" }
   }
 }
 ```
@@ -435,6 +439,77 @@ Instant food (`eat_duration: 0`) and slow food (`eat_duration: 10` = 10 seconds)
   }
 }
 ```
+
+### Block — Simple Example
+
+```json
+{
+  "id": "my_ore",
+  "type": "block",
+  "names": {
+    "en_us": "My Ore",
+    "es_mx": "Mi Mineral"
+  },
+  "light_level": 0,
+  "texture": {
+    "mode": "reference",
+    "refs": {
+      "block": "minecraft:block/diamond_ore"
+    }
+  }
+}
+```
+
+### Block with Per-Face Textures — Example
+
+```json
+{
+  "id": "multi_ore",
+  "type": "block",
+  "names": {
+    "en_us": "Multi Ore",
+    "es_mx": "Mineral Multi"
+  },
+  "texture": {
+    "mode": "reference",
+    "faces": {
+      "top":    "minecraft:block/coal_ore",
+      "bottom": "minecraft:block/iron_ore",
+      "north":  "minecraft:block/gold_ore",
+      "south":  "minecraft:block/redstone_ore",
+      "east":   "minecraft:block/emerald_ore",
+      "west":   "minecraft:block/diamond_ore"
+    }
+  }
+}
+```
+
+Use `"side"` as a shortcut to apply the same texture to all 4 horizontal faces.
+
+### Directional Block — Example
+
+```json
+{
+  "id": "directional_block",
+  "type": "block",
+  "directional": true,
+  "names": {
+    "en_us": "My Machine",
+    "es_mx": "Mi Máquina"
+  },
+  "texture": {
+    "mode": "reference",
+    "faces": {
+      "top":    "minecraft:block/stone",
+      "bottom": "minecraft:block/stone",
+      "side":   "minecraft:block/stone",
+      "north":  "minecraft:block/furnace_front_on"
+    }
+  }
+}
+```
+
+The `"north"` face is the front face — it points toward the player when the block is placed.
 
 ---
 
@@ -629,11 +704,14 @@ Individual items (`type: "sword"`, `type: "bow"`, etc.) use the same fields as a
 
 ### Texture Fields
 
-| Field          | Type   | Description                                                                                                |
-|----------------|--------|------------------------------------------------------------------------------------------------------------|
-| `texture.mode` | String | `default`, `custom`, or `reference`                                                                        |
-| `texture.refs` | Map    | For `custom`: relative path to a PNG inside `ultimatecustomgear/`. For `reference`: full resource location |
-| `armor_layers` | Map    | (Armor sets only) `layer_1` and `layer_2` paths for the in-world armor texture                             |
+| Field                | Type   | Description                                                                                                   |
+|----------------------|--------|---------------------------------------------------------------------------------------------------------------|
+| `texture.mode`       | String | `default`, `custom`, or `reference`                                                                           |
+| `texture.refs`       | Map    | For `custom`: relative path to a PNG inside `ultimatecustomgear/`. For `reference`: full resource location    |
+| `armor_layers`       | Map    | (Armor sets only) `layer_1` and `layer_2` paths for the in-world armor texture                                |
+| `texture.refs.block` | String | (Simple blocks) Resource location used for all 6 faces via `cube_all`                                         |
+| `texture.faces`      | Object | (Blocks only) Per-face texture configuration. Keys: `top`, `bottom`, `north`, `south`, `east`, `west`, `side` |
+| `texture.faces.side` | String | Shortcut: applies to `north`, `south`, `east`, `west` if not individually defined                             |
 
 ### Recipe Fields
 
@@ -668,6 +746,13 @@ Individual items (`type: "sword"`, `type: "bow"`, etc.) use the same fields as a
 | `contact_effects[].effect`    | String  | —              | Effect ID, e.g. `"minecraft:poison"`                             |
 | `contact_effects[].amplifier` | Int     | 0              | Effect level minus 1                                             |
 | `contact_effects[].duration`  | Int     | 3              | Duration in seconds per application                              |
+
+### Block Fields
+
+| Field         | Type    | Default | Description                                                                                       |
+|---------------|---------|---------|---------------------------------------------------------------------------------------------------|
+| `light_level` | Int     | 0       | Light emitted by the block (0–15)                                                                 |
+| `directional` | Boolean | false   | If true, the block rotates to face the player when placed. Requires `texture.faces.north` defined |
 
 ---
 

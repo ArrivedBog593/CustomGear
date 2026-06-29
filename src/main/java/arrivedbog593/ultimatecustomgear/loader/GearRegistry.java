@@ -2,11 +2,8 @@ package arrivedbog593.ultimatecustomgear.loader;
 
 import arrivedbog593.ultimatecustomgear.data.GearData;
 import arrivedbog593.ultimatecustomgear.items.gear.CustomArmorItem;
-import arrivedbog593.ultimatecustomgear.items.weapons.CustomSwordItem;
 import arrivedbog593.ultimatecustomgear.items.tools.CustomToolItem;
-import arrivedbog593.ultimatecustomgear.items.weapons.CustomBowItem;
-import arrivedbog593.ultimatecustomgear.items.weapons.CustomCrossbowItem;
-import arrivedbog593.ultimatecustomgear.items.weapons.CustomShieldItem;
+import arrivedbog593.ultimatecustomgear.items.weapons.*;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
