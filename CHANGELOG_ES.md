@@ -26,6 +26,8 @@ Todas las notas de cambios importantes para el proyecto UltimateCustomGear.
 ### 📦 Dependencias
 No se agregaron nuevas dependencias.
 
+---
+
 ## [1.2.5] - 2026-06-16
 
 ### ✨ Nuevas Características

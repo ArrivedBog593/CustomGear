@@ -15,7 +15,7 @@ All important changelog notes for the UltimateCustomGear project.
 #### Blocks — Directional Placement
 - New `directional: true` field makes a block rotate to face the player when placed, like a furnace
 - The `texture.faces.north` face is treated as the front face
-- Only horizontal directions supported (north, south, east, west)
+- Only horizontal directions are supported (north, south, east, west)
 
 ### 🔧 Technical Changes
 - `BlockData.java` — replaced `GearData.TextureData texture` with new `BlockTextureData` class containing `mode`, `refs` and `faces`; `BlockFaces` moved inside `BlockTextureData`
@@ -25,6 +25,8 @@ All important changelog notes for the UltimateCustomGear project.
 
 ### 📦 Dependencies
 No new dependencies added.
+
+---
 
 ## [1.2.5] - 2026-06-16
 
