@@ -60,6 +60,12 @@ public class BlockRegistry {
             BLOCK_ITEMS.register(data.id, () ->
                     new BlockItem(blockHolder.get(), new Item.Properties()));
             LOGGER.info("[CustomGear] Directional block registered: {}", data.id);
+        } else if (data.gravity) {
+            DeferredHolder<Block, CustomFallingBlock> blockHolder =
+                    BLOCKS.register(data.id, () -> new CustomFallingBlock(data));
+            BLOCK_ITEMS.register(data.id, () ->
+                    new BlockItem(blockHolder.get(), new Item.Properties()));
+            LOGGER.info("[CustomGear] Falling block registered: {}", data.id);
         } else {
             DeferredHolder<Block, CustomBlock> blockHolder =
                     BLOCKS.register(data.id, () -> new CustomBlock(data));

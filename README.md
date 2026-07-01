@@ -450,7 +450,11 @@ Instant food (`eat_duration: 0`) and slow food (`eat_duration: 10` = 10 seconds)
     "en_us": "My Ore",
     "es_mx": "Mi Mineral"
   },
-  "light_level": 0,
+  "light_level": 3,
+  "destroy_time": 3.0,
+  "explosion_resistance": 3.0,
+  "map_color": "deepslate",
+  "sound": "stone",
   "texture": {
     "mode": "reference",
     "refs": {
@@ -510,6 +514,27 @@ Use `"side"` as a shortcut to apply the same texture to all 4 horizontal faces.
 ```
 
 The `"north"` face is the front face — it points toward the player when the block is placed.
+
+### Falling Block — Example
+
+```json
+{
+  "id": "my_falling_block",
+  "type": "block",
+  "gravity": true,
+  "names": {
+    "en_us": "My Falling Block",
+    "es_mx": "Mi Bloque con Caída"
+  },
+  "sound": "sand",
+  "destroy_time": 0.5,
+  "explosion_resistance": 0.5,
+  "texture": {
+    "mode": "reference",
+    "refs": { "block": "minecraft:block/sand" }
+  }
+}
+```
 
 ---
 
@@ -749,10 +774,18 @@ Individual items (`type: "sword"`, `type: "bow"`, etc.) use the same fields as a
 
 ### Block Fields
 
-| Field         | Type    | Default | Description                                                                                       |
-|---------------|---------|---------|---------------------------------------------------------------------------------------------------|
-| `light_level` | Int     | 0       | Light emitted by the block (0–15)                                                                 |
-| `directional` | Boolean | false   | If true, the block rotates to face the player when placed. Requires `texture.faces.north` defined |
+| Field                  | Type    | Default | Description                                                                                                            |
+|------------------------|---------|---------|------------------------------------------------------------------------------------------------------------------------|
+| `light_level`          | Int     | 0       | Light emitted by the block (0–15)                                                                                      |
+| `destroy_time`         | Float   | 3.0     | Time to break with correct tool in seconds. Obsidian=9.5, bedrock=-1 (unbreakable)                                     |
+| `explosion_resistance` | Float   | 3.0     | Resistance to explosions. Stone=6.0, Obsidian=1200.0                                                                   |
+| `sound`                | String  | `stone` | Sound when placing/breaking/walking. See [BLOCK_SOUNDS.md](BLOCK_SOUNDS.md) for all available values. Default: `stone` |
+| `map_color`            | String  | `none`  | Map color for the block. See [MAP_COLORS.md](MAP_COLORS.md) for all available values. Default: `none`                  |
+| `directional`          | Boolean | false   | If true, rotates to face the player when placed. Requires `texture.faces.north` defined                                |
+| `gravity`              | Boolean | false   | If true, falls when unsupported, like sand or gravel. Cannot combine with `directional`                                |
+| `texture.refs.block`   | String  | —       | (Simple blocks) Resource location used for all 6 faces                                                                 |
+| `texture.faces`        | Object  | —       | Per-face texture configuration. Keys: `top`, `bottom`, `north`, `south`, `east`, `west`, `side`                        |
+| `texture.faces.side`   | String  | —       | Shortcut: applies to `north`, `south`, `east`, `west` if not individually defined                                      |
 
 ---
 

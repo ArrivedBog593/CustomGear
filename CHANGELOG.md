@@ -2,6 +2,36 @@
 
 All important changelog notes for the UltimateCustomGear project.
 
+## [1.2.7] - 2026-06-29
+
+### ✨ New Features
+
+#### Blocks — Gravity
+- New `gravity: true` field makes a block fall when unsupported, like sand or gravel
+- Cannot be combined with `directional`
+
+#### Blocks — New Configurable Properties
+- `destroy_time` — time in seconds to break the block with the correct tool (default: 3.0)
+- `explosion_resistance` — resistance to explosions (default: 3.0, obsidian: 1200.0)
+- `sound` — block sound type when placing, breaking or walking on it (default: `stone`)
+- Over 100 vanilla sound types supported: `wood`, `gravel`, `sand`, `deepslate`, `amethyst`, `copper`, `sculk`, `netherite`, etc.
+- `map_color` — block map color (default: `stone`); supports basic colors, dyes, and special colors like `gold`, `diamond`, `lapis`, `emerald`, `podzol`, and `nether`
+
+#### Blocks — Fix light_level
+- Fixed `light_level` not working — missing `@SerializedName("light_level")` annotation in `BlockData`
+
+### 🔧 Technical Changes
+- `BlockData.java` — added `destroyTime`, `explosionResistance`, `sound` fields with `@SerializedName`; fixed `@SerializedName("light_level")` on `lightLevel`
+- `CustomBlock.java` — `buildProperties` now uses `data.destroyTime`, `data.explosionResistance` and `BlockSoundResolver.resolve(data.sound)`
+- `CustomFallingBlock.java` — new class extending `FallingBlock`; reuses `CustomBlock.buildProperties`
+- `BlockRegistry.java` — detects `gravity: true` and creates `CustomFallingBlock`
+- `BlockSoundResolver.java` — new utility class in `util/` with 112 vanilla sound types
+
+### 📦 Dependencies
+No new dependencies added.
+
+---
+
 ## [1.2.6] - 2026-06-28
 
 ### ✨ New Features
@@ -36,7 +66,7 @@ No new dependencies added.
 - Bows and crossbows now show `arrow_damage`, `arrow_damage_bonus`, `arrow_damage_multiplier` and `charge_speed` in the tooltip
 
 #### Tool Tooltips
-- Pickaxes, axes, shovels and hoes now show `harvest_level` and `mining_speed` in the tooltip
+- Pickaxes, axes, shovels, and hoes now show `harvest_level` and `mining_speed` in the tooltip
 
 ### 🐛 Bug Fixes
 - Fixed non-burning fluids not extinguishing fire — fluids with `burns_entities: false` now call `player.clearFire()` on contact
@@ -89,7 +119,7 @@ No new dependencies added.
 ### ✨ New Features
 
 #### Food Items (`type: "food"`)
-- New item type `food` — consumable items with custom nutrition, saturation and effects
+- New item type `food` — consumable items with custom nutrition, saturation, and effects
 - Configurable `nutrition` and `saturation` values
 - `always_edible` — allows eating even when the hunger bar is full (like golden apples)
 - `fast_food` — item is consumed faster (like dried kelp)

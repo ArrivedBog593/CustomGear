@@ -2,6 +2,36 @@
 
 Todas las notas de cambios importantes para el proyecto UltimateCustomGear.
 
+## [1.2.7] - 2026-06-29
+
+### ✨ Nuevas Características
+
+#### Bloques — Gravedad
+- Nuevo campo `gravity: true` hace que el bloque caiga cuando no tiene soporte, como la arena o la grava
+- No es compatible con `directional`
+
+#### Bloques — Nuevas Propiedades Configurables
+- `destroy_time` — tiempo en segundos para romper el bloque con la herramienta correcta (por defecto: 3.0)
+- `explosion_resistance` — resistencia a explosiones (por defecto: 3.0, obsidiana: 1200.0)
+- `sound` — tipo de sonido al colocar, romper o caminar sobre el bloque (por defecto: `stone`)
+- Más de 100 tipos de sonido vanilla soportados: `wood`, `gravel`, `sand`, `deepslate`, `amethyst`, `copper`, `sculk`, `netherite`, etc.
+- `map_color` — color del bloque en el mapa (por defecto: `none`); soporta colores básicos, tintes y colores especiales como `gold`, `diamond`, `lapis`, `emerald`, `podzol` y `nether`
+
+#### Bloques — Fix de light_level
+- Corregido `light_level` que no funcionaba — faltaba la anotación `@SerializedName("light_level")` en `BlockData`
+
+### 🔧 Cambios Técnicos
+- `BlockData.java` — se agregaron los campos `destroyTime`, `explosionResistance`, `sound` con `@SerializedName`; corregido `@SerializedName("light_level")` en `lightLevel`
+- `CustomBlock.java` — `buildProperties` ahora usa `data.destroyTime`, `data.explosionResistance` y `BlockSoundResolver.resolve(data.sound)`
+- `CustomFallingBlock.java` — nueva clase que extiende `FallingBlock`; reutiliza `CustomBlock.buildProperties`
+- `BlockRegistry.java` — detecta `gravity: true` y crea `CustomFallingBlock`
+- `BlockSoundResolver.java` — nueva clase utilitaria en `util/` con 112 tipos de sonido vanilla
+
+### 📦 Dependencias
+No se agregaron nuevas dependencias.
+
+---
+
 ## [1.2.6] - 2026-06-28
 
 ### ✨ Nuevas Características

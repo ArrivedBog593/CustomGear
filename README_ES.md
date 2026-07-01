@@ -450,7 +450,11 @@ También se soporta comida instantánea (`eat_duration: 0`) y comida lenta (`eat
     "en_us": "My Ore",
     "es_mx": "Mi Mineral"
   },
-  "light_level": 0,
+  "light_level": 3,
+  "destroy_time": 3.0,
+  "explosion_resistance": 3.0,
+  "map_color": "deepslate",
+  "sound": "stone",
   "texture": {
     "mode": "reference",
     "refs": {
@@ -510,6 +514,27 @@ Usa `"side"` como atajo para aplicar la misma textura a las 4 caras horizontales
 ```
 
 La cara `"north"` es la cara frontal — apunta hacia el jugador al colocar el bloque.
+
+### Falling Block — Example
+
+```json
+{
+  "id": "mi_bloque_con_caida",
+  "type": "block",
+  "gravity": true,
+  "names": {
+    "en_us": "My Falling Block",
+    "es_mx": "Mi Bloque con Caída"
+  },
+  "sound": "sand",
+  "destroy_time": 0.5,
+  "explosion_resistance": 0.5,
+  "texture": {
+    "mode": "reference",
+    "refs": { "block": "minecraft:block/sand" }
+  }
+}
+```
 
 ---
 
@@ -749,10 +774,18 @@ Los ítems individuales (`type: "sword"`, `type: "bow"`, etc.) usan los mismos c
 
 ### Campos de Bloques
 
-| Campo         | Tipo    | Por defecto | Descripción                                                                                               |
-|---------------|---------|-------------|-----------------------------------------------------------------------------------------------------------|
-| `light_level` | Int     | 0           | Luz emitida por el bloque (0–15)                                                                          |
-| `directional` | Boolean | false       | Si es true, el bloque rota para apuntar al jugador al colocarse. Requiere `texture.faces.north` definido  |
+| Campo                  | Tipo    | Por defecto | Descripción                                                                                                                       |
+|------------------------|---------|-------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| `light_level`          | Int     | 0           | Luz emitida por el bloque (0–15)                                                                                                  |
+| `destroy_time`         | Float   | 3.0         | Tiempo para romper con la herramienta correcta en segundos. Obsidiana=9.5, bedrock=-1 (irrompible)                                |
+| `explosion_resistance` | Float   | 3.0         | Resistencia a explosiones. Piedra=6.0, Obsidiana=1200.0                                                                           |
+| `sound`                | String  | `stone`     | Sonido al colocar/romper/caminar. Ver [BLOCK_SOUNDS.md](BLOCK_SOUNDS.md) para todos los valores disponibles. Por defecto: `stone` |
+| `map_color`            | String  | `none`      | Color del mapa para el bloque. Ver [MAP_COLORS.md](MAP_COLORS.md) para todos los valores disponibles. Por defecto: `none`         |
+| `directional`          | Boolean | false       | Si es true, rota para apuntar al jugador al colocarse. Requiere `texture.faces.north` definido                                    |
+| `gravity`              | Boolean | false       | Si es true, cae cuando no tiene soporte, como la arena. No compatible con `directional`                                           |
+| `texture.refs.block`   | String  | —           | (Bloques simples) Resource location aplicada a las 6 caras                                                                        |
+| `texture.faces`        | Objeto  | —           | Textura por cara. Claves: `top`, `bottom`, `north`, `south`, `east`, `west`, `side`                                               |
+| `texture.faces.side`   | String  | —           | Atajo: aplica a `north`, `south`, `east`, `west` si no están definidas individualmente                                            |
 
 ---
 

@@ -1,19 +1,21 @@
 package arrivedbog593.ultimatecustomgear.items.blocks;
 
 import arrivedbog593.ultimatecustomgear.data.BlockData;
+import arrivedbog593.ultimatecustomgear.util.BlockSoundResolver;
+import arrivedbog593.ultimatecustomgear.util.MapColorResolver;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.minecraft.world.level.material.MapColor;
 
 /**
  * Generic block built from a BlockData JSON.
  * <p>
  * JSON properties:
- *  - lightLevel → light emission
- *  - requiredTool + toolLevel → controlled via block tags (see BlockRegistry)
- *  - texture / model → runtime-generated assets
- *  - names → translatable name
+ *  - light_level      → light emission (0-15)
+ *  - destroy_time     → time to break with correct tool, in seconds (default: 3.0)
+ *  - explosion_resistance → resistance to explosions (default: 3.0, obsidian: 1200)
+ *  - sound            → block sound type (default: "stone")
+ *  - texture          → model and texture configuration
+ *  - names            → translatable name
  */
 public class CustomBlock extends Block {
 
@@ -23,9 +25,9 @@ public class CustomBlock extends Block {
 
     public static Properties buildProperties(BlockData data) {
         Properties props = BlockBehaviour.Properties.of()
-                .mapColor(MapColor.STONE)
-                .strength(3.0f, 3.0f)
-                .sound(SoundType.STONE)
+                .mapColor(MapColorResolver.resolve(data.mapColor))
+                .strength(data.destroyTime, data.explosionResistance)
+                .sound(BlockSoundResolver.resolve(data.sound))
                 .requiresCorrectToolForDrops();
 
         if (data.lightLevel > 0) {
