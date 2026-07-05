@@ -2,80 +2,119 @@ package arrivedbog593.ultimatecustomgear;
 
 import arrivedbog593.ultimatecustomgear.client.ClientSetup;
 import arrivedbog593.ultimatecustomgear.commands.CustomGearCommandHandler;
+import arrivedbog593.ultimatecustomgear.config.CustomGearConfig;
 import arrivedbog593.ultimatecustomgear.data.GearData;
 import arrivedbog593.ultimatecustomgear.events.*;
 import arrivedbog593.ultimatecustomgear.loader.*;
+import arrivedbog593.ultimatecustomgear.network.CustomGearNetworking;
 import arrivedbog593.ultimatecustomgear.resources.DynamicResourcePack;
 import arrivedbog593.ultimatecustomgear.resources.TextureLoader;
+import arrivedbog593.ultimatecustomgear.util.ContentHasher;
+import arrivedbog593.ultimatecustomgear.util.GlobalIdValidator;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.PackLocationInfo;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.PackSelectionConfig;
 import net.minecraft.server.packs.PackType;
-import net.minecraft.server.packs.repository.KnownPack;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackSource;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddPackFindersEvent;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 
 @Mod("ultimatecustomgear")
 public class CustomGearMod {
 
-    @SuppressWarnings("unused")
     public static final String MOD_ID = "ultimatecustomgear";
     public static DynamicResourcePack DYNAMIC_PACK;
 
-    public CustomGearMod(IEventBus modEventBus) {
-        Path configFolder = Paths.get(".", "ultimatecustomgear");
+    /**
+     * The ultimatecustomgear config folder, resolved against the actual game
+     * directory. Paths.get(".") depends on the process working directory,
+     * which some launchers do NOT set to .minecraft — FMLPaths.GAMEDIR is
+     * always the real game dir on both client and dedicated server.
+     */
+    public static Path configFolder() {
+        return FMLPaths.GAMEDIR.get().resolve(MOD_ID);
+    }
 
-        // 1. Read all JSONs
-        List<GearData> gearList = GearParser.loadAll(configFolder);
-        UniversalParser.LoadResult universalResult = UniversalParser.loadAll(configFolder);
+    public CustomGearMod(IEventBus modEventBus, ModContainer modContainer) {
+        // Register the config FIRST, before anything might read it
+        modContainer.registerConfig(ModConfig.Type.COMMON, CustomGearConfig.SPEC);
 
-        // 2. Register all items, blocks and fluids
-        GearRegistry.register(modEventBus, gearList);
-        ItemRegistry.register(modEventBus, universalResult.items);
-        BlockRegistry.register(modEventBus, universalResult.blocks);
-        FluidRegistry.register(modEventBus, universalResult.fluids);
-        CustomGearTab.register(modEventBus);
+        Path configFolder = configFolder();
 
-        // 3. Create the dynamic resource pack (handles both client resources and server data)
-        DYNAMIC_PACK = new DynamicResourcePack(
-                new PackLocationInfo(
-                        "customgear_dynamic",
-                        Component.literal("CustomGear Dynamic Pack"),
-                        PackSource.BUILT_IN,
-                        Optional.of(new KnownPack("customgear", "dynamic", "1.0"))
-                )
-        );
+        List<GearData> gearList;
+        UniversalParser.LoadResult universalResult;
+        GlobalIdValidator.Result validated;
 
-        // 4. Load textures and lang (client resources)
-        TextureLoader.loadAll(DYNAMIC_PACK, gearList,
-                universalResult.items, universalResult.blocks, universalResult.fluids);
-        TextureLoader.generateLang(DYNAMIC_PACK, gearList,
-                universalResult.items, universalResult.blocks, universalResult.fluids);
+        try (ContentRoots roots = ContentRoots.open(configFolder)) {
+            // 1. Read all JSONs (loose folder + every zip in packs/)
+            gearList = GearParser.loadAll(roots);
+            universalResult = UniversalParser.loadAll(roots);
 
-        // 5. Generate recipe JSONs (server data) — injected into the dynamic pack
-        // so they are loaded by the normal data pack system and visible to JEI
-        RecipeLoader.loadAll(DYNAMIC_PACK, gearList,
-                universalResult.items, universalResult.blocks);
+            // Capture the content hash of what THIS instance just loaded
+            // (across ALL roots, zips included) — the handshake compares
+            // these captured values, never the disk at join time
+            ContentHasher.capture(roots);
 
-        // 6. Register the pack for both client resources and server data
+            // 1.5. Global final-ID validation — drops colliding entries instead of crashing
+            validated = GlobalIdValidator.validate(
+                    gearList, universalResult.items, universalResult.blocks, universalResult.fluids);
+
+            // 2. Register all items, blocks and fluids (validated lists only)
+            GearRegistry.register(modEventBus, validated.gear);
+            ItemRegistry.register(modEventBus, validated.items);
+            BlockRegistry.register(modEventBus, validated.blocks);
+            CustomGearTab.register(modEventBus);
+            FluidRegistry.register(modEventBus, validated.fluids);
+
+            // 3. Create the dynamic resource pack — igual que lo tienes
+            DYNAMIC_PACK = new DynamicResourcePack(
+                    new PackLocationInfo(
+                            "customgear_dynamic",
+                            Component.literal("CustomGear Dynamic Pack"),
+                            PackSource.BUILT_IN,
+                            Optional.empty()
+                    )
+            );
+
+            // 4. Load textures and lang (client resources)
+            TextureLoader.loadAll(DYNAMIC_PACK, validated.gear,
+                    validated.items, validated.blocks, validated.fluids);
+            TextureLoader.generateLang(DYNAMIC_PACK, validated.gear,
+                    validated.items, validated.blocks, validated.fluids);
+
+            // 5. Generate recipe JSONs (server data)
+            RecipeLoader.loadAll(DYNAMIC_PACK, validated.gear,
+                    validated.items, validated.blocks);
+
+            // 5.6. Generate block tags (mineable tool + harvest level) — server data
+            BlockTagLoader.loadAll(DYNAMIC_PACK, validated.blocks);
+
+            // 5.7. Generate loot tables (server data)
+            BlockLootLoader.loadAll(DYNAMIC_PACK, validated.blocks);
+        }
+
+        // 6. Register the pack, client setup, event handlers and networking
         modEventBus.addListener(this::onAddPackFinders);
+        modEventBus.addListener(CustomGearNetworking::registerPayloads);
+        modEventBus.addListener(CustomGearNetworking::registerConfigurationTasks);
         if (FMLEnvironment.dist.isClient()) {
             modEventBus.addListener(ClientSetup::onClientSetup);
+            NeoForge.EVENT_BUS.register(ClientSetup.class);
         }
         NeoForge.EVENT_BUS.register(CustomGearCommandHandler.class);
-        NeoForge.EVENT_BUS.register(FluidContactHandler.class);
         NeoForge.EVENT_BUS.register(SetBonusHandler.class);
         NeoForge.EVENT_BUS.register(HeldEffectHandler.class);
         NeoForge.EVENT_BUS.register(ArrowDamageHandler.class);
@@ -87,14 +126,13 @@ public class CustomGearMod {
         if (event.getPackType() == PackType.CLIENT_RESOURCES
                 || event.getPackType() == PackType.SERVER_DATA) {
             event.addRepositorySource(consumer -> {
-                PackLocationInfo info = new PackLocationInfo(
-                        "customgear_dynamic",
-                        Component.literal("CustomGear Dynamic Pack"),
-                        PackSource.BUILT_IN,
-                        Optional.of(new KnownPack("customgear", "dynamic", "1.0"))
-                );
+                // DYNAMIC_PACK.location() already carries the content-hash
+                // KnownPack, recomputed automatically after any pack mutation.
+                // This lambda runs on every pack-repository rescan, so after
+                // /customgear reload + /reload the version reflects the new
+                // contents with no extra work here.
                 Pack pack = Pack.readMetaAndCreate(
-                        info,
+                        DYNAMIC_PACK.location(),
                         new Pack.ResourcesSupplier() {
                             @Override
                             @NotNull

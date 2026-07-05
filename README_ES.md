@@ -10,7 +10,7 @@
 ## Características
 
 - Agrega **sets de armadura** personalizados con defensa, durabilidad, toughness y resistencia al retroceso por pieza individual
-- Agrega **sets de herramientas** (pico, hacha, pala, azadón) e herramientas individuales con daño, velocidad y velocidad de minado personalizados
+- Agrega **sets de herramientas** (pico, hacha, pala, azadón) y herramientas individuales con daño, velocidad y velocidad de minado personalizados
 - Agrega **sets de armas** (espada, arco, ballesta, escudo) y armas individuales
 - Agrega **arcos** personalizados con daño de flecha y velocidad de carga configurables, con animación de tensado completa
 - Agrega **ballestas** personalizadas con daño de flecha y velocidad de carga configurables, con animación de carga completa
@@ -22,12 +22,15 @@
 - Efectos de bonus de set al tener el número requerido de piezas equipadas
 - Efectos al sostener por herramienta/arma (ej. el pico da Prisa, la espada da Fuerza)
 - **Sistema de recetas nativo** — define recetas de crafteo directamente en los archivos JSON, sin mods externos
+- **Packs de contenido** — distribuye todo tu contenido como un solo archivo `.zip` que los jugadores colocan en `packs/`
+- **Verificación de contenido en multijugador** — el servidor comprueba al conectar que los clientes tengan los mismos archivos de contenido, con cumplimiento configurable
+- Los ingredientes de recetas aceptan **tags** (`"#minecraft:planks"` = cualquier tabla de madera, incluyendo ítems de otros mods)
 - Soporte completo para nombres en múltiples idiomas — define el nombre completo por idioma sin restricciones de formato
 - Texturas personalizadas con sistema de rutas flexible, o reutiliza modelos de otros mods
 - Los archivos JSON pueden organizarse en cualquier estructura de subcarpetas dentro de `.minecraft/ultimatecustomgear/`
 - Compatible con JEI — las recetas son completamente visibles
 - Todos los ítems son encantables con encantamientos de vanilla y de otros mods
-- Comando `/customgear reload` para recargar nombres, texturas y efectos sin reiniciar el juego
+- Comando `/customgear reload` para recargar nombres, efectos y recetas sin reiniciar (texturas tras F3+T)
 
 ---
 
@@ -36,7 +39,7 @@
 1. Descarga e instala [NeoForge 1.21.1](https://neoforged.net/)
 2. Coloca `ultimatecustomgear-1.x.x.jar` en tu carpeta `mods/`
 3. Lanza el juego una vez para que se genere la carpeta `ultimatecustomgear/` dentro de `.minecraft/`
-4. Agrega tus archivos JSON a `.minecraft/ultimatecustomgear/`
+4. Agrega tus archivos JSON en `.minecraft/ultimatecustomgear/` — o coloca un `.zip` de contenido en `.minecraft/ultimatecustomgear/packs/` (ver **Packs de Contenido** más abajo)
 5. Reinicia el juego
 
 > **Nota de sintaxis JSON:** El JSON estándar no permite comas al final del último elemento. Una coma sobrante al final de un objeto o lista hará que el archivo sea ignorado silenciosamente al cargar.
@@ -46,6 +49,8 @@
 ## Estructura de archivos JSON
 
 Todos los archivos JSON van dentro de `.minecraft/ultimatecustomgear/`. Cada archivo define un ítem, set, bloque o fluido. Los archivos pueden organizarse en cualquier estructura de subcarpetas.
+
+El contenido también puede empaquetarse como archivos `.zip` dentro de `packs/` — ver la sección **Packs de Contenido**.
 
 ### Tipos soportados
 
@@ -454,6 +459,8 @@ También se soporta comida instantánea (`eat_duration: 0`) y comida lenta (`eat
   "destroy_time": 3.0,
   "explosion_resistance": 3.0,
   "map_color": "deepslate",
+  "required_tool": "pickaxe",
+  "harvest_level": 2,
   "sound": "stone",
   "texture": {
     "mode": "reference",
@@ -552,6 +559,21 @@ CustomGear soporta recetas de crafteo nativas definidas directamente en JSON. No
 | `blasting`           | Alto horno                                       |
 | `smithing_transform` | Mesa de herrería (template + base + adición)     |
 
+### Tags como ingredientes
+
+Cualquier casilla de ingrediente acepta un **tag** con el prefijo `#` — la
+receta aceptará cualquier ítem de ese tag:
+
+```json
+"key": {
+  "P": "#minecraft:planks",
+  "I": "#c:ingots/iron",
+  "S": "minecraft:stick"
+}
+```
+
+Funciona en recetas shaped, shapeless, smelting, blasting y smithing. Las recetas con errores estructurales (filas desiguales, símbolos sin definir, keys sin usar, ID malformados) se descartan con un mensaje detallado en el log que nombra el ítem y el problema exacto.
+
 ### Receta de ítem individual
 
 ```json
@@ -629,6 +651,25 @@ Para arcos y ballestas, opcionalmente puedes incluir modelos de frames de tensad
   }
 }
 ```
+
+---
+
+## Packs de Contenido
+
+Puedes distribuir tu contenido como un solo archivo **.zip** en vez de archivos sueltos. Coloca el zip en:
+
+```
+.minecraft/ultimatecustomgear/packs/tu-contenido.zip
+```
+
+Los JSON y texturas dentro del zip cargan exactamente igual que los archivos sueltos — las subcarpetas dentro del zip funcionan sin problema. Es la forma recomendada para que los dueños de servidor compartan contenido con sus jugadores: un solo archivo, imposible de descomprimir a medias o editar por accidente.
+
+**Reglas:**
+- Los zips solo se cargan desde la subcarpeta `packs/`. Un zip en cualquier otro lugar se ignora (con un mensaje en el log indicando a dónde moverlo).
+- **Solo se admite `.zip`.** Si tienes un `.rar` o `.7z`, recomprímelo como zip: en Windows, selecciona los archivos → clic derecho → Enviar a → Carpeta comprimida.
+- **Los archivos sueltos ganan sobre los zips.** Si un JSON suelto define el mismo `id` que uno dentro de un zip, se usa el archivo suelto por completo (stats, texturas, recetas) y la entrada del zip se descarta con un mensaje en el log. Puedes usar esto para sobreescribir localmente un ítem específico de un pack sin tocar el zip.
+- Se permiten varios zips; cargan en orden alfabético.
+- `/customgear reload` detecta zips agregados o actualizados sin reiniciar.
 
 ---
 
@@ -758,34 +799,42 @@ Los ítems individuales (`type: "sword"`, `type: "bow"`, etc.) usan los mismos c
 
 ### Campos de fluidos
 
-| Campo                         | Tipo    | Por defecto    | Descripción                                                             |
-|-------------------------------|---------|----------------|-------------------------------------------------------------------------|
-| `light_level`                 | Int     | 0              | Luz emitida por el bloque de fluido (0–15)                              |
-| `color`                       | String  | `"0xFFFFFFFF"` | Color de tinte en ARGB hex, ej. `"0xFF3F76E4"`                          |
-| `tick_rate`                   | Int     | 5              | Ticks entre cada paso de expansión. Menor = más rápido. Agua=5, Lava=30 |
-| `spread_distance`             | Int     | 8              | Expansión horizontal máxima en bloques. Agua=8, Lava=4                  |
-| `burns_entities`              | Boolean | false          | Prende fuego a las entidades como la lava                               |
-| `burn_duration`               | Int     | 5              | Segundos que dura el fuego. Solo si `burns_entities` es true            |
-| `contact_effect_interval`     | Float   | 1.0            | Segundos entre cada aplicación de efectos mientras se está en el fluido |
-| `contact_effects`             | List    | —              | Efectos aplicados mientras se está sumergido                            |
-| `contact_effects[].effect`    | String  | —              | ID del efecto, ej. `"minecraft:poison"`                                 |
-| `contact_effects[].amplifier` | Int     | 0              | Nivel del efecto menos 1                                                |
-| `contact_effects[].duration`  | Int     | 3              | Duración en segundos por aplicación                                     |
+| Campo                         | Tipo    | Por defecto    | Descripción                                                                                                                          |
+|-------------------------------|---------|----------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| `light_level`                 | Int     | 0              | Luz emitida por el bloque de fluido (0–15)                                                                                           |
+| `color`                       | String  | `"0xFFFFFFFF"` | Color de tinte en ARGB hex, ej. `"0xFF3F76E4"`                                                                                       |
+| `tick_rate`                   | Int     | 5              | Ticks entre cada paso de expansión. Menor = más rápido. Agua=5, Lava=30                                                              |
+| `spread_distance`             | Int     | 8              | Expansión horizontal máxima en bloques. Agua=8, Lava=4                                                                               |
+| `burns_entities`              | Boolean | false          | Prende fuego a las entidades como la lava — afecta a jugadores, mobs e ítems tirados (los mobs inmunes al fuego no se ven afectados) |
+| `burn_duration`               | Int     | 5              | Segundos que dura el fuego. Solo si `burns_entities` es true                                                                         |
+| `contact_effect_interval`     | Float   | 1.0            | Segundos entre cada aplicación de efectos mientras se está en el fluido                                                              |
+| `contact_effects`             | List    | —              | Efectos aplicados a entidades vivas (jugadores y mobs) mientras están sumergidas                                                     |
+| `contact_effects[].effect`    | String  | —              | ID del efecto, ej. `"minecraft:poison"`                                                                                              |
+| `contact_effects[].amplifier` | Int     | 0              | Nivel del efecto menos 1                                                                                                             |
+| `contact_effects[].duration`  | Int     | 3              | Duración en segundos por aplicación                                                                                                  |
+
+> `contact_effects[].duration` debe ser al menos ~2 segundos mayor que `contact_effect_interval`, o los efectos de daño en el tiempo (veneno, wither) no alcanzan a hacer daño. Los valores por defecto (duration 3, interval 1.0) son seguros.
+
+> ⚠️ Los ítems tirados dentro de un fluido con `burns_entities: true` se prenden fuego y se **destruyen**, exactamente como en la lava — los jugadores que mueran dentro perderán su loot. Diséñalo con eso en mente.
 
 ### Campos de Bloques
 
-| Campo                  | Tipo    | Por defecto | Descripción                                                                                                                       |
-|------------------------|---------|-------------|-----------------------------------------------------------------------------------------------------------------------------------|
-| `light_level`          | Int     | 0           | Luz emitida por el bloque (0–15)                                                                                                  |
-| `destroy_time`         | Float   | 3.0         | Tiempo para romper con la herramienta correcta en segundos. Obsidiana=9.5, bedrock=-1 (irrompible)                                |
-| `explosion_resistance` | Float   | 3.0         | Resistencia a explosiones. Piedra=6.0, Obsidiana=1200.0                                                                           |
-| `sound`                | String  | `stone`     | Sonido al colocar/romper/caminar. Ver [BLOCK_SOUNDS.md](BLOCK_SOUNDS.md) para todos los valores disponibles. Por defecto: `stone` |
-| `map_color`            | String  | `none`      | Color del mapa para el bloque. Ver [MAP_COLORS.md](MAP_COLORS.md) para todos los valores disponibles. Por defecto: `none`         |
-| `directional`          | Boolean | false       | Si es true, rota para apuntar al jugador al colocarse. Requiere `texture.faces.north` definido                                    |
-| `gravity`              | Boolean | false       | Si es true, cae cuando no tiene soporte, como la arena. No compatible con `directional`                                           |
-| `texture.refs.block`   | String  | —           | (Bloques simples) Resource location aplicada a las 6 caras                                                                        |
-| `texture.faces`        | Objeto  | —           | Textura por cara. Claves: `top`, `bottom`, `north`, `south`, `east`, `west`, `side`                                               |
-| `texture.faces.side`   | String  | —           | Atajo: aplica a `north`, `south`, `east`, `west` si no están definidas individualmente                                            |
+| Campo                  | Tipo    | Por defecto | Descripción                                                                                                                                                                                                                       |
+|------------------------|---------|-------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `light_level`          | Int     | 0           | Luz emitida por el bloque (0–15)                                                                                                                                                                                                  |
+| `destroy_time`         | Float   | 3.0         | Tiempo para romper con la herramienta correcta en segundos. Obsidiana=9.5, bedrock=-1 (irrompible)                                                                                                                                |
+| `explosion_resistance` | Float   | 3.0         | Resistencia a explosiones. Piedra=6.0, Obsidiana=1200.0                                                                                                                                                                           |
+| `sound`                | String  | `stone`     | Sonido al colocar/romper/caminar. Ver [BLOCK_SOUNDS.md](BLOCK_SOUNDS.md) para todos los valores disponibles. Por defecto: `stone`                                                                                                 |
+| `map_color`            | String  | `none`      | Color del mapa para el bloque. Ver [MAP_COLORS.md](MAP_COLORS.md) para todos los valores disponibles. Por defecto: `none`                                                                                                         |
+| `required_tool`        | String  | `none`      | Herramienta que mina el bloque eficientemente: `pickaxe`, `axe`, `shovel`, `hoe`, `sword` o `none`. Solo otorga velocidad de minado — usa `harvest_level` para condicionar los drops                                              |
+| `harvest_level`        | Int     | 0           | Nivel de herramienta que condiciona los drops: 0=sin requisito (dropea con cualquier cosa), 1=piedra, 2=hierro, 3=diamante, 4=netherite. El nivel 4 usa el requisito de diamante (vanilla no tiene tag de netherite para bloques) |
+| `directional`          | Boolean | false       | Si es true, rota para apuntar al jugador al colocarse. Requiere `texture.faces.north` definido                                                                                                                                    |
+| `gravity`              | Boolean | false       | Si es true, cae cuando no tiene soporte, como la arena. No compatible con `directional`                                                                                                                                           |
+| `texture.refs.block`   | String  | —           | (Bloques simples) Resource location aplicada a las 6 caras                                                                                                                                                                        |
+| `texture.faces`        | Objeto  | —           | Textura por cara. Claves: `top`, `bottom`, `north`, `south`, `east`, `west`, `side`                                                                                                                                               |
+| `texture.faces.side`   | String  | —           | Atajo: aplica a `north`, `south`, `east`, `west` si no están definidas individualmente                                                                                                                                            |
+
+> Con `harvest_level` ≥ 1, el bloque se comporta como las menas de vanilla: la herramienta equivocada o de nivel menor es lenta Y no suelta nada. Con nivel 0 (u omitido), `required_tool` solo da velocidad de minado — el bloque dropea con cualquier cosa, como la arena. Funciona con herramientas de otros mods que sigan los niveles de vanilla. Nota: cambiar `harvest_level` entre 0 y ≥1 requiere reiniciar (el requisito de drops se fija al arrancar); ajustarlo entre 1–4, o cambiar `required_tool`, aplica con `/customgear reload`.
 
 ---
 
@@ -797,21 +846,45 @@ Los ítems individuales (`type: "sword"`, `type: "bow"`, etc.) usan los mismos c
 
 ### Qué actualiza el comando reload
 - Nombres de ítems
-- Texturas y modelos
 - Efectos al sostener (armas y herramientas)
-- Efectos por pieza y bonificaciones de set (armadura)
-- Visualización de durabilidad
+- Efectos por pieza y bonos de conjunto (armaduras)
+- Efectos de contacto y comportamiento de fuego de los fluidos
+- Recetas (el comando recarga los datapacks automáticamente)
+- Tags de minado de bloques — cambios de `required_tool` y ajustes de `harvest_level` (1–4)
+- Durabilidad mostrada
+- Texturas y modelos — **tras presionar F3+T** (el juego solo recarga los recursos del cliente bajo demanda)
 
 ### Qué requiere reinicio completo del juego
 - Daño de ataque y velocidad de ataque
 - Defensa, toughness y resistencia al retroceso de armadura
-- Velocidad de minado y nivel de cosecha
+- Velocidad de minado y nivel de las herramientas (tool sets)
+- Activar/desactivar el requisito de drops de un bloque (`harvest_level` 0 ↔ ≥1)
 - Agregar o eliminar ítems (archivos JSON nuevos o eliminados)
-- Cambiar IDs de ítems
+- Cambiar ID de ítems
 
 ---
 
-## Referencia de IDs
+## Multijugador
+
+**El cliente y el servidor deben tener los mismos archivos de contenido.** Los stats de los ítems se fijan al arrancar el juego, así que archivos diferentes causan desincronizaciones invisibles (tu tooltip dice un daño y el servidor aplica otro). Para prevenirlo, el mod verifica el contenido al conectar comparando hashes — el empaque no importa: un servidor usando un zip coincide con clientes usando los mismos JSONs sueltos, y viceversa.
+
+Lo que ocurre ante una diferencia se configura **en el servidor** en `config/ultimatecustomgear-common.toml`:
+
+| Modo                    | Comportamiento                                                                                                                                                                                                                                                                       |
+|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ENFORCE` (por defecto) | El cliente es desconectado con un mensaje que muestra ambos hashes y cómo corregirlo. Garantiza que todos los jugadores vean stats, nombres y recetas correctos.                                                                                                                     |
+| `WARN`                  | El cliente puede entrar; el servidor registra la diferencia y el jugador recibe un aviso en el chat de que tooltips/nombres pueden no coincidir con los valores reales (el combate siempre usa los del servidor). Útil mientras distribuyes un zip actualizado sin expulsar a todos. |
+| `OFF`                   | Sin verificación. Los clientes a los que les faltan ítems igual no pueden entrar (esa es la verificación propia de Minecraft), pero las diferencias de stats pasan desapercibidas.                                                                                                   |
+
+Solo importa el valor del servidor — la config local del cliente no tiene efecto al conectarse a un servidor.
+
+**Distribuir contenido:** empaca tus JSONs (y texturas) de `ultimatecustomgear` en un zip, compártelo, y que tus jugadores lo coloquen en su carpeta `.minecraft/ultimatecustomgear/packs/`.
+
+> Ambos lados deben usar la misma versión del mod: los clientes 1.3.0 no pueden entrar a servidores anteriores y viceversa (cambio de protocolo de red).
+
+---
+
+## Referencia de ID
 
 | Tipo                      | Patrón de ID                        | Ejemplo                               |
 |---------------------------|-------------------------------------|---------------------------------------|
@@ -832,6 +905,7 @@ Los ítems individuales (`type: "sword"`, `type: "bow"`, etc.) usan los mismos c
 - Los encantamientos de otros mods funcionan automáticamente en ítems encantables
 - Los modelos de cualquier mod instalado pueden referenciarse con el modo `reference`
 - Los ingredientes de cualquier mod instalado pueden usarse en recetas
+- Multijugador: el servidor y los clientes deben usar la misma versión del mod y archivos de contenido coincidentes (verificado automáticamente al conectar)
 
 ---
 

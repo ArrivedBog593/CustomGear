@@ -4,8 +4,10 @@ import arrivedbog593.ultimatecustomgear.items.weapons.CustomBowItem;
 import arrivedbog593.ultimatecustomgear.items.weapons.CustomCrossbowItem;
 import arrivedbog593.ultimatecustomgear.items.weapons.CustomShieldItem;
 import arrivedbog593.ultimatecustomgear.loader.GearRegistry;
+import arrivedbog593.ultimatecustomgear.network.CustomGearNetworking;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.Item;
@@ -13,6 +15,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.ChargedProjectiles;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -27,7 +30,7 @@ public class ClientSetup {
 
     private static final Logger LOGGER = LogManager.getLogger("CustomGear");
 
-    @SubscribeEvent
+    // Registered via addListener on the MOD bus — no annotation needed
     public static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
             int total = GearRegistry.ITEMS.getEntries().size();
@@ -59,6 +62,16 @@ public class ClientSetup {
                 }
             });
         });
+    }
+
+    // Registered via NeoForge.EVENT_BUS.register(ClientSetup.class) — GAME bus
+    @SubscribeEvent
+    public static void onClientJoin(ClientPlayerNetworkEvent.LoggingIn event) {
+        if (CustomGearNetworking.pendingMismatchWarning) {
+            CustomGearNetworking.pendingMismatchWarning = false;
+            event.getPlayer().displayClientMessage(
+                    Component.translatable("customgear.network.hash_mismatch_warn"), false);
+        }
     }
 
     // ── Bow ──────────────────────────────────────────────────────────────────

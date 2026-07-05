@@ -35,74 +35,88 @@ public class GearParser {
             "pickaxe", "axe", "shovel", "hoe"
     );
 
-    public static List<GearData> loadAll(Path folder) {
+    /**
+     * Loads gear from every content root: the loose folder plus every zip
+     * mounted from packs/. Cache keys are prefixed with the root label
+     * ("packs/foo.zip!inner/path.json") so zip entries and loose files never
+     * collide in the cache. Zip entries are cached like loose files — their
+     * lastModified comes from the entry inside the zip.
+     */
+    public static List<GearData> loadAll(ContentRoots contentRoots) {
         List<GearData> result  = new ArrayList<>();
         Set<String> seenIds    = new HashSet<>();
 
-        if (!ParserUtils.ensureFolderExists(folder)) return result;
-
-        Path canonicalFolder = ParserUtils.resolveCanonical(folder);
-        if (canonicalFolder == null) return result;
+        Path configFolder = contentRoots.configFolder();
+        if (!ParserUtils.ensureFolderExists(configFolder)) return result;
 
         GenericCache<GearData> cache = GenericCache.load(
-                folder,
+                configFolder,
                 "gear_cache.json",
                 new TypeToken<Map<String, GenericCache.CacheEntry<GearData>>>() {}.getType()
         );
         Set<String>    currentKeys   = new HashSet<>();
         AtomicBoolean  cacheModified = new AtomicBoolean(false);
 
-        try {
-            Files.walk(folder)
-                    .filter(p -> p.toString().endsWith(".json")
-                            && !folder.relativize(p).startsWith(".cache"))
-                    .forEach(path -> {
-                        if (!ParserUtils.isSafeChild(path, canonicalFolder)) {
-                            LOGGER.warn("[CustomGear] Skipping file outside customgear/ dir (possible symlink attack): {}", path);
-                            return;
-                        }
+        for (ContentRoots.Root root : contentRoots.roots()) {
+            // Symlink escapes are only possible on the real filesystem;
+            // zip virtual filesystems cannot reference paths outside the zip.
+            Path canonicalRoot = root.isLoose() ? ParserUtils.resolveCanonical(root.path()) : null;
+            if (root.isLoose() && canonicalRoot == null) continue;
 
-                        String relKey = folder.relativize(path).toString();
-                        currentKeys.add(relKey);
+            try {
+                Files.walk(root.path())
+                        .filter(p -> p.toString().endsWith(".json")
+                                && !root.path().relativize(p).startsWith(".cache")
+                                && !root.path().relativize(p).startsWith("packs"))
+                        .forEach(path -> {
+                            if (root.isLoose() && !ParserUtils.isSafeChild(path, canonicalRoot)) {
+                                LOGGER.warn("[CustomGear] Skipping file outside customgear/ dir (possible symlink attack): {}", path);
+                                return;
+                            }
 
-                        try {
-                            String json = Files.readString(path);
-                            String type = ParserUtils.extractType(json);
-                            if (type == null || !GEAR_TYPES.contains(type)) return;
+                            String relKey = root.label() + root.path().relativize(path);
+                            currentKeys.add(relKey);
 
-                            FileTime ft           = Files.getLastModifiedTime(path);
-                            long     lastModified = ft.toMillis();
-                            GenericCache.CacheEntry<GearData> cached = cache.get(relKey);
+                            try {
+                                String json = Files.readString(path);
+                                String type = ParserUtils.extractType(json);
+                                if (type == null || !GEAR_TYPES.contains(type)) return;
 
-                            if (cached != null && cached.lastModified == lastModified && cached.data != null) {
-                                if (!seenIds.add(cached.data.id)) {
-                                    LOGGER.error("[CustomGear] Duplicate ID '{}' found (cache) — skipping: {}",
-                                            cached.data.id, relKey);
-                                    return;
-                                }
-                                result.add(cached.data);
-                                LOGGER.debug("[CustomGear] Cache hit: {}", relKey);
-                            } else {
-                                GearData data = GSON.fromJson(json, GearData.class);
-                                if (validate(data, path)) {
-                                    if (!seenIds.add(data.id)) {
-                                        LOGGER.error("[CustomGear] Duplicate ID '{}' — file '{}' will be ignored. "
-                                                + "Each gear ID must be unique across all JSON files.", data.id, relKey);
+                                FileTime ft           = Files.getLastModifiedTime(path);
+                                long     lastModified = ft.toMillis();
+                                GenericCache.CacheEntry<GearData> cached = cache.get(relKey);
+
+                                if (cached != null && cached.lastModified == lastModified && cached.data != null) {
+                                    if (!seenIds.add(cached.data.id)) {
+                                        LOGGER.error("[CustomGear] Duplicate ID '{}' found (cache) — skipping: {}",
+                                                cached.data.id, relKey);
                                         return;
                                     }
-                                    result.add(data);
-                                    cache.put(relKey, lastModified, data);
-                                    cacheModified.set(true);
-                                    LOGGER.info("[CustomGear] Loaded: {} ({})", data.id, relKey);
+                                    result.add(cached.data);
+                                    LOGGER.debug("[CustomGear] Cache hit: {}", relKey);
+                                } else {
+                                    GearData data = GSON.fromJson(json, GearData.class);
+                                    if (validate(data, path)) {
+                                        if (!seenIds.add(data.id)) {
+                                            LOGGER.error("[CustomGear] Duplicate ID '{}' — file '{}' will be ignored. "
+                                                    + "Each gear ID must be unique across all JSON files and packs.", data.id, relKey);
+                                            return;
+                                        }
+                                        result.add(data);
+                                        cache.put(relKey, lastModified, data);
+                                        cacheModified.set(true);
+                                        LOGGER.info("[CustomGear] Loaded: {} ({})", data.id, relKey);
+                                    }
                                 }
+                            } catch (Exception e) {
+                                LOGGER.error("[CustomGear] Error reading {}: {}",
+                                        path.getFileName(), e.getMessage());
                             }
-                        } catch (Exception e) {
-                            LOGGER.error("[CustomGear] Error reading {}: {}",
-                                    path.getFileName(), e.getMessage());
-                        }
-                    });
-        } catch (IOException e) {
-            LOGGER.error("[CustomGear] Error scanning folder: {}", e.getMessage());
+                        });
+            } catch (IOException e) {
+                LOGGER.error("[CustomGear] Error scanning {}: {}",
+                        root.isLoose() ? "folder" : root.label(), e.getMessage());
+            }
         }
 
         if (cache.removeStale(currentKeys)) {

@@ -2,7 +2,90 @@
 
 All important changelog notes for the UltimateCustomGear project.
 
-## [1.2.7] - 2026-06-29
+## [1.3.0] - 2026-07-04
+
+### ⚠️ Important Notes
+- **Servers and clients must both update to 1.3.0** — the network protocol changed, so older clients cannot join updated servers (they get a clear version-mismatch message).
+- Held/set/piece effect icons now show a self-renewing ~12s timer instead of ∞. This is intentional (see Effects Rework below).
+- Area-tilling hoes consume 1 durability per tilled block (e.g., radius 3 = up to 49 durability per use).
+
+### ✨ New Features
+
+#### Blocks — Required Tool & Harvest Level
+- New `required_tool` field — which tool mines the block: `sword`, `pickaxe`, `axe`, `shovel`, `hoe` or `none` (default)
+- `required_tool: "sword"` makes the block mine faster with any sword (like leaves) — note: swords speed up mining but don't gate drops, and `harvest_level` doesn't apply to them
+- New `harvest_level` field — tool tier required to get drops: 0 (wood), 1 (stone), 2 (iron), 3 (diamond), 4 (netherite)
+- `required_tool` grants mining speed only (like sand + shovel); `harvest_level` ≥ 1 is what gates drops behind the correct tool tier, like vanilla ore
+- Implemented via vanilla block tags injected as server data — fully compatible with modded tools that follow vanilla tiers
+
+#### Content Packs (.zip)
+- Content can now be distributed as **.zip files** dropped into `.minecraft/ultimatecustomgear/packs/` — JSONs and textures inside load exactly like loose files
+- Loose files take precedence over zips: you can locally override a single item from a pack by placing your own version loose
+- Only `.zip` is supported; `.rar`/`.7z` files and archives left in the root folder produce log messages explaining how to fix it
+- `/customgear reload` picks up added or updated zips without restarting
+
+#### Multiplayer Content Verification
+- When a client joins, the server verifies the client loaded the same content JSONs (compared via content hash — packaging doesn't matter: zip vs. loose files with the same content match)
+- New config `content_handshake_mode` in `ultimatecustomgear-common.toml`:
+    - `ENFORCE` (default) — mismatching clients are disconnected with a message showing both hashes and how to fix it
+    - `WARN` — mismatching clients are allowed in with a chat warning; the server logs the mismatch
+    - `OFF` — the check is skipped entirely
+- Only the server's setting matters — clients obey what the server sends
+- The dynamic pack now advertises a content-derived version to vanilla's pack negotiation: if client and server recipes differ, the server's recipes are sent and used (no more silent "ghost recipe" desyncs)
+
+#### Recipe Tag Ingredients
+- Any ingredient slot accepts a **tag** with the `#` prefix, e.g. `"#minecraft:planks"` (any plank) or `"#c:ingots/iron"` (iron ingots from any mod) — works in shaped, shapeless, smelting, blasting, and smithing
+
+#### Full Recipe Validation
+- Shaped recipes are now fully validated with clear log messages: row length (1-3), uneven rows, pattern symbols missing from `key`, unused `key` entries, and malformed item/tag IDs
+- Shapeless recipes with more than 9 ingredients are rejected with a message
+
+### 🐛 Bug Fixes
+- Fixed **startup crashes from ID collisions across content types** (e.g. an item and a block sharing an id, an item colliding with a set-derived name like `myset_sword`, or with a fluid's `_bucket` item). Colliding entries are now skipped with a log naming both owners
+- Fixed **all mod recipes disappearing after `/reload`** — the reload command wasn't regenerating recipes into the dynamic pack
+- Fixed **damage-over-time contact effects (poison, wither) never dealing damage while inside a fluid** — reapplication was resetting the effect before its damage tick
+- Fixed real potions being wiped when swapping away from an item granting the same effect
+- Fixed "ghost" permanent effects persisting after logging out while holding an effect-granting item
+- Fixed the dynamic pack being registered twice per pack scan
+- Fixed custom item textures resolving against the mod's old folder name (`customgear/` instead of `ultimatecustomgear/`)
+- Fixed content not loading under launchers with a nonstandard working directory (config folder now resolves against the real game directory)
+- Fixed fluid contact state leaking memory and using stale counters after death or dimension change (now keyed by player UUID, cleaned on logout)
+- Area-tilling hoes now stop when the hoe breaks mid-area and always till the clicked block first
+- Fixed `burns_entities` and `contact_effects` only affecting players — fluids now affect **all entities** (mobs, dropped items, projectiles) like vanilla lava. Dropped items in a burning fluid are destroyed; fire-immune mobs (blazes, etc.) are unaffected
+- Fixed custom blocks never dropping items in survival — `requiresCorrectToolForDrops` was applied unconditionally to all blocks, even those without any tool requirement
+- Fixed custom blocks never dropping themselves when broken — blocks had no loot tables (Minecraft blocks drop nothing without one). Every custom block now gets a standard self-drop loot table with the vanilla explosion condition
+
+### ♻️ Behavior Changes
+- **Effects Rework**: held effects, set bonuses, and piece effects use beacon-style refreshed short durations instead of infinite ones. A real potion of the same effect always wins while it lasts; effects self-expire within seconds if tracking is lost
+- If a player overlaps two custom fluids at once, only the dominant (deepest) one applies its effects — previously both did
+- `/customgear reload` now triggers the data-pack reload itself: recipes update immediately without running `/reload`. Texture changes still require pressing F3+T; base stats still require a restart
+
+### 🔧 Technical Changes
+- `ContentRoots.java` — new: mounts the loose folder plus every zip in `packs/` as uniform content roots (deterministic alphabetical order)
+- `GlobalIdValidator.java` — new: validates all final derived IDs across item/block/fluid registries before registration, atomic per-entry claims
+- `ContentHasher.java` — new: canonical (key-sorted, whitespace/packaging independent) hash of all content JSONs across all roots, captured at load time
+- `CustomGearNetworking.java`, `HashCheckPayload.java`, `HashCheckAckPayload.java` — new: configuration-phase handshake with server-decided enforcement travelling in the payload; protocol version "2"
+- `CustomGearConfig.java` — new: COMMON config with `content_handshake_mode`
+- `GearParser.java` / `UniversalParser.java` — iterate all content roots; cache keys prefixed per-root (`packs/foo.zip!path`)
+- `TextureLoader.java` — custom resources resolved through the content session (fixes the legacy `./customgear` path)
+- `RecipeLoader.java` — tag ingredient support, full structural validation, atomic per-recipe rejection
+- `EffectUtils.java` — 240-tick refreshed durations (steady HUD icons), potion-safe removal
+- `SetBonusHandler.java` — diff-based apply/remove instead of remove-all/reapply-all
+- `CustomHoeItem.java` — durability check in the area loop, center-first
+- `DynamicResourcePack.java` — `location()` override carrying a content-hash `KnownPack`; `ConcurrentHashMap`; cached hash invalidated on mutation
+- `CustomGearMod.java` / `CustomGearCommandHandler.java` — content session (try-with-resources) around load/reload; hash re-capture on reload; automatic data-pack reload after `/customgear reload`
+- `CustomLiquidBlock.java` — new: applies fire and contact effects to every entity via `entityInside` (vanilla-lava style), stateless, with the DoT-friendly effect refresh; replaces the removed `FluidContactHandler`
+- `CustomFluid.java` — `createBlock` now creates a `CustomLiquidBlock`
+- `BlockTagLoader.java` — new: generates `minecraft:tags/block/mineable/*` and `needs_*_tool` tags into the dynamic pack (1.21 singular tag paths); called at startup and on reload
+- `CustomBlock.java` — `buildProperties` applies `requiresCorrectToolForDrops()` only when `harvest_level` ≥ 1 (`required_tool` alone never gates drops)
+- `BlockLootLoader.java` — new: generates self-drop loot tables into the dynamic pack; called at startup and on reload
+
+### 📦 Dependencies
+No new dependencies added.
+
+---
+
+## [1.2.7] - 2026-06-30
 
 ### ✨ New Features
 
@@ -32,7 +115,7 @@ No new dependencies added.
 
 ---
 
-## [1.2.6] - 2026-06-28
+## [1.2.6] - 2026-06-29
 
 ### ✨ New Features
 

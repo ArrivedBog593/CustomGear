@@ -55,6 +55,6 @@ public class CustomFluid {
             props = props.lightLevel(state -> clamped);
         }
 
-        return new LiquidBlock(fluid.get(), props);
+        return new CustomLiquidBlock(fluid.get(), props, data.id);
     }
 }

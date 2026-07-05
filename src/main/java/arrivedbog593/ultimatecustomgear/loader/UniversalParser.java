@@ -38,24 +38,27 @@ public class UniversalParser {
         public final List<AdvancementData> advancements = new ArrayList<>();
     }
 
-    public static LoadResult loadAll(Path folder) {
+    /**
+     * Loads blocks/fluids/items from every content root: the loose folder
+     * plus every zip mounted from packs/. Cache keys are prefixed with the
+     * root label so zip entries never collide with loose files.
+     */
+    public static LoadResult loadAll(ContentRoots contentRoots) {
         LoadResult result = new LoadResult();
 
-        if (!ParserUtils.ensureFolderExists(folder)) return result;
-
-        Path canonicalFolder = ParserUtils.resolveCanonical(folder);
-        if (canonicalFolder == null) return result;
+        Path configFolder = contentRoots.configFolder();
+        if (!ParserUtils.ensureFolderExists(configFolder)) return result;
 
         GenericCache<BlockData> blockCache = GenericCache.load(
-                folder, "block_cache.json",
+                configFolder, "block_cache.json",
                 new TypeToken<Map<String, GenericCache.CacheEntry<BlockData>>>() {}.getType()
         );
         GenericCache<FluidData> fluidCache = GenericCache.load(
-                folder, "fluid_cache.json",
+                configFolder, "fluid_cache.json",
                 new TypeToken<Map<String, GenericCache.CacheEntry<FluidData>>>() {}.getType()
         );
         GenericCache<ItemData> itemCache = GenericCache.load(
-                folder, "item_cache.json",
+                configFolder, "item_cache.json",
                 new TypeToken<Map<String, GenericCache.CacheEntry<ItemData>>>() {}.getType()
         );
 
@@ -66,114 +69,123 @@ public class UniversalParser {
         Set<String>   currentKeys   = new HashSet<>();
         AtomicBoolean cacheModified = new AtomicBoolean(false);
 
-        try {
-            Files.walk(folder)
-                    .filter(p -> p.toString().endsWith(".json")
-                            && !folder.relativize(p).startsWith(".cache"))
-                    .forEach(path -> {
-                        if (!ParserUtils.isSafeChild(path, canonicalFolder)) {
-                            LOGGER.warn("[CustomGear] Skipping file outside customgear/ dir: {}", path);
-                            return;
-                        }
+        for (ContentRoots.Root root : contentRoots.roots()) {
+            // Symlink escapes are only possible on the real filesystem;
+            // zip virtual filesystems cannot reference paths outside the zip.
+            Path canonicalRoot = root.isLoose() ? ParserUtils.resolveCanonical(root.path()) : null;
+            if (root.isLoose() && canonicalRoot == null) continue;
 
-                        String relKey = folder.relativize(path).toString();
-                        currentKeys.add(relKey);
-
-                        try {
-                            String json = Files.readString(path);
-                            String type = ParserUtils.extractType(json);
-
-                            if (type == null || GEAR_TYPES.contains(type)) return;
-
-                            FileTime ft           = Files.getLastModifiedTime(path);
-                            long     lastModified = ft.toMillis();
-
-                            switch (type) {
-                                case "block" -> {
-                                    GenericCache.CacheEntry<BlockData> cached = blockCache.get(relKey);
-                                    if (cached != null && cached.lastModified == lastModified && cached.data != null) {
-                                        if (!seenBlocks.add(cached.data.id)) {
-                                            LOGGER.error("[CustomGear] Duplicate block ID '{}' — skipping: {}", cached.data.id, relKey);
-                                            return;
-                                        }
-                                        result.blocks.add(cached.data);
-                                        LOGGER.debug("[CustomGear] Block cache hit: {}", relKey);
-                                    } else {
-                                        BlockData data = GSON.fromJson(json, BlockData.class);
-                                        if (validateBlock(data, path)) {
-                                            if (!seenBlocks.add(data.id)) {
-                                                LOGGER.error("[CustomGear] Duplicate block ID '{}' — skipping: {}", data.id, relKey);
-                                                return;
-                                            }
-                                            result.blocks.add(data);
-                                            blockCache.put(relKey, lastModified, data);
-                                            cacheModified.set(true);
-                                            LOGGER.info("[CustomGear] Block loaded: {}", data.id);
-                                        }
-                                    }
-                                }
-                                case "fluid" -> {
-                                    GenericCache.CacheEntry<FluidData> cached = fluidCache.get(relKey);
-                                    if (cached != null && cached.lastModified == lastModified && cached.data != null) {
-                                        if (!seenFluids.add(cached.data.id)) {
-                                            LOGGER.error("[CustomGear] Duplicate fluid ID '{}' — skipping: {}", cached.data.id, relKey);
-                                            return;
-                                        }
-                                        result.fluids.add(cached.data);
-                                        LOGGER.debug("[CustomGear] Fluid cache hit: {}", relKey);
-                                    } else {
-                                        FluidData data = GSON.fromJson(json, FluidData.class);
-                                        if (validateFluid(data, path)) {
-                                            if (!seenFluids.add(data.id)) {
-                                                LOGGER.error("[CustomGear] Duplicate fluid ID '{}' — skipping: {}", data.id, relKey);
-                                                return;
-                                            }
-                                            result.fluids.add(data);
-                                            fluidCache.put(relKey, lastModified, data);
-                                            cacheModified.set(true);
-                                            LOGGER.info("[CustomGear] Fluid loaded: {}", data.id);
-                                        }
-                                    }
-                                }
-                                case "item", "food" -> {
-                                    GenericCache.CacheEntry<ItemData> cached = itemCache.get(relKey);
-                                    if (cached != null && cached.lastModified == lastModified && cached.data != null) {
-                                        if (!seenItems.add(cached.data.id)) {
-                                            LOGGER.error("[CustomGear] Duplicate item ID '{}' — skipping: {}", cached.data.id, relKey);
-                                            return;
-                                        }
-                                        result.items.add(cached.data);
-                                        LOGGER.debug("[CustomGear] Item cache hit: {}", relKey);
-                                    } else {
-                                        ItemData data = GSON.fromJson(json, ItemData.class);
-                                        if (validateItem(data, path)) {
-                                            if (!seenItems.add(data.id)) {
-                                                LOGGER.error("[CustomGear] Duplicate item ID '{}' — skipping: {}", data.id, relKey);
-                                                return;
-                                            }
-                                            result.items.add(data);
-                                            itemCache.put(relKey, lastModified, data);
-                                            cacheModified.set(true);
-                                            LOGGER.info("[CustomGear] Item loaded: {}", data.id);
-                                        }
-                                    }
-                                }
-                                case "advancement" -> {
-                                    AdvancementData data = GSON.fromJson(json, AdvancementData.class);
-                                    if (validateAdvancement(data, path)) {
-                                        result.advancements.add(data);
-                                        LOGGER.debug("[CustomGear] Advancement parsed (not yet active): {}", data.id);
-                                    }
-                                }
-                                default -> LOGGER.warn("[CustomGear] Unknown type '{}' in: {}", type, path.getFileName());
+            try {
+                Files.walk(root.path())
+                        .filter(p -> p.toString().endsWith(".json")
+                                && !root.path().relativize(p).startsWith(".cache")
+                                && !root.path().relativize(p).startsWith("packs"))
+                        .forEach(path -> {
+                            if (root.isLoose() && !ParserUtils.isSafeChild(path, canonicalRoot)) {
+                                LOGGER.warn("[CustomGear] Skipping file outside customgear/ dir: {}", path);
+                                return;
                             }
 
-                        } catch (Exception e) {
-                            LOGGER.error("[CustomGear] Error reading {}: {}", path.getFileName(), e.getMessage());
-                        }
-                    });
-        } catch (IOException e) {
-            LOGGER.error("[CustomGear] Error scanning folder: {}", e.getMessage());
+                            String relKey = root.label() + root.path().relativize(path);
+                            currentKeys.add(relKey);
+
+                            try {
+                                String json = Files.readString(path);
+                                String type = ParserUtils.extractType(json);
+
+                                if (type == null || GEAR_TYPES.contains(type)) return;
+
+                                FileTime ft           = Files.getLastModifiedTime(path);
+                                long     lastModified = ft.toMillis();
+
+                                switch (type) {
+                                    case "block" -> {
+                                        GenericCache.CacheEntry<BlockData> cached = blockCache.get(relKey);
+                                        if (cached != null && cached.lastModified == lastModified && cached.data != null) {
+                                            if (!seenBlocks.add(cached.data.id)) {
+                                                LOGGER.error("[CustomGear] Duplicate block ID '{}' — skipping: {}", cached.data.id, relKey);
+                                                return;
+                                            }
+                                            result.blocks.add(cached.data);
+                                            LOGGER.debug("[CustomGear] Block cache hit: {}", relKey);
+                                        } else {
+                                            BlockData data = GSON.fromJson(json, BlockData.class);
+                                            if (validateBlock(data, path)) {
+                                                if (!seenBlocks.add(data.id)) {
+                                                    LOGGER.error("[CustomGear] Duplicate block ID '{}' — skipping: {}", data.id, relKey);
+                                                    return;
+                                                }
+                                                result.blocks.add(data);
+                                                blockCache.put(relKey, lastModified, data);
+                                                cacheModified.set(true);
+                                                LOGGER.info("[CustomGear] Block loaded: {}", data.id);
+                                            }
+                                        }
+                                    }
+                                    case "fluid" -> {
+                                        GenericCache.CacheEntry<FluidData> cached = fluidCache.get(relKey);
+                                        if (cached != null && cached.lastModified == lastModified && cached.data != null) {
+                                            if (!seenFluids.add(cached.data.id)) {
+                                                LOGGER.error("[CustomGear] Duplicate fluid ID '{}' — skipping: {}", cached.data.id, relKey);
+                                                return;
+                                            }
+                                            result.fluids.add(cached.data);
+                                            LOGGER.debug("[CustomGear] Fluid cache hit: {}", relKey);
+                                        } else {
+                                            FluidData data = GSON.fromJson(json, FluidData.class);
+                                            if (validateFluid(data, path)) {
+                                                if (!seenFluids.add(data.id)) {
+                                                    LOGGER.error("[CustomGear] Duplicate fluid ID '{}' — skipping: {}", data.id, relKey);
+                                                    return;
+                                                }
+                                                result.fluids.add(data);
+                                                fluidCache.put(relKey, lastModified, data);
+                                                cacheModified.set(true);
+                                                LOGGER.info("[CustomGear] Fluid loaded: {}", data.id);
+                                            }
+                                        }
+                                    }
+                                    case "item", "food" -> {
+                                        GenericCache.CacheEntry<ItemData> cached = itemCache.get(relKey);
+                                        if (cached != null && cached.lastModified == lastModified && cached.data != null) {
+                                            if (!seenItems.add(cached.data.id)) {
+                                                LOGGER.error("[CustomGear] Duplicate item ID '{}' — skipping: {}", cached.data.id, relKey);
+                                                return;
+                                            }
+                                            result.items.add(cached.data);
+                                            LOGGER.debug("[CustomGear] Item cache hit: {}", relKey);
+                                        } else {
+                                            ItemData data = GSON.fromJson(json, ItemData.class);
+                                            if (validateItem(data, path)) {
+                                                if (!seenItems.add(data.id)) {
+                                                    LOGGER.error("[CustomGear] Duplicate item ID '{}' — skipping: {}", data.id, relKey);
+                                                    return;
+                                                }
+                                                result.items.add(data);
+                                                itemCache.put(relKey, lastModified, data);
+                                                cacheModified.set(true);
+                                                LOGGER.info("[CustomGear] Item loaded: {}", data.id);
+                                            }
+                                        }
+                                    }
+                                    case "advancement" -> {
+                                        AdvancementData data = GSON.fromJson(json, AdvancementData.class);
+                                        if (validateAdvancement(data, path)) {
+                                            result.advancements.add(data);
+                                            LOGGER.debug("[CustomGear] Advancement parsed (not yet active): {}", data.id);
+                                        }
+                                    }
+                                    default -> LOGGER.warn("[CustomGear] Unknown type '{}' in: {}", type, path.getFileName());
+                                }
+
+                            } catch (Exception e) {
+                                LOGGER.error("[CustomGear] Error reading {}: {}", path.getFileName(), e.getMessage());
+                            }
+                        });
+            } catch (IOException e) {
+                LOGGER.error("[CustomGear] Error scanning {}: {}",
+                        root.isLoose() ? "folder" : root.label(), e.getMessage());
+            }
         }
 
         if (blockCache.removeStale(currentKeys)) cacheModified.set(true);

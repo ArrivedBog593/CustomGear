@@ -12,6 +12,21 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Applies armor set bonuses and per-piece effects using the refreshed
+ * short-duration scheme from {@link EffectUtils}.
+ * <p>
+ * Each second this handler:
+ * <ol>
+ *   <li>Computes which sets/pieces are currently active from worn armor.</li>
+ *   <li>APPLIES their effects — for effects already active this is just a
+ *       duration refresh (no visual churn, potions never downgraded).</li>
+ *   <li>Removes (potion-safely) only the effects of sets/pieces that were
+ *       active last cycle but are no longer — a diff, not the previous
+ *       remove-everything-reapply-everything churn.</li>
+ * </ol>
+ * If tracking is ever lost (logout, crash), effects self-expire in ≤12s.
+ */
 public class SetBonusHandler {
 
     private static final Map<UUID, Map<String, GearData>> activeSetData = new ConcurrentHashMap<>();
@@ -33,20 +48,7 @@ public class SetBonusHandler {
 
         UUID playerId = player.getUUID();
 
-        Map<String, GearData> currentActiveSetData =
-                activeSetData.getOrDefault(playerId, Map.of());
-        Map<String, List<GearData.EffectData>> currentActivePieceEffectsData =
-                activePieceEffectsData.getOrDefault(playerId, Map.of());
-
-        for (GearData data : currentActiveSetData.values()) {
-            if (data.setBonus != null) {
-                removeEffects(player, data.setBonus.effects);
-            }
-        }
-        for (List<GearData.EffectData> effects : currentActivePieceEffectsData.values()) {
-            removeEffects(player, effects);
-        }
-
+        // ── 1. Compute what is active NOW from worn armor ────────────────────
         Map<String, Integer> piecesWorn = new HashMap<>();
         Map<String, GearData> setDataMap = new HashMap<>();
         List<PieceInfo> equippedPieces = new ArrayList<>();
@@ -66,17 +68,15 @@ public class SetBonusHandler {
             }
         }
 
-        Set<String> newActiveSets = new HashSet<>();
         Map<String, GearData> newActiveSetData = new HashMap<>();
-        Set<String> newActivePieces = new HashSet<>();
         Map<String, List<GearData.EffectData>> newActivePieceEffectsData = new HashMap<>();
 
+        // ── 2. Apply (= refresh) everything currently active ─────────────────
         for (Map.Entry<String, Integer> entry : piecesWorn.entrySet()) {
             String setId = entry.getKey();
             GearData data = setDataMap.get(setId);
             if (data.setBonus != null && entry.getValue() >= data.setBonus.requiredPieces) {
-                applyEffects(player, data.setBonus.effects);
-                newActiveSets.add(setId);
+                EffectUtils.applyEffects(player, data.setBonus.effects);
                 newActiveSetData.put(setId, data);
             }
         }
@@ -84,22 +84,33 @@ public class SetBonusHandler {
         for (PieceInfo info : equippedPieces) {
             List<GearData.EffectData> effects = info.data.pieceEffects.get(info.piece());
             if (effects != null && !effects.isEmpty()) {
-                applyEffects(player, effects);
-                newActivePieces.add(info.pieceId);
+                EffectUtils.applyEffects(player, effects);
                 newActivePieceEffectsData.put(info.pieceId, effects);
             }
         }
 
+        // ── 3. Remove only what STOPPED being active (diff vs. last cycle) ────
+        Map<String, GearData> prevSets =
+                activeSetData.getOrDefault(playerId, Map.of());
+        Map<String, List<GearData.EffectData>> prevPieces =
+                activePieceEffectsData.getOrDefault(playerId, Map.of());
+
+        for (Map.Entry<String, GearData> entry : prevSets.entrySet()) {
+            if (!newActiveSetData.containsKey(entry.getKey())
+                    && entry.getValue().setBonus != null) {
+                EffectUtils.removeEffects(player, entry.getValue().setBonus.effects);
+            }
+        }
+
+        for (Map.Entry<String, List<GearData.EffectData>> entry : prevPieces.entrySet()) {
+            if (!newActivePieceEffectsData.containsKey(entry.getKey())) {
+                EffectUtils.removeEffects(player, entry.getValue());
+            }
+        }
+
+        // ── 4. Store the new state ────────────────────────────────────────────
         activeSetData.put(playerId, newActiveSetData);
         activePieceEffectsData.put(playerId, newActivePieceEffectsData);
-    }
-
-    private static void applyEffects(Player player, List<GearData.EffectData> effects) {
-        EffectUtils.applyEffects(player, effects);
-    }
-
-    private static void removeEffects(Player player, List<GearData.EffectData> effects) {
-        EffectUtils.removeEffects(player, effects);
     }
 
     private record PieceInfo(String pieceId, GearData data, String piece) {

@@ -15,9 +15,10 @@ public final class MapColorResolver {
     private MapColorResolver() {}
 
     public static MapColor resolve(String color) {
-        if (color == null) return MapColor.NONE;
+        if (color == null) return MapColor.STONE;
 
         return switch (color.toLowerCase()) {
+            case "none" -> MapColor.NONE;
             case "grass" -> MapColor.GRASS;
             case "sand" -> MapColor.SAND;
             case "wool" -> MapColor.WOOL;
@@ -28,7 +29,6 @@ public final class MapColorResolver {
             case "snow" -> MapColor.SNOW;
             case "clay" -> MapColor.CLAY;
             case "dirt" -> MapColor.DIRT;
-            case "stone" -> MapColor.STONE;
             case "water" -> MapColor.WATER;
             case "wood" -> MapColor.WOOD;
             case "quartz" -> MapColor.QUARTZ;
@@ -84,7 +84,7 @@ public final class MapColorResolver {
             case "raw_iron" -> MapColor.RAW_IRON;
             case "glow_lichen" -> MapColor.GLOW_LICHEN;
 
-            default -> MapColor.NONE;
+            default -> MapColor.STONE;
         };
     }
 }

@@ -4,22 +4,26 @@ import arrivedbog593.ultimatecustomgear.CustomGearMod;
 import arrivedbog593.ultimatecustomgear.data.GearData;
 import arrivedbog593.ultimatecustomgear.loader.*;
 import arrivedbog593.ultimatecustomgear.resources.TextureLoader;
+import arrivedbog593.ultimatecustomgear.util.ContentHasher;
+import arrivedbog593.ultimatecustomgear.util.GlobalIdValidator;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.commands.ReloadCommand;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static arrivedbog593.ultimatecustomgear.CustomGearMod.DYNAMIC_PACK;
 
 public class CustomGearCommandHandler {
 
@@ -50,29 +54,59 @@ public class CustomGearCommandHandler {
                             lastReloadTime.set(now);
 
                             try {
-                                // 1. Reload all JSONs
-                                Path customgear = Paths.get(".", CustomGearMod.MOD_ID);
-                                List<GearData> gearList = GearParser.loadAll(customgear);
-                                UniversalParser.LoadResult universalResult = UniversalParser.loadAll(customgear);
+                                Path customgear = CustomGearMod.configFolder();
 
-                                // 2. Clear the previous dynamic pack
-                                CustomGearMod.DYNAMIC_PACK.clear();
+                                GlobalIdValidator.Result validated;
 
-                                // 3. Reload textures and languages
-                                TextureLoader.loadAll(CustomGearMod.DYNAMIC_PACK, gearList,
-                                        universalResult.items, universalResult.blocks, universalResult.fluids);
-                                TextureLoader.generateLang(CustomGearMod.DYNAMIC_PACK, gearList,
-                                        universalResult.items, universalResult.blocks, universalResult.fluids);
+                                try (ContentRoots roots = ContentRoots.open(customgear)) {
+                                    // 1. Reload all JSONs (loose folder + every zip in packs/)
+                                    List<GearData> gearList = GearParser.loadAll(roots);
+                                    UniversalParser.LoadResult universalResult = UniversalParser.loadAll(roots);
 
-                                // 4. Reload fluid, item and block data in registries
-                                FluidRegistry.updateFluidData(universalResult.fluids);
-                                ItemRegistry.updateItemData(universalResult.items);
-                                BlockRegistry.updateBlockData(universalResult.blocks);
+                                    // 1.5. Same global validation as startup — keeps runtime maps consistent
+                                    validated = GlobalIdValidator.validate(
+                                            gearList, universalResult.items, universalResult.blocks, universalResult.fluids);
 
-                                // 5. Atomic swap of the GEAR_MAP — removes the inconsistency window
-                                updateGearRegistryAtomic(gearList);
+                                    // 2. Clear the previous dynamic pack
+                                    DYNAMIC_PACK.clear();
 
-                                // 6. Notify user
+                                    // 3. Reload textures and languages
+                                    TextureLoader.loadAll(DYNAMIC_PACK, validated.gear,
+                                            validated.items, validated.blocks, validated.fluids);
+                                    TextureLoader.generateLang(DYNAMIC_PACK, validated.gear,
+                                            validated.items, validated.blocks, validated.fluids);
+
+                                    // 3.5. Regenerate recipe JSONs — without this, the pack's recipes are
+                                    // wiped by clear() and the next /reload erases ALL mod recipes
+                                    RecipeLoader.loadAll(DYNAMIC_PACK, validated.gear,
+                                            validated.items, validated.blocks);
+
+                                    // 3.6. Generate block tags (mineable tool + harvest level) — server data
+                                    BlockTagLoader.loadAll(DYNAMIC_PACK, validated.blocks);
+
+                                    // 3.7. Generate loot tables (server data)
+                                    BlockLootLoader.loadAll(DYNAMIC_PACK, validated.blocks);
+
+                                    // 4. Reload fluid, item and block data in registries
+                                    FluidRegistry.updateFluidData(validated.fluids);
+                                    ItemRegistry.updateItemData(validated.items);
+                                    BlockRegistry.updateBlockData(validated.blocks);
+
+                                    // 5. Atomic swap of the GEAR_MAP
+                                    updateGearRegistryAtomic(validated.gear);
+
+                                    // 5.5. Re-capture the content hash so new connections
+                                    // validate against the reloaded content (zips included)
+                                    ContentHasher.capture(roots);
+                                }
+
+                                // 6. Trigger the vanilla data pack reload so the
+                                // regenerated recipes take effect immediately
+                                ReloadCommand.reloadPacks(
+                                        source.getServer().getPackRepository().getSelectedIds(),
+                                        source);
+
+                                // 7. Notify user
                                 source.sendSuccess(
                                         () -> Component.translatable("customgear.command.reload.success"),
                                         true

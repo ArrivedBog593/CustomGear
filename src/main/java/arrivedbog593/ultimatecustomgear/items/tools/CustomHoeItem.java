@@ -76,27 +76,51 @@ public class CustomHoeItem extends HoeItem {
 
         if (radius > 0 && !context.getLevel().isClientSide()) {
             BlockPos centerPos = context.getClickedPos();
+            ItemStack stack = context.getItemInHand();
+
+            // Till the clicked block FIRST, so if durability runs out
+            // mid-area the block the player actually aimed at is always
+            // the one that got tilled.
+            boolean anySuccess = tillAt(context, centerPos);
+
 
             for (int x = -radius; x <= radius; x++) {
                 for (int z = -radius; z <= radius; z++) {
-                    BlockPos pos = centerPos.offset(x, 0, z);
-                    BlockHitResult hit = new BlockHitResult(
-                            Vec3.atCenterOf(pos),
-                            Direction.UP,
-                            pos,
-                            false);
-                    super.useOn(new UseOnContext(
-                            context.getLevel(),
-                            context.getPlayer(),
-                            context.getHand(),
-                            context.getItemInHand(),
-                            hit));
+                    if (x == 0 && z == 0) continue; // center already done
+
+                    // Each tilled block costs 1 durability; a large radius can
+                    // exceed what's left. When the hoe breaks, the in-hand
+                    // stack becomes empty — stop instead of ghost-tilling.
+                    if (stack.isEmpty()) {
+                        return anySuccess ? InteractionResult.SUCCESS
+                                : InteractionResult.PASS;
+                    }
+
+                    if (tillAt(context, centerPos.offset(x, 0, z))) {
+                        anySuccess = true;
+                    }
                 }
             }
 
-            return InteractionResult.SUCCESS;
+            return anySuccess ? InteractionResult.SUCCESS : InteractionResult.PASS;
         }
 
         return super.useOn(context);
+    }
+
+    /** Delegates one till attempt to vanilla HoeItem at the given position. */
+    private boolean tillAt(UseOnContext context, BlockPos pos) {
+        BlockHitResult hit = new BlockHitResult(
+                Vec3.atCenterOf(pos),
+                Direction.UP,
+                pos,
+                false);
+        InteractionResult result = super.useOn(new UseOnContext(
+                context.getLevel(),
+                context.getPlayer(),
+                context.getHand(),
+                context.getItemInHand(),
+                hit));
+        return result.consumesAction();
     }
 }

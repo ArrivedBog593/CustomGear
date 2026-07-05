@@ -22,12 +22,15 @@
 - Set bonus effects when wearing the required number of armor pieces
 - Held effects per tool/weapon (e.g., pickaxe gives Haste, sword gives Strength)
 - **Native recipe system** — define crafting recipes directly in JSON files, no external mods needed
+- **Content packs** — distribute all your content as a single `.zip` file that players drop into `packs/`
+- **Multiplayer content verification** — the server checks at login that clients have matching content files, with configurable enforcement
+- Recipe ingredients support **tags** (`"#minecraft:planks"` = any plank type, including items from other mods)
 - Full multi-language support — define the full item name per language with no format restrictions
 - Custom textures with a flexible path system, or reuse models from other mods
 - JSON files can be organized in any subfolder structure inside `.minecraft/ultimatecustomgear/`
 - Compatible with JEI — recipes are fully visible
 - All items are enchantable with vanilla and modded enchantments
-- `/customgear reload` command to reload names, textures, and effects without restarting
+- `/customgear reload` command to reload names, effects, and recipes without restarting (textures after F3+T)
 
 ---
 
@@ -36,7 +39,7 @@
 1. Download and install [NeoForge 1.21.1](https://neoforged.net/)
 2. Place `ultimatecustomgear-1.x.x.jar` in your `mods/` folder
 3. Launch the game once to generate the `ultimatecustomgear/` folder inside `.minecraft/`
-4. Add your JSON files to `.minecraft/ultimatecustomgear/`
+4. Add your JSON files to `.minecraft/ultimatecustomgear/` — or drop a content `.zip` into `.minecraft/ultimatecustomgear/packs/` (see **Content Packs** below)
 5. Restart the game
 
 > **JSON syntax note:** Standard JSON does not allow trailing commas. A trailing comma after the last element in an object or array will cause the file to be silently skipped on load.
@@ -46,6 +49,8 @@
 ## JSON File Structure
 
 All JSON files go inside `.minecraft/ultimatecustomgear/`. Each file defines one item, set, block, or fluid. Files can be organized in any subfolder structure you prefer.
+
+Content can also be packaged as `.zip` files inside `packs/` — see the **Content Packs** section.
 
 ### Supported types
 
@@ -454,6 +459,8 @@ Instant food (`eat_duration: 0`) and slow food (`eat_duration: 10` = 10 seconds)
   "destroy_time": 3.0,
   "explosion_resistance": 3.0,
   "map_color": "deepslate",
+  "required_tool": "pickaxe",
+  "harvest_level": 2,
   "sound": "stone",
   "texture": {
     "mode": "reference",
@@ -552,6 +559,21 @@ CustomGear supports native crafting recipes defined directly in JSON. No externa
 | `blasting`           | Blast furnace                               |
 | `smithing_transform` | Smithing table (template + base + addition) |
 
+### Tags as ingredients
+
+Any ingredient slot accepts a **tag** with the `#` prefix — the recipe will
+accept any item in that tag:
+
+```json
+"key": {
+  "P": "#minecraft:planks",
+  "I": "#c:ingots/iron",
+  "S": "minecraft:stick"
+}
+```
+
+Works in shaped, shapeless, smelting, blasting, and smithing recipes. Recipes with structural errors (uneven pattern rows, undefined pattern symbols, unused keys, malformed IDs) are skipped with a detailed message in the log naming the item and the exact problem.
+
 ### Individual item recipe
 
 ```json
@@ -629,6 +651,25 @@ For bows and crossbows, you can optionally include custom pulling/loading frame 
   }
 }
 ```
+
+---
+
+## Content Packs
+
+You can distribute your content as a single **.zip file** instead of loose files. Drop the zip into:
+
+```
+.minecraft/ultimatecustomgear/packs/your-content.zip
+```
+
+JSONs and textures inside the zip load exactly like loose files — subfolders inside the zip are fine. This is the recommended way for server owners to share content with players: one file, impossible to half-extract or edit by accident.
+
+**Rules:**
+- Zips are only loaded from the `packs/` subfolder. A zip anywhere else is ignored (with a log message telling you where to move it).
+- **Only `.zip` is supported.** If you have a `.rar` or `.7z`, re-compress it as zip: on Windows, select the files → right-click → Send to → Compressed folder.
+- **Loose files win over zips.** If a loose JSON defines the same `id` as one inside a zip, the loose file is used entirely (stats, textures, recipes) and the zip entry is skipped with a log message. You can use this to locally override a single item from a pack without touching the zip.
+- Multiple zips are allowed; they load in alphabetical order.
+- `/customgear reload` picks up added or updated zips without restarting.
 
 ---
 
@@ -758,34 +799,42 @@ Individual items (`type: "sword"`, `type: "bow"`, etc.) use the same fields as a
 
 ### Fluid Fields
 
-| Field                         | Type    | Default        | Description                                                      |
-|-------------------------------|---------|----------------|------------------------------------------------------------------|
-| `light_level`                 | Int     | 0              | Light emitted by the fluid block (0–15)                          |
-| `color`                       | String  | `"0xFFFFFFFF"` | Tint color in ARGB hex format, e.g. `"0xFF3F76E4"`               |
-| `tick_rate`                   | Int     | 5              | Ticks between each spread step. Lower = faster. Water=5, Lava=30 |
-| `spread_distance`             | Int     | 8              | Max horizontal spread in blocks. Water=8, Lava=4                 |
-| `burns_entities`              | Boolean | false          | Sets entities on fire like lava                                  |
-| `burn_duration`               | Int     | 5              | Seconds the entity burns. Only if `burns_entities` is true       |
-| `contact_effect_interval`     | Float   | 1.0            | Seconds between each effect application while in the fluid       |
-| `contact_effects`             | List    | —              | Effects applied while submerged                                  |
-| `contact_effects[].effect`    | String  | —              | Effect ID, e.g. `"minecraft:poison"`                             |
-| `contact_effects[].amplifier` | Int     | 0              | Effect level minus 1                                             |
-| `contact_effects[].duration`  | Int     | 3              | Duration in seconds per application                              |
+| Field                         | Type    | Default        | Description                                                                                                 |
+|-------------------------------|---------|----------------|-------------------------------------------------------------------------------------------------------------|
+| `light_level`                 | Int     | 0              | Light emitted by the fluid block (0–15)                                                                     |
+| `color`                       | String  | `"0xFFFFFFFF"` | Tint color in ARGB hex format, e.g. `"0xFF3F76E4"`                                                          |
+| `tick_rate`                   | Int     | 5              | Ticks between each spread step. Lower = faster. Water=5, Lava=30                                            |
+| `spread_distance`             | Int     | 8              | Max horizontal spread in blocks. Water=8, Lava=4                                                            |
+| `burns_entities`              | Boolean | false          | Sets entities on fire like lava — affects players, mobs and dropped items (fire-immune mobs are unaffected) |
+| `burn_duration`               | Int     | 5              | Seconds the entity burns. Only if `burns_entities` is true                                                  |
+| `contact_effect_interval`     | Float   | 1.0            | Seconds between each effect application while in the fluid                                                  |
+| `contact_effects`             | List    | —              | Effects applied to living entities (players and mobs) while submerged                                       |
+| `contact_effects[].effect`    | String  | —              | Effect ID, e.g. `"minecraft:poison"`                                                                        |
+| `contact_effects[].amplifier` | Int     | 0              | Effect level minus 1                                                                                        |
+| `contact_effects[].duration`  | Int     | 3              | Duration in seconds per application                                                                         |
+
+> `contact_effects[].duration` should be at least ~2 seconds longer than `contact_effect_interval`, or damage-over-time effects (poison, wither) won't get the chance to tick. The defaults (duration 3, interval 1.0) are safe.
+
+> ⚠️ Dropped items inside a fluid with `burns_entities: true` catch fire and are **destroyed**, exactly like in lava — players who die in it will lose their drops. Design accordingly.
 
 ### Block Fields
 
-| Field                  | Type    | Default | Description                                                                                                            |
-|------------------------|---------|---------|------------------------------------------------------------------------------------------------------------------------|
-| `light_level`          | Int     | 0       | Light emitted by the block (0–15)                                                                                      |
-| `destroy_time`         | Float   | 3.0     | Time to break with correct tool in seconds. Obsidian=9.5, bedrock=-1 (unbreakable)                                     |
-| `explosion_resistance` | Float   | 3.0     | Resistance to explosions. Stone=6.0, Obsidian=1200.0                                                                   |
-| `sound`                | String  | `stone` | Sound when placing/breaking/walking. See [BLOCK_SOUNDS.md](BLOCK_SOUNDS.md) for all available values. Default: `stone` |
-| `map_color`            | String  | `none`  | Map color for the block. See [MAP_COLORS.md](MAP_COLORS.md) for all available values. Default: `none`                  |
-| `directional`          | Boolean | false   | If true, rotates to face the player when placed. Requires `texture.faces.north` defined                                |
-| `gravity`              | Boolean | false   | If true, falls when unsupported, like sand or gravel. Cannot combine with `directional`                                |
-| `texture.refs.block`   | String  | —       | (Simple blocks) Resource location used for all 6 faces                                                                 |
-| `texture.faces`        | Object  | —       | Per-face texture configuration. Keys: `top`, `bottom`, `north`, `south`, `east`, `west`, `side`                        |
-| `texture.faces.side`   | String  | —       | Shortcut: applies to `north`, `south`, `east`, `west` if not individually defined                                      |
+| Field                  | Type    | Default | Description                                                                                                                                                                            |
+|------------------------|---------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `light_level`          | Int     | 0       | Light emitted by the block (0–15)                                                                                                                                                      |
+| `destroy_time`         | Float   | 3.0     | Time to break with correct tool in seconds. Obsidian=9.5, bedrock=-1 (unbreakable)                                                                                                     |
+| `explosion_resistance` | Float   | 3.0     | Resistance to explosions. Stone=6.0, Obsidian=1200.0                                                                                                                                   |
+| `sound`                | String  | `stone` | Sound when placing/breaking/walking. See [BLOCK_SOUNDS.md](BLOCK_SOUNDS.md) for all available values. Default: `stone`                                                                 |
+| `map_color`            | String  | `none`  | Map color for the block. See [MAP_COLORS.md](MAP_COLORS.md) for all available values. Default: `none`                                                                                  |
+| `required_tool`        | String  | `none`  | Tool that mines the block efficiently: `pickaxe`, `axe`, `shovel`, `hoe`, `sword` or `none`. Grants mining speed only — use `harvest_level` to gate drops                              |
+| `harvest_level`        | Int     | 0       | Tool tier that gates drops: 0=no requirement (drops with anything), 1=stone, 2=iron, 3=diamond, 4=netherite. Level 4 uses the diamond requirement (vanilla has no netherite block tag) |
+| `directional`          | Boolean | false   | If true, rotates to face the player when placed. Requires `texture.faces.north` defined                                                                                                |
+| `gravity`              | Boolean | false   | If true, falls when unsupported, like sand or gravel. Cannot combine with `directional`                                                                                                |
+| `texture.refs.block`   | String  | —       | (Simple blocks) Resource location used for all 6 faces                                                                                                                                 |
+| `texture.faces`        | Object  | —       | Per-face texture configuration. Keys: `top`, `bottom`, `north`, `south`, `east`, `west`, `side`                                                                                        |
+| `texture.faces.side`   | String  | —       | Shortcut: applies to `north`, `south`, `east`, `west` if not individually defined                                                                                                      |
+
+> With `harvest_level` ≥ 1, the block behaves like vanilla ore: the wrong tool or a lower tier is slow AND drops nothing. With level 0 (or omitted), `required_tool` only grants mining speed — the block drops with anything, like sand. Works with modded tools that follow vanilla tiers. Note: switching `harvest_level` between 0 and ≥1 requires a restart (the drop requirement is baked at startup); adjusting it between 1–4, or changing `required_tool`, applies with `/customgear reload`.
 
 ---
 
@@ -797,17 +846,41 @@ Individual items (`type: "sword"`, `type: "bow"`, etc.) use the same fields as a
 
 ### What the reload command updates
 - Item names
-- Textures and models
 - Held effects (weapons and tools)
 - Piece effects and set bonuses (armor)
+- Fluid contact effects and burning behavior
+- Recipes (the command reloads data packs automatically)
+- Block mining tags — `required_tool` changes and `harvest_level` adjustments (1–4)
 - Durability display
+- Textures and models — **after pressing F3+T** (the game only reloads client resources on demand)
 
 ### What requires a full game restart
 - Attack damage and attack speed
 - Armor defense, toughness, and knockback resistance
-- Mining speed and harvest level
+- Tool mining speed and tool tier (tool sets)
+- Enabling/disabling a block's drop requirement (`harvest_level` 0 ↔ ≥1)
 - Adding or removing items (new or deleted JSON files)
 - Changing item IDs
+
+---
+
+## Multiplayer
+
+**Client and server must have the same content files.** Item stats are baked in when the game starts, so differing files cause invisible desyncs (your tooltip says one damage value, the server applies another). To prevent this, the mod verifies content at login by comparing content hashes — packaging doesn't matter: a server using a zip matches clients using the same JSONs loose, and vice versa.
+
+What happens on a mismatch is configured **on the server** in `config/ultimatecustomgear-common.toml`:
+
+| Mode                | Behavior                                                                                                                                                                                                                                               |
+|---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ENFORCE` (default) | The client is disconnected with a message showing both hashes and how to fix it. Guarantees every player sees correct stats, names and recipes.                                                                                                        |
+| `WARN`              | The client is allowed in; the server logs the mismatch and the player gets a chat warning that tooltips/names may not match real values (combat always uses server values). Useful while distributing an updated content zip without kicking everyone. |
+| `OFF`               | No verification. Clients missing items still can't join (that's Minecraft's own registry check), but stat differences go undetected.                                                                                                                   |
+
+Only the server's setting matters — a client's local config has no effect when joining a server.
+
+**Distributing content:** pack your `ultimatecustomgear` JSONs (and textures)into a zip, share it, and have players drop it into their`.minecraft/ultimatecustomgear/packs/` folder.
+
+> Both sides must run the same mod version: 1.3.0 clients cannot join older servers and vice versa (network protocol change).
 
 ---
 
@@ -832,6 +905,7 @@ Individual items (`type: "sword"`, `type: "bow"`, etc.) use the same fields as a
 - Modded enchantments work automatically on enchantable items
 - Models from any installed mod can be referenced with `reference` mode
 - Ingredients from any installed mod can be used in recipes
+- Multiplayer: server and clients must run the same mod version and matching content files (verified automatically at login)
 
 ---
 

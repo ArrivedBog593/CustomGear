@@ -18,6 +18,18 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Applies held effects (main hand and offhand) using the refreshed
+ * short-duration scheme from {@link EffectUtils}: effects are re-applied
+ * every second while the item is held, and expire on their own (≤12s) if
+ * tracking is ever lost — no more infinite ghost effects after logout.
+ * <p>
+ * Hand-change tracking is kept for snappy removal on item swap; the removal
+ * is potion-safe (see EffectUtils.removeEffects). Known minor edge: if BOTH
+ * hands grant the same effect and one hand swaps away, the removal briefly
+ * clears it — the next refresh cycle (≤1s) restores it from the remaining
+ * hand. Self-healing by design.
+ */
 public class HeldEffectHandler {
 
     private static final Map<UUID, ResourceLocation> lastMainHand = new ConcurrentHashMap<>();
@@ -49,10 +61,11 @@ public class HeldEffectHandler {
         ResourceLocation prevOff  = lastOffHand.get(id);
 
         // If main hand item changed, remove effects from previous item
+        // (potion-safe removal — real potions of the same effect survive)
         if (prevMain != null && !prevMain.equals(currentMain)) {
             GearData prevData = GearRegistry.lookupGear(prevMain);
             if (prevData != null && prevData.heldEffects != null) {
-                removeEffects(player, prevData.heldEffects);
+                EffectUtils.removeEffects(player, prevData.heldEffects);
             }
         }
 
@@ -60,10 +73,12 @@ public class HeldEffectHandler {
         if (prevOff != null && !prevOff.equals(currentOff)) {
             GearData prevData = GearRegistry.lookupGear(prevOff);
             if (prevData != null && prevData.heldEffects != null) {
-                removeEffects(player, prevData.heldEffects);
+                EffectUtils.removeEffects(player, prevData.heldEffects);
             }
         }
 
+        // Apply (= refresh) effects for what is held right now. Re-applying
+        // every cycle is what keeps the short duration alive; it is not churn.
         checkAndApply(player, mainStack);
         checkAndApply(player, offStack);
 
@@ -79,10 +94,6 @@ public class HeldEffectHandler {
         List<GearData.EffectData> effects = getHeldEffects(stack);
         if (effects == null || effects.isEmpty()) return;
         EffectUtils.applyEffects(player, effects);
-    }
-
-    private static void removeEffects(Player player, List<GearData.EffectData> effects) {
-        EffectUtils.removeEffects(player, effects);
     }
 
     private static ResourceLocation getItemId(ItemStack stack) {

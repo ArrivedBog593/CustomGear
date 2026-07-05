@@ -60,6 +60,12 @@ public class BlockData {
     @SerializedName("map_color")
     public String mapColor;
 
+    @SerializedName("required_tool")
+    public String requiredTool;
+
+    @SerializedName("harvest_level")
+    public int harvestLevel = 0;
+
     /** Texture configuration */
     public BlockTextureData texture;
 

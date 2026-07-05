@@ -14,16 +14,27 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
- * Generates recipe JSON files and injects them into the DynamicResourcePack
- * as SERVER_DATA, so Minecraft loads them through the normal data pack system.
+ * Generates vanilla recipe JSONs from RecipeData and injects them into the
+ * dynamic pack as SERVER_DATA, so they load through the normal data pack
+ * pipeline and are visible to JEI. No reflection involved.
  * <p>
- * This approach makes recipes visible to JEI and works without reflection.
- * Item existence is NOT validated here — Minecraft validates recipes when loading
- * the data pack, and custom items are not yet registered at mod init time.
+ * VALIDATION PHILOSOPHY: everything vanilla would reject at data-pack load
+ * time is caught HERE, with a message that names the item and the exact
+ * problem. Vanilla's own errors are cryptic and don't point back to the
+ * user's JSON — for a no-coding-required mod, clear validation IS the product.
+ * Item existence is still NOT validated here (custom items aren't registered
+ * yet at mod init); only structure and ID syntax are.
+ * <p>
+ * INGREDIENTS: every ingredient position accepts either a plain item ID
+ * ("minecraft:diamond") or a TAG prefixed with '#' ("#minecraft:planks" =
+ * any plank type). Tags work in shaped keys, shapeless ingredients, cooking
+ * inputs, and smithing template/base/addition.
  * <p>
  * Supported recipe types:
  *   - shaped → crafting table with a specific pattern
@@ -126,10 +137,59 @@ public class RecipeLoader {
             LOGGER.warn("[CustomGear] Shaped recipe for '{}' has more than 3 rows — skipping", itemId);
             return null;
         }
+
+        // Row lengths: each 1-3 chars, and ALL rows the same length.
+        // Vanilla rejects uneven or oversized patterns at data-pack load
+        // with an error that doesn't point back to the user's JSON.
+        int width = data.pattern.getFirst().length();
+        for (String row : data.pattern) {
+            if (row.isEmpty() || row.length() > 3) {
+                LOGGER.warn("[CustomGear] Shaped recipe for '{}': row \"{}\" must be 1-3 characters — skipping",
+                        itemId, row);
+                return null;
+            }
+            if (row.length() != width) {
+                LOGGER.warn("[CustomGear] Shaped recipe for '{}': all pattern rows must have the SAME length "
+                                + "(row \"{}\" has {} chars, expected {}). Pad with spaces for empty slots — skipping",
+                        itemId, row, row.length(), width);
+                return null;
+            }
+        }
+
+        // Collect the symbols actually used in the pattern (space = empty slot)
+        Set<Character> usedSymbols = new HashSet<>();
+        for (String row : data.pattern) {
+            for (char c : row.toCharArray()) {
+                if (c != ' ') usedSymbols.add(c);
+            }
+        }
+
+        // Key entries: 1 char, not a space, and every key must be USED in the
+        // pattern — vanilla errors on unused key symbols too.
         for (Map.Entry<String, String> entry : data.key.entrySet()) {
-            if (entry.getKey().length() != 1) {
-                LOGGER.warn("[CustomGear] Shaped recipe for '{}': key '{}' must be 1 char — skipping",
-                        itemId, entry.getKey());
+            String symbol = entry.getKey();
+            if (symbol.length() != 1) {
+                LOGGER.warn("[CustomGear] Shaped recipe for '{}': key '{}' must be exactly 1 char — skipping",
+                        itemId, symbol);
+                return null;
+            }
+            if (symbol.charAt(0) == ' ') {
+                LOGGER.warn("[CustomGear] Shaped recipe for '{}': the space character is reserved for "
+                        + "empty slots and can't be a key — skipping", itemId);
+                return null;
+            }
+            if (!usedSymbols.contains(symbol.charAt(0))) {
+                LOGGER.warn("[CustomGear] Shaped recipe for '{}': key '{}' is defined but never appears "
+                        + "in the pattern — skipping. Remove it or use it in the pattern", itemId, symbol);
+                return null;
+            }
+        }
+
+        // Every pattern symbol must have a key entry
+        for (char symbol : usedSymbols) {
+            if (!data.key.containsKey(String.valueOf(symbol))) {
+                LOGGER.warn("[CustomGear] Shaped recipe for '{}': pattern uses '{}' but 'key' doesn't "
+                        + "define it — skipping", itemId, symbol);
                 return null;
             }
         }
@@ -143,13 +203,13 @@ public class RecipeLoader {
 
         JsonObject key = new JsonObject();
         for (Map.Entry<String, String> entry : data.key.entrySet()) {
-            JsonObject ingredient = new JsonObject();
-            ingredient.addProperty("item", entry.getValue());
-            key.add(entry.getKey(), ingredient);
+            JsonObject ing = ingredient(entry.getValue(), itemId, "key '" + entry.getKey() + "'");
+            if (ing == null) return null;
+            key.add(entry.getKey(), ing);
         }
         obj.add("key", key);
 
-        obj.add("result", buildResult("customgear:" + itemId, data.resultCount));
+        obj.add("result", buildResult(itemId, data.resultCount));
         return obj;
     }
 
@@ -160,19 +220,24 @@ public class RecipeLoader {
             LOGGER.warn("[CustomGear] Shapeless recipe for '{}' missing 'ingredients' — skipping", itemId);
             return null;
         }
+        if (data.ingredients.size() > 9) {
+            LOGGER.warn("[CustomGear] Shapeless recipe for '{}' has {} ingredients — a crafting grid "
+                    + "only holds 9. Skipping", itemId, data.ingredients.size());
+            return null;
+        }
 
         JsonObject obj = new JsonObject();
         obj.addProperty("type", "minecraft:crafting_shapeless");
 
         JsonArray ingredients = new JsonArray();
         for (String id : data.ingredients) {
-            JsonObject ingredient = new JsonObject();
-            ingredient.addProperty("item", id);
-            ingredients.add(ingredient);
+            JsonObject ing = ingredient(id, itemId, "ingredients");
+            if (ing == null) return null;
+            ingredients.add(ing);
         }
         obj.add("ingredients", ingredients);
 
-        obj.add("result", buildResult("customgear:" + itemId, data.resultCount));
+        obj.add("result", buildResult(itemId, data.resultCount));
         return obj;
     }
 
@@ -188,11 +253,11 @@ public class RecipeLoader {
         JsonObject obj = new JsonObject();
         obj.addProperty("type", type);
 
-        JsonObject ingredient = new JsonObject();
-        ingredient.addProperty("item", data.ingredient);
-        obj.add("ingredient", ingredient);
+        JsonObject ing = ingredient(data.ingredient, itemId, "ingredient");
+        if (ing == null) return null;
+        obj.add("ingredient", ing);
 
-        obj.add("result", buildResult("customgear:" + itemId, 1));
+        obj.add("result", buildResult(itemId, 1));
         obj.addProperty("experience", data.experience);
         obj.addProperty("cookingtime", data.cookingTime > 0 ? data.cookingTime : defaultTime);
 
@@ -211,28 +276,61 @@ public class RecipeLoader {
         JsonObject obj = new JsonObject();
         obj.addProperty("type", "minecraft:smithing_transform");
 
-        JsonObject template = new JsonObject();
-        template.addProperty("item", data.template);
+        JsonObject template = ingredient(data.template, itemId, "template");
+        JsonObject base     = ingredient(data.base,     itemId, "base");
+        JsonObject addition = ingredient(data.addition, itemId, "addition");
+        if (template == null || base == null || addition == null) return null;
+
         obj.add("template", template);
-
-        JsonObject base = new JsonObject();
-        base.addProperty("item", data.base);
         obj.add("base", base);
-
-        JsonObject addition = new JsonObject();
-        addition.addProperty("item", data.addition);
         obj.add("addition", addition);
 
-        obj.add("result", buildResult("customgear:" + itemId, 1));
+        obj.add("result", buildResult(itemId, 1));
         return obj;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
+    /**
+     * Builds a vanilla ingredient object from a config value.
+     * <ul>
+     *   <li>"minecraft:diamond"  → {"item": "minecraft:diamond"}</li>
+     *   <li>"#minecraft:planks"  → {"tag": "minecraft:planks"} (any plank)</li>
+     * </ul>
+     * Returns null (with a clear log naming the item and the position) if the
+     * resource location is syntactically invalid — vanilla would reject the
+     * whole recipe file at load time with a much less helpful error.
+     */
+    private static JsonObject ingredient(String value, String itemId, String where) {
+        if (value == null || value.isBlank()) {
+            LOGGER.warn("[CustomGear] Recipe for '{}': empty ingredient in {} — skipping recipe",
+                    itemId, where);
+            return null;
+        }
+
+        boolean isTag = value.startsWith("#");
+        String rl = isTag ? value.substring(1) : value;
+
+        if (ResourceLocation.tryParse(rl) == null) {
+            LOGGER.warn("[CustomGear] Recipe for '{}': malformed {} '{}' in {} — skipping recipe. "
+                            + "Expected 'namespace:path' (e.g. 'minecraft:diamond') or "
+                            + "'#namespace:tag' (e.g. '#minecraft:planks'). Only lowercase letters, "
+                            + "numbers, '_', '-', '.' and '/' are allowed",
+                    itemId, isTag ? "tag" : "item ID", value, where);
+            return null;
+        }
+
+        JsonObject obj = new JsonObject();
+        obj.addProperty(isTag ? "tag" : "item", rl);
+        return obj;
+    }
+
     private static JsonObject buildResult(String itemId, int count) {
         JsonObject result = new JsonObject();
-        result.addProperty("id", itemId);
-        if (count > 1) result.addProperty("count", count);
+        result.addProperty("id", "customgear:" + itemId);
+        if (count > 1) {
+            result.addProperty("count", Math.min(count, 64));
+        }
         return result;
     }
 }

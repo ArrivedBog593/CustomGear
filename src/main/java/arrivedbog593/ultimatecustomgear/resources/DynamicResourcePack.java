@@ -7,6 +7,7 @@ import net.minecraft.server.packs.PackLocationInfo;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.metadata.MetadataSectionSerializer;
 import net.minecraft.server.packs.metadata.pack.PackMetadataSection;
+import net.minecraft.server.packs.repository.KnownPack;
 import net.minecraft.server.packs.resources.IoSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,26 +17,53 @@ import org.jetbrains.annotations.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class DynamicResourcePack extends AbstractPackResources {
 
     private static final Logger LOGGER = LogManager.getLogger("CustomGear");
 
-    private final Map<ResourceLocation, byte[]> resources = new HashMap<>();
+    // ConcurrentHashMap: Minecraft loads resources on parallel worker threads,
+    // and /customgear reload mutates this map at runtime. A plain HashMap risks
+    // ConcurrentModificationException if a resource reload overlaps a mutation.
+    private final Map<ResourceLocation, byte[]> resources = new ConcurrentHashMap<>();
+
+    /** Cached content hash — invalidated on every mutation (addTexture/addRaw/clear). */
+    private volatile String cachedHash = null;
 
     public DynamicResourcePack(PackLocationInfo info) {
         super(info);
     }
 
+    /**
+     * The KnownPack negotiation reads pack identity from the PackResources
+     * itself via location().knownPack() — NOT from the Pack object built in
+     * AddPackFindersEvent. Overriding here makes the content-hash KnownPack
+     * the single source of truth: every Resource loaded from this pack
+     * carries it, so vanilla only skips re-sending data to a client whose
+     * generated pack is byte-identical to the server's.
+     */
+    @Override
+    public @NotNull PackLocationInfo location() {
+        PackLocationInfo base = super.location();
+        return new PackLocationInfo(
+                base.id(),
+                base.title(),
+                base.source(),
+                Optional.of(new KnownPack("customgear", "dynamic", contentHash()))
+        );
+    }
+
     public void addTexture(ResourceLocation location, Path texturePath) {
         try {
             resources.put(location, Files.readAllBytes(texturePath));
+            cachedHash = null;
         } catch (IOException e) {
             LOGGER.error("[CustomGear] Couldn't read texture: {}", texturePath);
         }
@@ -43,6 +71,7 @@ public class DynamicResourcePack extends AbstractPackResources {
 
     public void addRaw(ResourceLocation location, byte[] data) {
         resources.put(location, data);
+        cachedHash = null;
     }
 
     @Override
@@ -103,5 +132,42 @@ public class DynamicResourcePack extends AbstractPackResources {
 
     public void clear() {
         resources.clear();
+        cachedHash = null;
+    }
+
+    /**
+     * Deterministic SHA-256 hash of the full pack contents (keys + bytes),
+     * sorted by ResourceLocation so map iteration order never affects the result.
+     * Used as the KnownPack version: if client and server generated identical
+     * packs, the hashes match and vanilla skips re-sending the data. If they
+     * differ in ANY byte, the versions differ and the server sends its data —
+     * which is exactly the fallback we want instead of silent desync.
+     * <p>
+     * Cached because location() may be called many times per resource load;
+     * the cache is invalidated by any mutation of the resources map.
+     */
+    public String contentHash() {
+        String cached = cachedHash;
+        if (cached != null) return cached;
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            resources.entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey(
+                            Comparator.comparing(ResourceLocation::toString)))
+                    .forEach(e -> {
+                        digest.update(e.getKey().toString().getBytes(StandardCharsets.UTF_8));
+                        digest.update((byte) 0); // separator: key/value boundary
+                        digest.update(e.getValue());
+                    });
+            byte[] hash = digest.digest();
+            StringBuilder sb = new StringBuilder(16);
+            for (int i = 0; i < 8; i++) sb.append(String.format("%02x", hash[i]));
+            String result = sb.toString();
+            cachedHash = result;
+            return result;
+        } catch (NoSuchAlgorithmException e) {
+            // SHA-256 exists on every JVM; defensive fallback only
+            return "unhashed-" + resources.size();
+        }
     }
 }

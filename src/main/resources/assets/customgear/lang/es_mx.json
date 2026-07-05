@@ -1,7 +1,10 @@
 {
   "itemGroup.customgear": "Custom Gear",
 
-  "customgear.command.reload.success": "✓ Items recargados correctamente",
+  "customgear.network.hash_mismatch": "Tus archivos de Ultimate Custom Gear no coinciden con los del servidor.\nServidor: %s — Tuyos: %s\nPídele al dueño del servidor su carpeta ultimatecustomgear (o el zip) y reemplaza la tuya en .minecraft/ultimatecustomgear/",
+  "customgear.network.hash_mismatch_warn": "⚠ Tus archivos de UltimateCustomGear difieren de los del servidor. Nombres, tooltips y daño mostrado pueden no coincidir con los valores reales (el combate siempre usa los del servidor). Pídele al dueño el zip actualizado.",
+
+  "customgear.command.reload.success": "✓ Items recargados. Presiona F3+T si cambiaste texturas",
   "customgear.command.reload.error": "✗ Error al recargar",
 
   "tooltip.customgear.piece_effects": "Cuando se usa:",
