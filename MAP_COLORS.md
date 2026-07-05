@@ -3,7 +3,7 @@
 Complete list of available values for the `map_color` field in block JSON files.
 
 > **Usage:** `"map_color": "grass"`  
-> If the value is not recognized or omitted, defaults to `none`.
+> If the value is not recognized or omitted, defaults to `stone`.
 
 ---
 
