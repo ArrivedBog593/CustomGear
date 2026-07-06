@@ -45,6 +45,8 @@ public class CustomFluid {
 
     public static LiquidBlock createBlock(Supplier<? extends FlowingFluid> fluid, FluidData data) {
         BlockBehaviour.Properties props = BlockBehaviour.Properties.of()
+                .replaceable()      // place blocks into the fluid, like water/lava
+                .liquid()           // liquid material semantics
                 .noCollission()
                 .strength(100f)
                 .noLootTable()

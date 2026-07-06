@@ -25,6 +25,7 @@
 - **Packs de contenido** — distribuye todo tu contenido como un solo archivo `.zip` que los jugadores colocan en `packs/`
 - **Verificación de contenido en multijugador** — el servidor comprueba al conectar que los clientes tengan los mismos archivos de contenido, con cumplimiento configurable
 - Los ingredientes de recetas aceptan **tags** (`"#minecraft:planks"` = cualquier tabla de madera, incluyendo ítems de otros mods)
+- El contenido puede **pertenecer a tags** mediante un campo `tags`, para que tus ítems/bloques funcionen en recetas de otros mods (p. ej. etiqueta un ítem como `c:ingots` y cualquier mod que use ese tag lo aceptará)
 - Soporte completo para nombres en múltiples idiomas — define el nombre completo por idioma sin restricciones de formato
 - Texturas personalizadas con sistema de rutas flexible, o reutiliza modelos de otros mods
 - Los archivos JSON pueden organizarse en cualquier estructura de subcarpetas dentro de `.minecraft/ultimatecustomgear/`
@@ -619,6 +620,58 @@ Para múltiples recetas, usa un array:
 
 ---
 
+## Tags
+
+Dos caras del mismo sistema:
+- **Consumir** un tag en una receta usa el prefijo `#`: `"#minecraft:planks"` acepta cualquier ítem de ese tag (ver Recetas → Tags como ingredientes).
+- **Pertenecer** a un tag usa el campo `tags` en tu contenido, SIN `#`, para que las recetas de otros mods — y las tuyas — acepten tu ítem/bloque/fluido.
+
+```json
+{
+  "id": "ruby_ingot",
+  "type": "item",
+  "tags": ["c:ingots", "c:ingots/ruby"]
+}
+```
+
+Un tag es simplemente la suma de todo lo que lo declara — puedes usar tags de vanilla, tags de convención (`c:`) compartidos entre mods, o inventar los tuyos (`customgear:magic_gems`). Tus tags se fusionan con los existentes del mismo nombre.
+
+Los **bloques** se agregan a los registries de tags de bloque y de ítem (para qué las recetas, que consumen la forma de ítem, acepten tu bloque). Los **fluidos** etiquetan el fluido y su cubeta. **Los sets de armadura/ herramientas/armas aún no están soportados** (sus IDs se derivan por pieza).
+
+### Tags comunes
+
+Tags de vanilla (`minecraft:`) — hacen que tu contenido cuente como un material de vanilla:
+
+| Tag                                                                                                   | Uso                                        |
+|-------------------------------------------------------------------------------------------------------|--------------------------------------------|
+| `minecraft:planks`                                                                                    | Cuenta como tablas en recetas de vanilla   |
+| `minecraft:logs`                                                                                      | Troncos                                    |
+| `minecraft:wool`                                                                                      | Lana                                       |
+| `minecraft:leaves`                                                                                    | Hojas (se minan rápido con espada/tijeras) |
+| `minecraft:swords` / `minecraft:pickaxes` / `minecraft:axes` / `minecraft:shovels` / `minecraft:hoes` | Herramienta de ese tipo                    |
+| `minecraft:coals`                                                                                     | Combustibles tipo carbón                   |
+
+Tags de convención (`c:`) — el estándar de interoperabilidad entre mods (los más útiles):
+
+| Tag                                                | Uso                                                |
+|----------------------------------------------------|----------------------------------------------------|
+| `c:ingots` + `c:ingots/<material>`                 | Lingotes                                           |
+| `c:gems` + `c:gems/<material>`                     | Gemas                                              |
+| `c:ores` + `c:ores/<material>`                     | Menas                                              |
+| `c:raw_materials` + `c:raw_materials/<material>`   | Materiales en bruto                                |
+| `c:nuggets` + `c:nuggets/<material>`               | Pepitas                                            |
+| `c:dusts` + `c:dusts/<material>`                   | Polvos                                             |
+| `c:storage_blocks` + `c:storage_blocks/<material>` | Bloques de almacenamiento (bloque de X)            |
+| `c:tools` + `c:tools/<tipo>`                       | Herramientas por tipo                              |
+| `c:armors` + `c:armors/<pieza>`                    | Armaduras por pieza                                |
+| `c:foods` + `c:foods/<tipo>`                       | Comida (`c:foods/fruits`, `c:foods/vegetables`...) |
+| `c:dyes` + `c:dyes/<color>`                        | Tintes                                             |
+| `c:seeds` / `c:crops`                              | Semillas y cultivos                                |
+
+Consejo: usa el tag general Y el subtag de material (`c:ingots` y `c:ingots/ruby`) para máxima compatibilidad — el primero para "cualquier lingote", el segundo para "lingote de rubí específicamente".
+
+---
+
 ## Texturas
 
 Hay tres modos de textura disponibles:
@@ -671,19 +724,22 @@ Los JSON y texturas dentro del zip cargan exactamente igual que los archivos sue
 - Se permiten varios zips; cargan en orden alfabético.
 - `/customgear reload` detecta zips agregados o actualizados sin reiniciar.
 
+> Un pack distribuible debe ser **autocontenido**: cada textura que un JSON referencie debe estar dentro del mismo zip. Referenciar una textura suelta desde un JSON dentro de un zip funciona localmente, pero los jugadores que solo reciban el zip no tendrán el archivo suelto. (Los archivos sueltos siguen teniendo prioridad sobre el contenido del zip con la misma ruta — útil para ajustes locales.)
+
 ---
 
 ## Referencia de campos
 
 ### Campos comunes
 
-| Campo            | Tipo    | Descripción                                                                                                            |
-|------------------|---------|------------------------------------------------------------------------------------------------------------------------|
-| `id`             | String  | Identificador único. Solo letras minúsculas, números y guiones bajos. 2–64 caracteres.                                 |
-| `type`           | String  | Tipo de ítem (ver tabla de Tipos soportados)                                                                           |
-| `names`          | Map     | Nombre completo por idioma (solo para ítems individuales — los sets usan `piece_names`, `tool_names` o `weapon_names`) |
-| `enchantable`    | Boolean | Si el ítem puede ser encantado                                                                                         |
-| `enchantability` | Int     | Mayor = mejores encantamientos. Hierro = 9, Oro = 25, Diamante = 10                                                    |
+| Campo            | Tipo    | Descripción                                                                                                                                                                                                                          |
+|------------------|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `id`             | String  | Identificador único. Solo letras minúsculas, números y guiones bajos. 2–64 caracteres.                                                                                                                                               |
+| `type`           | String  | Tipo de ítem (ver tabla de Tipos soportados)                                                                                                                                                                                         |
+| `names`          | Map     | Nombre completo por idioma (solo para ítems individuales — los sets usan `piece_names`, `tool_names` o `weapon_names`)                                                                                                               |
+| `enchantable`    | Boolean | Si el ítem puede ser encantado                                                                                                                                                                                                       |
+| `enchantability` | Int     | Mayor = mejores encantamientos. Hierro = 9, Oro = 25, Diamante = 10                                                                                                                                                                  |
+| `tags`           | List    | Tags a los que pertenece este contenido, SIN `#` (p. ej. `["c:ingots", "c:ingots/ruby"]`). Permite que las recetas que aceptan `#ese_tag` lo usen. Ver **Tags** más abajo. Funciona en ítems, comida, bloques y fluidos (no en sets) |
 
 ### Campos de comida
 
@@ -778,6 +834,8 @@ Los ítems individuales (`type: "sword"`, `type: "bow"`, etc.) usan los mismos c
 | `texture.refs.block` | String | (Bloques simples) Resource location aplicada a las 6 caras mediante `cube_all`                                                             |
 | `texture.faces`      | Objeto | (Solo bloques) Textura por cara. Claves: `top`, `bottom`, `north`, `south`, `east`, `west`, `side`                                         |
 | `texture.faces.side` | String | Atajo: aplica a `north`, `south`, `east`, `west` si no están definidas individualmente                                                     |
+
+> **`refs` vs `faces`:** `refs` lo maneja todo — una textura única con la clave `all` (`"refs": { "all": "..." }`), o texturas por cara con las claves de cara (`top`, `bottom`, `north`, `south`, `east`, `west`, `side`). `faces` es un alias legacy que solo sirve para texturas por cara. Usa `refs`. (La clave `block` es un alias legacy de `all`.) Nota: `all`/`block` solo funcionan dentro de `refs`, nunca dentro de `faces`.
 
 ### Campos de receta
 

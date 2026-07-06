@@ -3,6 +3,7 @@ package arrivedbog593.ultimatecustomgear.data;
 import com.google.gson.annotations.SerializedName;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class BlockData {
 
@@ -66,6 +67,14 @@ public class BlockData {
     @SerializedName("harvest_level")
     public int harvestLevel = 0;
 
+    /**
+     * Tags this content belongs to, without the '#' prefix
+     * (e.g. "c:ingots", "c:ingots/ruby", "minecraft:planks").
+     * Lets other mods' recipes — and your own — accept this via #tag.
+     */
+    @SerializedName("tags")
+    public List<String> tags;
+
     /** Texture configuration */
     public BlockTextureData texture;
 
@@ -92,5 +101,42 @@ public class BlockData {
         public String mode;
         public Map<String, String> refs;
         public BlockFaces faces;
+
+        /** Face keys recognized inside refs (per-face mode). */
+        private static final Set<String> FACE_KEYS = Set.of(
+                "top", "bottom", "north", "south", "east", "west", "side");
+
+        /**
+         * Resolves the per-face config, unifying the two ways to declare it:
+         *   1. The typed "faces" object (legacy).
+         *   2. Face keys ("top"/"side"/...) placed directly in "refs".
+         * Returns null if neither declares any face → single-texture block
+         * (refs.all / refs.block), handled elsewhere.
+         * If both exist, "faces" wins and a caller may warn.
+         */
+        public BlockFaces resolveFaces() {
+            if (faces != null) return faces;
+            if (refs == null) return null;
+
+            boolean hasFaceKey = refs.keySet().stream().anyMatch(FACE_KEYS::contains);
+            if (!hasFaceKey) return null;
+
+            BlockFaces f = new BlockFaces();
+            f.top    = refs.get("top");
+            f.bottom = refs.get("bottom");
+            f.north  = refs.get("north");
+            f.south  = refs.get("south");
+            f.east   = refs.get("east");
+            f.west   = refs.get("west");
+            f.side   = refs.get("side");
+            return f;
+        }
+
+        /** Single-texture reference: "all" canonical, "block" legacy alias. */
+        public String allRef() {
+            if (refs == null) return null;
+            String r = refs.get("all");
+            return r != null ? r : refs.get("block");
+        }
     }
 }

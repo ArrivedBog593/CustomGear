@@ -2,6 +2,41 @@
 
 Todas las notas de cambios importantes para el proyecto UltimateCustomGear.
 
+## [1.3.1] - 2026-07-05
+
+### ✨ Nuevas Características
+
+#### Tags de Ítems / Bloques / Fluidos
+- Nuevo campo `tags` en ítems, comida, bloques y fluidos — declara a qué tags pertenece tu contenido (sin prefijo `#`), p. ej. `"tags": ["c:ingots", "c:ingots/ruby"]`
+- Hace que tu contenido sea usable en recetas de otros mods (y las tuyas) que acepten esos tags: un bloque con el tag `minecraft:planks` funciona donde se aceptan tablas; un ítem con `c:ingots` es reconocido por cualquier mod que use ese tag
+- Los bloques se agregan a los registries de tags de bloque y de ítem (para que cuenten tanto el bloque como su forma de ítem); los fluidos etiquetan el fluido y su cubeta
+- Los tags se fusionan con los de vanilla u otros mods del mismo nombre (`"replace": false`); también puedes inventar tus propios tags (`customgear:magic_gems`)
+- No disponible para sets de armadura/herramientas/armas en esta versión (sus ID por pieza necesitan un esquema aparte — planeado)
+
+#### Claves de textura unificadas para bloques
+- `refs` ahora maneja todos los casos de textura de bloque: textura única (`all`) o por cara (`top`/`bottom`/`north`/`south`/`east`/`west`/`side`)
+- `all` es la clave canónica para textura única; `block` se mantiene como alias legacy
+- `faces` sigue funcionando para texturas por cara (alias legacy)
+
+### 🐛 Correcciones
+- Arreglado que las texturas de bloque en modo custom rechazaran la clave `all`/`block` (antes el modo solo aceptaba la ruta por cara)
+- Arreglado que las texturas custom de bloques no cargaran desde los zips de packs de contenido — se resolvían contra una ruta de carpeta vieja fija en vez de las raíces de contenido (carpeta suelta + zips). Las texturas custom de bloque/cara ahora cargan desde zips como todo lo demás
+- Arreglado que los fluidos custom colocados mostraran una key de traducción cruda en Jade/WAILA en vez de su nombre (faltaba la key del nombre del bloque del fluido)
+- Arreglado no poder colocar bloques dentro de un fluido custom para taparlo o quitarlo — los bloques de fluido ahora son `replaceable` y están marcados como líquido, como el agua/lava
+
+### 🔧 Cambios Técnicos
+- `ItemTagLoader.java` — nuevo: genera los archivos de tags de ítem/bloque/fluido desde el campo `tags` y los inyecta en el pack dinámico (rutea los bloques a los registries de bloque+ítem, los fluidos a fluido+cubeta; rutas de tags singulares de 1.21, `"replace": false`); se llama al arrancar y en el reload
+- `ItemData.java`, `BlockData.java`, `FluidData.java` — nuevo campo `tags` (`List<String>`)
+- `BlockModelGenerator.java` — resolución unificada de claves de textura: `allRef()` (acepta `all`/`block`) y `resolveFaces()` (lee claves de cara desde `refs` o el objeto `faces`); las texturas custom ahora se resuelven a través de `TextureLoader.resolveUserResource` (raíces de contenido), arreglando la ruta fija `./ultimatecustomgear` que ignoraba los zips de packs
+- `LangGenerator.java` — emite `block.customgear.<id>` para los fluidos (nombre en Jade/WAILA/F3)
+- `CustomFluid.java` — las propiedades del bloque de fluido ahora incluyen `.replaceable()` y `.liquid()`
+- `CustomGearCommandHandler.java` — el reload ahora también regenera los tags de bloque, las loot tables de bloque y los tags de ítem (todos los loaders que inyectan al pack deben correr en el reload)
+
+### 📦 Dependencias
+No se agregaron dependencias nuevas.
+
+---
+
 ## [1.3.0] - 2026-07-04
 
 ### ⚠️ Notas Importantes

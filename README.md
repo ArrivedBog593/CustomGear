@@ -25,6 +25,7 @@
 - **Content packs** — distribute all your content as a single `.zip` file that players drop into `packs/`
 - **Multiplayer content verification** — the server checks at login that clients have matching content files, with configurable enforcement
 - Recipe ingredients support **tags** (`"#minecraft:planks"` = any plank type, including items from other mods)
+- Content can **belong to tags** via a `tags` field, so your items/blocks work in other mods' recipes (e.g., tag an item `c:ingots` and any mod using that tag accepts it)
 - Full multi-language support — define the full item name per language with no format restrictions
 - Custom textures with a flexible path system, or reuse models from other mods
 - JSON files can be organized in any subfolder structure inside `.minecraft/ultimatecustomgear/`
@@ -619,6 +620,58 @@ For multiple recipes, use an array:
 
 ---
 
+## Tags
+
+Two sides of the same system:
+- **Consuming** a tag in a recipe uses the `#` prefix: `"#minecraft:planks"` accepts any item in that tag (see Recipes → Tags as ingredients).
+- **Belonging** to a tag uses the `tags` field on your content, WITHOUT `#`, so other mods' recipes — and your own — accept your item/block/fluid.
+
+```json
+{
+  "id": "ruby_ingot",
+  "type": "item",
+  "tags": ["c:ingots", "c:ingots/ruby"]
+}
+```
+
+A tag is just the sum of everything that declares it — you can use vanilla tags, convention (`c:`) tags shared across mods, or invent your own (`customgear:magic_gems`). Your tags merge with existing ones of the same name.
+
+**Blocks** are added to both the block and item tag registries (so recipes, which consume the item form, accept your block). **Fluids** tag the fluid and their bucket item. **Armor/tool/weapon sets are not supported yet** (their IDs are derived per piece).
+
+### Common tags
+
+Vanilla tags (`minecraft:`) — make your content count as a vanilla material:
+
+| Tag                                                                                                   | Use                                     |
+|-------------------------------------------------------------------------------------------------------|-----------------------------------------|
+| `minecraft:planks`                                                                                    | Counts as planks in vanilla recipes     |
+| `minecraft:logs`                                                                                      | Logs                                    |
+| `minecraft:wool`                                                                                      | Wool                                    |
+| `minecraft:leaves`                                                                                    | Leaves (fast to mine with sword/shears) |
+| `minecraft:swords` / `minecraft:pickaxes` / `minecraft:axes` / `minecraft:shovels` / `minecraft:hoes` | Tool of that type                       |
+| `minecraft:coals`                                                                                     | Coal-type fuels                         |
+
+Convention tags (`c:`) — the cross-mod interoperability standard (most useful):
+
+| Tag                                                | Use                                              |
+|----------------------------------------------------|--------------------------------------------------|
+| `c:ingots` + `c:ingots/<material>`                 | Ingots                                           |
+| `c:gems` + `c:gems/<material>`                     | Gems                                             |
+| `c:ores` + `c:ores/<material>`                     | Ores                                             |
+| `c:raw_materials` + `c:raw_materials/<material>`   | Raw materials                                    |
+| `c:nuggets` + `c:nuggets/<material>`               | Nuggets                                          |
+| `c:dusts` + `c:dusts/<material>`                   | Dusts                                            |
+| `c:storage_blocks` + `c:storage_blocks/<material>` | Storage blocks (block of X)                      |
+| `c:tools` + `c:tools/<type>`                       | Tools by type                                    |
+| `c:armors` + `c:armors/<slot>`                     | Armor by slot                                    |
+| `c:foods` + `c:foods/<type>`                       | Food (`c:foods/fruits`, `c:foods/vegetables`...) |
+| `c:dyes` + `c:dyes/<color>`                        | Dyes                                             |
+| `c:seeds` / `c:crops`                              | Seeds and crops                                  |
+
+Tip: use the general tag AND the material subtag (`c:ingots` and `c:ingots/ruby`) for maximum compatibility — the first for "any ingot", the second for "ruby ingot specifically".
+ 
+---
+
 ## Textures
 
 Three texture modes are available:
@@ -667,9 +720,11 @@ JSONs and textures inside the zip load exactly like loose files — subfolders i
 **Rules:**
 - Zips are only loaded from the `packs/` subfolder. A zip anywhere else is ignored (with a log message telling you where to move it).
 - **Only `.zip` is supported.** If you have a `.rar` or `.7z`, re-compress it as zip: on Windows, select the files → right-click → Send to → Compressed folder.
-- **Loose files win over zips.** If a loose JSON defines the same `id` as one inside a zip, the loose file is used entirely (stats, textures, recipes) and the zip entry is skipped with a log message. You can use this to locally override a single item from a pack without touching the zip.
+- **Loose files win over zips.** If a loose JSON defines the same `id` as one inside a zip, the loose file is used entirely (stats, textures, recipes), and the zip entry is skipped with a log message. You can use this to locally override a single item from a pack without touching the zip.
 - Multiple zips are allowed; they load in alphabetical order.
 - `/customgear reload` picks up added or updated zips without restarting.
+
+> A distributable pack should be **self-contained**: every texture a JSON references must live inside the same zip. Referencing a loose texture from a zipped JSON works locally, but players who only receive the zip won't have the loose file. (Loose files still override zip contents of the same path — handy for local tweaks.)
 
 ---
 
@@ -677,13 +732,14 @@ JSONs and textures inside the zip load exactly like loose files — subfolders i
 
 ### Common Fields
 
-| Field            | Type    | Description                                                                                                   |
-|------------------|---------|---------------------------------------------------------------------------------------------------------------|
-| `id`             | String  | Unique identifier. Lowercase letters, numbers, and underscores only. 2–64 characters.                         |
-| `type`           | String  | Item type (see Supported Types table)                                                                         |
-| `names`          | Map     | Full item name per language (individual items only — sets use `piece_names`, `tool_names`, or `weapon_names`) |
-| `enchantable`    | Boolean | Whether the item can be enchanted                                                                             |
-| `enchantability` | Int     | Higher = better enchantments. Iron = 9, Gold = 25, Diamond = 10                                               |
+| Field            | Type    | Description                                                                                                                                                                                              |
+|------------------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `id`             | String  | Unique identifier. Lowercase letters, numbers, and underscores only. 2–64 characters.                                                                                                                    |
+| `type`           | String  | Item type (see Supported Types table)                                                                                                                                                                    |
+| `names`          | Map     | Full item name per language (individual items only — sets use `piece_names`, `tool_names`, or `weapon_names`)                                                                                            |
+| `enchantable`    | Boolean | Whether the item can be enchanted                                                                                                                                                                        |
+| `enchantability` | Int     | Higher = better enchantments. Iron = 9, Gold = 25, Diamond = 10                                                                                                                                          |
+| `tags`           | List    | Tags this content belongs to, WITHOUT `#` (e.g. `["c:ingots", "c:ingots/ruby"]`). Lets recipes that accept `#that_tag` use it. See **Tags** below. Works on items, food, blocks and fluids (not on sets) |
 
 ### Food Fields
 
@@ -778,6 +834,8 @@ Individual items (`type: "sword"`, `type: "bow"`, etc.) use the same fields as a
 | `texture.refs.block` | String | (Simple blocks) Resource location used for all 6 faces via `cube_all`                                         |
 | `texture.faces`      | Object | (Blocks only) Per-face texture configuration. Keys: `top`, `bottom`, `north`, `south`, `east`, `west`, `side` |
 | `texture.faces.side` | String | Shortcut: applies to `north`, `south`, `east`, `west` if not individually defined                             |
+
+> **`refs` vs `faces`:** `refs` handles everything — a single texture with the `all` key (`"refs": { "all": "..." }`), or per-face textures with the face keys (`top`, `bottom`, `north`, `south`, `east`, `west`, `side`). `faces` is a legacy alias that only works for per-face textures. Use `refs`. (The `block` key is a legacy alias of `all`.) Note: `all`/`block` only work inside `refs`, never inside `faces`.
 
 ### Recipe Fields
 
@@ -878,7 +936,7 @@ What happens on a mismatch is configured **on the server** in `config/ultimatecu
 
 Only the server's setting matters — a client's local config has no effect when joining a server.
 
-**Distributing content:** pack your `ultimatecustomgear` JSONs (and textures)into a zip, share it, and have players drop it into their`.minecraft/ultimatecustomgear/packs/` folder.
+**Distributing content:** pack your `ultimatecustomgear` JSONs (and textures) into a zip, share it, and have players drop it into their`.minecraft/ultimatecustomgear/packs/` folder.
 
 > Both sides must run the same mod version: 1.3.0 clients cannot join older servers and vice versa (network protocol change).
 

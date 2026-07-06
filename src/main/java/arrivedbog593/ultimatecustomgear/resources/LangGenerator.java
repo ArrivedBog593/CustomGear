@@ -71,6 +71,7 @@ public final class LangGenerator {
                         : data.id;
 
                 entries.put("fluid.customgear." + data.id, fluidName);
+                entries.put("block.customgear." + data.id, fluidName);
 
                 String bucketKey;
                 String bucketValue;

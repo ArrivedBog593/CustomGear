@@ -14,6 +14,14 @@ public class ItemData {
      */
     public String type;
 
+    /**
+     * Tags this content belongs to, without the '#' prefix
+     * (e.g. "c:ingots", "c:ingots/ruby", "minecraft:planks").
+     * Lets other mods' recipes — and your own — accept this via #tag.
+     */
+    @SerializedName("tags")
+    public List<String> tags;
+
     /** Texture path */
     public GearData.TextureData texture;
 

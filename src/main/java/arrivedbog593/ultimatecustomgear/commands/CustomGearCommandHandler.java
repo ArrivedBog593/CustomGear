@@ -76,16 +76,18 @@ public class CustomGearCommandHandler {
                                     TextureLoader.generateLang(DYNAMIC_PACK, validated.gear,
                                             validated.items, validated.blocks, validated.fluids);
 
-                                    // 3.5. Regenerate recipe JSONs — without this, the pack's recipes are
-                                    // wiped by clear() and the next /reload erases ALL mod recipes
+                                    // 3.5. Regenerate recipes
                                     RecipeLoader.loadAll(DYNAMIC_PACK, validated.gear,
                                             validated.items, validated.blocks);
 
-                                    // 3.6. Generate block tags (mineable tool + harvest level) — server data
+                                    // 3.6. Regenerate block mining tags (required_tool / harvest_level)
                                     BlockTagLoader.loadAll(DYNAMIC_PACK, validated.blocks);
 
-                                    // 3.7. Generate loot tables (server data)
+                                    // 3.7. Regenerate block loot tables (self-drop)
                                     BlockLootLoader.loadAll(DYNAMIC_PACK, validated.blocks);
+
+                                    // 3.8. Regenerate user-declared item/block/fluid tags
+                                    ItemTagLoader.loadAll(DYNAMIC_PACK, validated.items, validated.blocks, validated.fluids);
 
                                     // 4. Reload fluid, item and block data in registries
                                     FluidRegistry.updateFluidData(validated.fluids);

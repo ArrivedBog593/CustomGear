@@ -104,6 +104,9 @@ public class CustomGearMod {
 
             // 5.7. Generate loot tables (server data)
             BlockLootLoader.loadAll(DYNAMIC_PACK, validated.blocks);
+
+            // 5.8. Generate user-declared item/block/fluid tags — server data
+            ItemTagLoader.loadAll(DYNAMIC_PACK, validated.items, validated.blocks, validated.fluids);
         }
 
         // 6. Register the pack, client setup, event handlers and networking

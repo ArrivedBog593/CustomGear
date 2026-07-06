@@ -29,6 +29,14 @@ public class FluidData {
     public Map<String, String> bucketNames;
 
     /**
+     * Tags this content belongs to, without the '#' prefix
+     * (e.g. "c:ingots", "c:ingots/ruby", "minecraft:planks").
+     * Lets other mods' recipes — and your own — accept this via #tag.
+     */
+    @SerializedName("tags")
+    public List<String> tags;
+
+    /**
      * Texture configuration.
      * - Default mode: no texture object needed
      * - Custom mode: refs contain "still", "flowing", "bucket" paths

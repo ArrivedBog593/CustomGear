@@ -6,9 +6,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import static arrivedbog593.ultimatecustomgear.resources.ModelConstants.*;
 
@@ -19,11 +17,18 @@ import static arrivedbog593.ultimatecustomgear.resources.ModelConstants.*;
  *  1. Simple (cube_all)     — same texture on all faces
  *  2. Per-face (cube)       — different texture per face via "faces" field
  *  3. Directional (cube)    — rotates when placed, front face defined by "faces.north"
+ * <p>
+ * Key naming: "all" is the CANONICAL refs key for single-texture blocks in
+ * BOTH modes (this texture on ALL faces — contrast with "faces"); "block" is
+ * accepted as a legacy alias for backward compatibility. See allFacesRef().
+ * <p>
+ * Custom texture paths are resolved through TextureLoader.resolveUserResource,
+ * which searches the loose config folder AND every mounted content zip —
+ * never a hardcoded working-directory path.
  */
 public final class BlockModelGenerator {
 
-    private static final Logger LOGGER      = LogManager.getLogger("CustomGear");
-    private static final Path   GEAR_FOLDER = Paths.get(".", "ultimatecustomgear");
+    private static final Logger LOGGER = LogManager.getLogger("CustomGear");
 
     private BlockModelGenerator() {}
 
@@ -32,47 +37,48 @@ public final class BlockModelGenerator {
     public static void loadBlock(DynamicResourcePack pack, BlockData data) {
         LOGGER.info("[CustomGear] Loading block: {}", data.id);
 
-        // If faces are defined, use per-face or directional model
-        if (data.texture != null && data.texture.faces != null) {
+        // Per-face mode if faces are declared — either via the "faces" object
+        // or via face keys inside "refs". resolveFaces() unifies both.
+        BlockData.BlockFaces faces = data.texture != null ? data.texture.resolveFaces() : null;
+        if (faces != null) {
             if ("custom".equals(data.texture.mode)) {
-                loadCustomFacesBlock(pack, data);
+                loadCustomFacesBlock(pack, data, faces);
             } else {
-                // reference mode or no mode — use resource locations directly
-                loadReferenceFacesBlock(pack, data);
+                loadReferenceFacesBlock(pack, data, faces);
             }
             return;
         }
 
-        // No faces defined — simple cube_all
+        // Single-texture block
         if (data.texture == null || data.texture.mode == null) {
             generateBlockWithRef(pack, data.id, DEFAULT_BLOCK);
             return;
         }
         switch (data.texture.mode) {
             case "reference" -> {
-                String ref = data.texture.refs != null ? data.texture.refs.get("block") : null;
+                String ref = data.texture.allRef();
                 if (ref != null) {
                     generateBlockWithRef(pack, data.id, ref);
                 } else {
-                    LOGGER.error("[CustomGear] 'refs.block' missing in reference mode: {}", data.id);
+                    LOGGER.error("[CustomGear] 'refs.all' (or 'refs.block') missing in reference mode: {}", data.id);
                     generateBlockWithRef(pack, data.id, DEFAULT_BLOCK);
                 }
             }
             case "custom" -> {
-                String path = data.texture.refs != null ? data.texture.refs.get("all") : null;
+                String path = data.texture.allRef();
                 if (path != null) {
-                    Path texPath = GEAR_FOLDER.resolve(path);
-                    if (Files.exists(texPath)) {
-                        pack.addTexture(blockTextureLoc(data.id), texPath);
+                    java.util.Optional<Path> texPath = TextureLoader.resolveUserResource(path);
+                    if (texPath.isPresent()) {
+                        pack.addTexture(blockTextureLoc(data.id), texPath.get());
                         generateBlockModel(pack, data.id);
                         generateBlockState(pack, data.id);
                         generateBlockItemModel(pack, data.id);
                     } else {
-                        LOGGER.error("[CustomGear] Block texture not found: {}", texPath);
+                        LOGGER.error("[CustomGear] Block texture not found in config folder or any pack zip: {}", path);
                         generateBlockWithRef(pack, data.id, DEFAULT_BLOCK);
                     }
                 } else {
-                    LOGGER.error("[CustomGear] 'refs.all' missing in custom mode: {}", data.id);
+                    LOGGER.error("[CustomGear] 'refs.all' (or 'refs.block') missing in custom mode: {}", data.id);
                     generateBlockWithRef(pack, data.id, DEFAULT_BLOCK);
                 }
             }
@@ -104,8 +110,8 @@ public final class BlockModelGenerator {
 
     // ── Per-face blocks (custom PNG files) ────────────────────────────────────
 
-    private static void loadCustomFacesBlock(DynamicResourcePack pack, BlockData data) {
-        BlockData.BlockFaces f = data.texture.faces;
+    private static void loadCustomFacesBlock(DynamicResourcePack pack, BlockData data,
+                                             BlockData.BlockFaces f) {
         String id = data.id;
 
         // Resolve each face — individual face overrides "side" shortcut
@@ -135,33 +141,32 @@ public final class BlockModelGenerator {
     }
 
     /**
-     * Loads a custom face texture from disk and returns its resource location string.
+     * Loads a custom face texture and returns its resource location string.
      * Falls back to the side shortcut if the individual face path is null.
-     * Returns null if neither is defined.
+     * Returns null if neither is defined. Paths are resolved against the
+     * loose config folder and every mounted content zip.
      */
     private static String resolveFaceCustom(DynamicResourcePack pack, String blockId,
                                             String faceName, String facePath, String sidePath) {
         String path = facePath != null ? facePath : sidePath;
         if (path == null) return null;
 
-        // Use shared texture if same path was already loaded for another face
-        // Key: blockId_faceName (e.g. "my_block_top")
         String texId = blockId + "_" + faceName;
-        Path texPath = GEAR_FOLDER.resolve(path);
-        if (Files.exists(texPath)) {
-            pack.addTexture(blockTextureLoc(texId), texPath);
+        java.util.Optional<Path> texPath = TextureLoader.resolveUserResource(path);
+        if (texPath.isPresent()) {
+            pack.addTexture(blockTextureLoc(texId), texPath.get());
             return NAMESPACE + ":block/" + texId;
         } else {
             LOGGER.error("[CustomGear] Face texture '{}' not found for block '{}': {}",
-                    faceName, blockId, texPath);
+                    faceName, blockId, path);
             return null;
         }
     }
 
     // ── Per-face blocks (reference resource locations) ────────────────────────
 
-    private static void loadReferenceFacesBlock(DynamicResourcePack pack, BlockData data) {
-        BlockData.BlockFaces f = data.texture.faces;
+    private static void loadReferenceFacesBlock(DynamicResourcePack pack, BlockData data,
+                                                BlockData.BlockFaces f) {
         String id = data.id;
 
         String top    = f.top    != null ? f.top    : (f.side != null ? f.side : DEFAULT_BLOCK);
