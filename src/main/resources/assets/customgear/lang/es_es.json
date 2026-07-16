@@ -29,5 +29,10 @@
   "tooltip.ultimatecustomgear.harvest_stone": "Piedra",
   "tooltip.ultimatecustomgear.harvest_iron": "Hierro",
   "tooltip.ultimatecustomgear.harvest_diamond": "Diamante",
-  "tooltip.ultimatecustomgear.harvest_netherite": "Netherita"
+  "tooltip.ultimatecustomgear.harvest_netherite": "Netherita",
+
+  "tooltip.ultimatecustomgear.dropped_by": "Lo sueltan:",
+  "tooltip.ultimatecustomgear.dropped_by.any_mob": "Cualquier mob",
+  "tooltip.ultimatecustomgear.dropped_by.mod_mobs": "Todos los mobs de %s",
+  "tooltip.ultimatecustomgear.dropped_by.more": "…y %s más"
 }

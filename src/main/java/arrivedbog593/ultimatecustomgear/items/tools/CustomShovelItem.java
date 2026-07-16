@@ -22,17 +22,19 @@ public class CustomShovelItem extends ShovelItem {
     }
 
     private CustomShovelItem(GearData data, CustomTier tier) {
-        super(
-                tier,
-                new Properties()
-                        .durability(data.durability)
-                        .attributes(ShovelItem.createAttributes(
-                                tier,
-                                data.attackDamage - 1,
-                                data.attackSpeed - 4
-                        ))
-        );
+        super(tier, buildProps(data, tier));
         this.initialGearData = data;
+    }
+
+    private static Properties buildProps(GearData data, CustomTier tier) {
+        Properties p = new Properties()
+                .durability(data.durability)
+                .attributes(ShovelItem.createAttributes(
+                        tier,
+                        data.attackDamage - 1,
+                        data.attackSpeed - 4
+                ));
+        return data.fireResistant ? p.fireResistant() : p;
     }
 
     private GearData getGearData() {

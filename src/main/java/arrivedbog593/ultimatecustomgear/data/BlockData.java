@@ -75,6 +75,11 @@ public class BlockData {
     @SerializedName("tags")
     public List<String> tags;
 
+    /** If true, the ITEM survives fire and lava when dropped (like netherite).
+     *  Does NOT make the wearer fire-immune (use fire_resistance effects for that). */
+    @SerializedName("fire_resistant")
+    public boolean fireResistant = false;
+
     /** Texture configuration */
     public BlockTextureData texture;
 

@@ -7,10 +7,9 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
+import java.util.Optional;
 
 import static arrivedbog593.ultimatecustomgear.resources.ModelConstants.*;
 
@@ -26,7 +25,10 @@ import static arrivedbog593.ultimatecustomgear.resources.ModelConstants.*;
 public final class GearModelGenerator {
 
     private static final Logger LOGGER = LogManager.getLogger("CustomGear");
-    private static final Path   GEAR_FOLDER = Paths.get(".", "customgear");
+    // NOTE: custom texture paths resolve through TextureLoader.resolveUserResource
+    // (loose config folder + every pack zip). The old GEAR_FOLDER constant pointed
+    // at "./customgear" — the mod's OLD folder name — so custom gear textures
+    // never resolved correctly and never loaded from zips.
 
     private GearModelGenerator() {}
 
@@ -138,11 +140,15 @@ public final class GearModelGenerator {
         String layerNum  = layerKey.split("_")[1];
         String layerPath = data.texture.armorLayers.get(layerKey);
         if (layerPath != null) {
-            Path texPath = GEAR_FOLDER.resolve(layerPath);
-            if (Files.exists(texPath)) {
-                pack.addTexture(armorTextureLoc(data.id, layerKey), texPath);
+            if (layerPath.equals("transparent")) {
+                pack.addRaw(armorTextureLoc(data.id, layerKey), TRANSPARENT_LAYER_PNG);
+                return;
+            }
+            Optional<Path> texPath = TextureLoader.resolveUserResource(layerPath);
+            if (texPath.isPresent()) {
+                pack.addTexture(armorTextureLoc(data.id, layerKey), texPath.get());
             } else {
-                LOGGER.error(ERROR_LAYER_NOT_FOUND, layerNum, texPath);
+                LOGGER.error(ERROR_LAYER_NOT_FOUND, layerNum, layerPath);
             }
         } else {
             LOGGER.error(ERROR_LAYER_NOT_DEFINED, layerNum, data.id);
@@ -152,13 +158,13 @@ public final class GearModelGenerator {
     private static void loadArmorPiece(DynamicResourcePack pack, GearData data, String piece) {
         String ref = data.texture.refs.get(piece);
         if (ref != null) {
-            Path texPath = GEAR_FOLDER.resolve(ref);
-            if (Files.exists(texPath)) {
+            Optional<Path> texPath = TextureLoader.resolveUserResource(ref);
+            if (texPath.isPresent()) {
                 String itemId = data.id + "_" + piece;
-                pack.addTexture(itemTextureLoc(itemId), texPath);
+                pack.addTexture(itemTextureLoc(itemId), texPath.get());
                 generateArmorItemModel(pack, itemId);
             } else {
-                LOGGER.error(ERROR_PIECE_TEXTURE_NOT_FOUND, texPath);
+                LOGGER.error(ERROR_PIECE_TEXTURE_NOT_FOUND, ref);
             }
         } else {
             LOGGER.error(ERROR_REFS_MISSING_KEY, piece, data.id);
@@ -201,11 +207,11 @@ public final class GearModelGenerator {
     }
 
     private static void loadToolTexture(DynamicResourcePack pack, String itemId, String ref) {
-        Path texPath = GEAR_FOLDER.resolve(ref);
-        if (Files.exists(texPath)) {
-            pack.addTexture(itemTextureLoc(itemId), texPath);
+        Optional<Path> texPath = TextureLoader.resolveUserResource(ref);
+        if (texPath.isPresent()) {
+            pack.addTexture(itemTextureLoc(itemId), texPath.get());
         } else {
-            LOGGER.error(ERROR_TOOL_TEXTURE_NOT_FOUND, texPath);
+            LOGGER.error(ERROR_TOOL_TEXTURE_NOT_FOUND, ref);
         }
     }
 
@@ -234,23 +240,23 @@ public final class GearModelGenerator {
 
     private static void loadCustomBowTextures(DynamicResourcePack pack, GearData data,
                                               String itemId, String baseRef) {
-        Path basePath = GEAR_FOLDER.resolve(baseRef);
-        if (!Files.exists(basePath)) {
-            LOGGER.error(ERROR_TOOL_TEXTURE_NOT_FOUND, basePath);
+        Optional<Path> basePath = TextureLoader.resolveUserResource(baseRef);
+        if (basePath.isEmpty()) {
+            LOGGER.error(ERROR_TOOL_TEXTURE_NOT_FOUND, baseRef);
             generateParentOnlyModel(pack, itemId, DEFAULT_BOW);
             return;
         }
-        pack.addTexture(itemTextureLoc(itemId), basePath);
+        pack.addTexture(itemTextureLoc(itemId), basePath.get());
         String[] frames = {"pulling_0", "pulling_1", "pulling_2"};
         boolean hasAllFrames = true;
         for (String frame : frames) {
             String frameRef = data.texture.refs.get("bow_" + frame);
             if (frameRef != null) {
-                Path framePath = GEAR_FOLDER.resolve(frameRef);
-                if (Files.exists(framePath)) {
-                    pack.addTexture(itemTextureLoc(itemId + "_" + frame), framePath);
+                Optional<Path> framePath = TextureLoader.resolveUserResource(frameRef);
+                if (framePath.isPresent()) {
+                    pack.addTexture(itemTextureLoc(itemId + "_" + frame), framePath.get());
                 } else {
-                    LOGGER.error(ERROR_TOOL_TEXTURE_NOT_FOUND, framePath);
+                    LOGGER.error(ERROR_TOOL_TEXTURE_NOT_FOUND, frameRef);
                     hasAllFrames = false;
                 }
             } else {
@@ -287,11 +293,22 @@ public final class GearModelGenerator {
             }
         }
         if (hasArmorLayers(data)) {
-            String layer1 = data.texture.armorLayers.get("layer_1");
-            String layer2 = data.texture.armorLayers.get("layer_2");
-            if (layer1 != null) generateItemModelWithRef(pack, data.id + "_layer_1", layer1);
-            if (layer2 != null) generateItemModelWithRef(pack, data.id + "_layer_2", layer2);
+            loadReferenceLayer(pack, data, "layer_1");
+            loadReferenceLayer(pack, data, "layer_2");
         }
+    }
+
+    /** Reference-mode armor layer: a resource location, or "transparent" for invisibility. */
+    private static void loadReferenceLayer(DynamicResourcePack pack, GearData data, String layerKey) {
+        String ref = data.texture.armorLayers.get(layerKey);
+        if (ref == null) return;
+        if (ref.equals("transparent")) {
+            // Same invisibility mechanism as custom mode: inject a fully
+            // transparent PNG at the layer's texture location
+            pack.addRaw(armorTextureLoc(data.id, layerKey), TRANSPARENT_LAYER_PNG);
+            return;
+        }
+        generateItemModelWithRef(pack, data.id + "_" + layerKey, ref);
     }
 
     private static void loadReferenceToolSet(DynamicResourcePack pack, GearData data) {
@@ -345,6 +362,22 @@ public final class GearModelGenerator {
         } else {
             LOGGER.error(ERROR_REFS_MISSING_KEY_IN, data.type, data.id);
             generateParentOnlyModel(pack, data.id, getDefaultWeaponParent(data.type));
+        }
+    }
+
+    /** Fully transparent 64x32 PNG, generated once — used for "transparent" armor layers. */
+    private static final byte[] TRANSPARENT_LAYER_PNG = createTransparentLayerPng();
+
+    private static byte[] createTransparentLayerPng() {
+        try {
+            java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(
+                    64, 32, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+            java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+            javax.imageio.ImageIO.write(img, "png", out);
+            return out.toByteArray();
+        } catch (IOException e) {
+            LOGGER.error("[CustomGear] Could not generate transparent layer PNG: {}", e.getMessage());
+            return new byte[0];
         }
     }
 

@@ -17,8 +17,13 @@ public class CustomCrossbowItem extends CrossbowItem {
     private final GearData initialGearData;
 
     public CustomCrossbowItem(GearData data) {
-        super(new Properties().durability(data.durability));
+        super(buildProps(data));
         this.initialGearData = data;
+    }
+
+    private static Properties buildProps(GearData data) {
+        Properties p = new Properties().durability(data.durability);
+        return data.fireResistant ? p.fireResistant() : p;
     }
 
     private GearData getGearData() {

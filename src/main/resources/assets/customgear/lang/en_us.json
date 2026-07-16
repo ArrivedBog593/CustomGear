@@ -29,5 +29,10 @@
   "tooltip.ultimatecustomgear.harvest_stone": "Stone",
   "tooltip.ultimatecustomgear.harvest_iron": "Iron",
   "tooltip.ultimatecustomgear.harvest_diamond": "Diamond",
-  "tooltip.ultimatecustomgear.harvest_netherite": "Netherite"
+  "tooltip.ultimatecustomgear.harvest_netherite": "Netherite",
+
+  "tooltip.ultimatecustomgear.dropped_by": "Dropped by:",
+  "tooltip.ultimatecustomgear.dropped_by.any_mob": "Any mob",
+  "tooltip.ultimatecustomgear.dropped_by.mod_mobs": "All %s mobs",
+  "tooltip.ultimatecustomgear.dropped_by.more": "…and %s more"
 }

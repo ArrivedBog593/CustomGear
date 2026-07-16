@@ -248,6 +248,24 @@ public class UniversalParser {
             LOGGER.warn("[CustomGear] Item ID does not match format: {}", data.id);
             return false;
         }
+        if (data.mobDrops != null) {
+            if (data.mobDrops.entities == null || data.mobDrops.entities.isEmpty()) {
+                LOGGER.warn("[CustomGear] Item '{}': mob_drops has no 'entities' — the drop is "
+                        + "DISABLED. Use \"entities\": [\"all\"] for every mob, or list specific "
+                        + "ids/#tags/mod:* wildcards", data.id);
+
+            }
+            if (data.mobDrops.chance < 0 || data.mobDrops.chance > 1) {
+                LOGGER.warn("[CustomGear] Item '{}': mob_drops.chance must be 0.0-1.0 (got {})",
+                        data.id, data.mobDrops.chance);
+                return false;
+            }
+            if (data.mobDrops.min < 1 || data.mobDrops.max < data.mobDrops.min) {
+                LOGGER.warn("[CustomGear] Item '{}': mob_drops min/max invalid (min {} max {})",
+                        data.id, data.mobDrops.min, data.mobDrops.max);
+                return false;
+            }
+        }
         return true;
     }
 

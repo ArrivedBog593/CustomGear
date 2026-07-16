@@ -29,6 +29,12 @@ public class FluidData {
     public Map<String, String> bucketNames;
 
     /**
+     * If true, the ITEM survives fire and lava when dropped (like netherite).
+     *  Does NOT make the wearer fire-immune (use fire_resistance effects for that). */
+    @SerializedName("fire_resistant")
+    public boolean fireResistant = false;
+
+    /**
      * Tags this content belongs to, without the '#' prefix
      * (e.g. "c:ingots", "c:ingots/ruby", "minecraft:planks").
      * Lets other mods' recipes — and your own — accept this via #tag.

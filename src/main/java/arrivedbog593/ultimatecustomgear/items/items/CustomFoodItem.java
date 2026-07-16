@@ -1,6 +1,7 @@
 package arrivedbog593.ultimatecustomgear.items.items;
 
 import arrivedbog593.ultimatecustomgear.data.ItemData;
+import arrivedbog593.ultimatecustomgear.loader.ItemRegistry;
 import arrivedbog593.ultimatecustomgear.util.TooltipHelper;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -47,8 +48,13 @@ public class CustomFoodItem extends Item {
     private final ItemData itemData;
 
     public CustomFoodItem(ItemData data) {
-        super(new Item.Properties().food(buildFoodProperties(data)));
+        super(buildProps(data));
         this.itemData = data;
+    }
+
+    private static Item.Properties buildProps(ItemData data) {
+        Item.Properties p = new Item.Properties().food(buildFoodProperties(data));
+        return data.fireResistant ? p.fireResistant() : p;
     }
 
     @Override
@@ -119,6 +125,9 @@ public class CustomFoodItem extends Item {
                                 @NotNull List<Component> tooltipComponents,
                                 @NotNull net.minecraft.world.item.TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltipComponents, flag);
-        TooltipHelper.addFoodEffectsTooltip(tooltipComponents, itemData);
+        ItemData live = ItemRegistry.ITEM_MAP.get(BuiltInRegistries.ITEM.getKey(this));
+        ItemData data = live != null ? live : itemData;
+        TooltipHelper.addFoodEffectsTooltip(tooltipComponents, data);
+        TooltipHelper.appendMobDrops(data, tooltipComponents);
     }
 }

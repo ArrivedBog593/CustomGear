@@ -1,11 +1,17 @@
 package arrivedbog593.ultimatecustomgear.items.items;
 
 import arrivedbog593.ultimatecustomgear.data.ItemData;
+import arrivedbog593.ultimatecustomgear.loader.ItemRegistry;
 import arrivedbog593.ultimatecustomgear.util.GearLookup;
+import arrivedbog593.ultimatecustomgear.util.TooltipHelper;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
 
 /**
  * Generic item built from an ItemData JSON.
@@ -20,8 +26,13 @@ public class CustomItem extends Item {
     private final ItemData itemData;
 
     public CustomItem(ItemData data) {
-        super(new Item.Properties());
+        super(buildProps(data));
         this.itemData = data;
+    }
+
+    private static Item.Properties buildProps(ItemData data) {
+        Item.Properties p = new Item.Properties();
+        return data.fireResistant ? p.fireResistant() : p;
     }
 
     @Override
@@ -34,5 +45,13 @@ public class CustomItem extends Item {
         String lang = GearLookup.getCurrentLang();
         return data.names.getOrDefault(lang,
                 data.names.getOrDefault("en_us", data.id));
+    }
+
+    @Override
+    public void appendHoverText(@NotNull ItemStack stack, @NotNull TooltipContext context,
+                                @NotNull List<Component> tooltip, @NotNull TooltipFlag flag) {
+        super.appendHoverText(stack, context, tooltip, flag);
+        ItemData live = ItemRegistry.ITEM_MAP.get(BuiltInRegistries.ITEM.getKey(this));
+        TooltipHelper.appendMobDrops(live != null ? live : itemData, tooltip);
     }
 }

@@ -1,12 +1,14 @@
 package arrivedbog593.ultimatecustomgear.util;
 
 import arrivedbog593.ultimatecustomgear.data.GearData;
+import arrivedbog593.ultimatecustomgear.data.ItemData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.entity.EntityType;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -202,5 +204,51 @@ public class TooltipHelper {
         return harvestKey != null
                 ? Component.translatable(harvestKey)
                 : Component.literal(String.valueOf(data.harvestLevel));
+    }
+
+    /** Appends the "Dropped by" section for items with mob_drops configured. */
+    public static void appendMobDrops(ItemData data, List<Component> tooltip) {
+        if (data == null || data.mobDrops == null) return;
+        ItemData.MobDropsData d = data.mobDrops;
+        if (d.entities == null || d.entities.isEmpty()) return; // drop disabled
+
+        String pct = formatChance(d.chance);
+        tooltip.add(Component.translatable("tooltip.ultimatecustomgear.dropped_by")
+                .withStyle(ChatFormatting.GOLD));
+
+        int shown = 0;
+        for (String e : d.entities) {
+            if (e == null || e.isBlank()) continue;
+            if (shown >= 3) {
+                tooltip.add(Component.translatable("tooltip.ultimatecustomgear.dropped_by.more",
+                        d.entities.size() - shown).withStyle(ChatFormatting.DARK_GRAY));
+                break;
+            }
+            Component name;
+            if (e.equals("all")) {
+                name = Component.translatable("tooltip.ultimatecustomgear.dropped_by.any_mob");
+            } else if (e.startsWith("#")) {
+                name = Component.literal(e); // tag shown as-is
+            } else if (e.endsWith(":*")) {
+                name = Component.translatable("tooltip.ultimatecustomgear.dropped_by.mod_mobs",
+                        e.substring(0, e.length() - 2));
+            } else {
+                ResourceLocation rl = ResourceLocation.tryParse(e);
+                name = (rl != null)
+                        ? BuiltInRegistries.ENTITY_TYPE.getOptional(rl)
+                        .map(EntityType::getDescription)
+                        .orElse(Component.literal(e))
+                        : Component.literal(e);
+            }
+            tooltip.add(Component.literal("• ").append(name)
+                    .append(Component.literal(" (" + pct + ")"))
+                    .withStyle(ChatFormatting.GRAY));
+            shown++;
+        }
+    }
+
+    private static String formatChance(double chance) {
+        double pct = chance * 100;
+        return (pct == Math.floor(pct)) ? (int) pct + "%" : String.format("%.1f%%", pct);
     }
 }

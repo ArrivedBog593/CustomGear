@@ -9,29 +9,38 @@
 
 ## Características
 
-- Agrega **sets de armadura** personalizados con defensa, durabilidad, toughness y resistencia al retroceso por pieza individual
-- Agrega **sets de herramientas** (pico, hacha, pala, azadón) y herramientas individuales con daño, velocidad y velocidad de minado personalizados
-- Agrega **sets de armas** (espada, arco, ballesta, escudo) y armas individuales
-- Agrega **arcos** personalizados con daño de flecha y velocidad de carga configurables, con animación de tensado completa
-- Agrega **ballestas** personalizadas con daño de flecha y velocidad de carga configurables, con animación de carga completa
-- Agrega **escudos** personalizados con durabilidad configurable y renderizado 3D completo en mano e inventario
-- Agrega **ítems comestibles** con nutrición, saturación, tiempo de consumo, siempre comestible y efectos al consumir
-- Agrega **bloques** con texturas por cara — textura diferente en cada una de las 6 caras
-- Agrega **bloques direccionales** que rotan para apuntar al jugador al colocarse, como un horno
-- Efectos por pieza de armadura al portarla individualmente (ej. el casco da Visión Nocturna)
-- Efectos de bonus de set al tener el número requerido de piezas equipadas
-- Efectos al sostener por herramienta/arma (ej. el pico da Prisa, la espada da Fuerza)
-- **Sistema de recetas nativo** — define recetas de crafteo directamente en los archivos JSON, sin mods externos
-- **Packs de contenido** — distribuye todo tu contenido como un solo archivo `.zip` que los jugadores colocan en `packs/`
-- **Verificación de contenido en multijugador** — el servidor comprueba al conectar que los clientes tengan los mismos archivos de contenido, con cumplimiento configurable
+### Creación de Contenido
+- **Sets de armadura** con stats por pieza (durabilidad, defensa, dureza, resistencia al retroceso)
+- **Armas** — espadas, arcos, ballestas y escudos con daño, durabilidad y velocidad de carga personalizados
+- **Herramientas** — picos, hachas, palas y azadones con velocidad de minado, niveles de cosecha y arado en área
+- **Comida** con nutrición, saturación, velocidad al comer y efectos al consumir
+- **Bloques** — incluyendo direccionales y con gravedad, con texturas por cara, luz, sonidos y requisitos de minado
+- **Fluidos** con colores personalizados, efectos de contacto y comportamiento de fuego
+
+### Efectos y Gameplay
+- Efectos al sostener, efectos por pieza y bonos de conjunto completo
+- **Drops de mobs** — cualquier ítem puede caer de los mobs con probabilidad, cantidad y filtros de entidad configurables (recargable en caliente: balancea tu economía en vivo)
+- Ítems `fire_resistant` que sobreviven al fuego y la lava, como la netherita — funciona en ítems, comida, gear, bloques y cubetas
+- **Armadura transparente** — armadura con stats y efectos completos que no se dibuja sobre el cuerpo
+
+### Texturas y Modelos
+- Referencia texturas de vanilla o de otros mods, o usa tus propios archivos PNG
+- Texturas por cara en bloques, animaciones de tensado de arcos, capas de armadura personalizadas
+
+### Recetas y Tags
+- **Sistema nativo de recetas** — shaped, shapeless, smelting, blasting y smithing, definidas en JSON
 - Los ingredientes de recetas aceptan **tags** (`"#minecraft:planks"` = cualquier tabla de madera, incluyendo ítems de otros mods)
-- El contenido puede **pertenecer a tags** mediante un campo `tags`, para que tus ítems/bloques funcionen en recetas de otros mods (p. ej. etiqueta un ítem como `c:ingots` y cualquier mod que use ese tag lo aceptará)
-- Soporte completo para nombres en múltiples idiomas — define el nombre completo por idioma sin restricciones de formato
-- Texturas personalizadas con sistema de rutas flexible, o reutiliza modelos de otros mods
-- Los archivos JSON pueden organizarse en cualquier estructura de subcarpetas dentro de `.minecraft/ultimatecustomgear/`
-- Compatible con JEI — las recetas son completamente visibles
-- Todos los ítems son encantables con encantamientos de vanilla y de otros mods
-- Comando `/customgear reload` para recargar nombres, efectos y recetas sin reiniciar (texturas tras F3+T)
+- El contenido puede **pertenecer a tags** mediante el campo `tags`, para que tus ítems funcionen en recetas de otros mods
+
+### Servidor y Multijugador
+- **Packs de contenido** — distribuye todo como un solo `.zip` que los jugadores colocan en `packs/`
+- **Verificación de contenido en multijugador** — el servidor comprueba al conectar que los clientes tengan los mismos archivos, con cumplimiento configurable
+- `/customgear reload` — actualiza nombres, efectos, recetas y drops sin reiniciar
+
+### Calidad de Vida
+- Soporte completo multi-idioma por ítem
+- Tooltips informativos (efectos, bonos de conjunto, niveles de cosecha, drops de mobs)
+- Errores de validación claros que nombran el archivo y el problema exacto
 
 ---
 
@@ -740,6 +749,7 @@ Los JSON y texturas dentro del zip cargan exactamente igual que los archivos sue
 | `enchantable`    | Boolean | Si el ítem puede ser encantado                                                                                                                                                                                                       |
 | `enchantability` | Int     | Mayor = mejores encantamientos. Hierro = 9, Oro = 25, Diamante = 10                                                                                                                                                                  |
 | `tags`           | List    | Tags a los que pertenece este contenido, SIN `#` (p. ej. `["c:ingots", "c:ingots/ruby"]`). Permite que las recetas que aceptan `#ese_tag` lo usen. Ver **Tags** más abajo. Funciona en ítems, comida, bloques y fluidos (no en sets) |
+| `fire_resistant` | Boolean | El ítem tirado sobrevive al fuego y la lava, como la netherita (en fluidos: la cubeta llena). No protege al portador del fuego. Requiere reiniciar                                                                                   |
 
 ### Campos de comida
 
@@ -826,14 +836,14 @@ Los ítems individuales (`type: "sword"`, `type: "bow"`, etc.) usan los mismos c
 
 ### Campos de textura
 
-| Campo                | Tipo   | Descripción                                                                                                                                |
-|----------------------|--------|--------------------------------------------------------------------------------------------------------------------------------------------|
-| `texture.mode`       | String | `default`, `custom`, o `reference`                                                                                                         |
-| `texture.refs`       | Map    | Para `custom`: ruta relativa a un PNG dentro de `ultimatecustomgear/`. Para `reference`: resource location completo del modelo de otro mod |
-| `armor_layers`       | Map    | (Solo sets de armadura) `layer_1` y `layer_2` para la textura de armadura en el mundo                                                      |
-| `texture.refs.block` | String | (Bloques simples) Resource location aplicada a las 6 caras mediante `cube_all`                                                             |
-| `texture.faces`      | Objeto | (Solo bloques) Textura por cara. Claves: `top`, `bottom`, `north`, `south`, `east`, `west`, `side`                                         |
-| `texture.faces.side` | String | Atajo: aplica a `north`, `south`, `east`, `west` si no están definidas individualmente                                                     |
+| Campo                | Tipo   | Descripción                                                                                                                                                                                                                       |
+|----------------------|--------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `texture.mode`       | String | `default`, `custom`, o `reference`                                                                                                                                                                                                |
+| `texture.refs`       | Map    | Para `custom`: ruta relativa a un PNG dentro de `ultimatecustomgear/`. Para `reference`: resource location completo del modelo de otro mod                                                                                        |
+| `armor_layers`       | Map    | (Solo sets de armadura) Rutas `layer_1` y `layer_2` para la textura de la armadura puesta. El valor especial `"transparent"` hace la armadura invisible al vestirla (stats y efectos intactos); en modo reference pon ambas capas |
+| `texture.refs.block` | String | (Bloques simples) Resource location aplicada a las 6 caras mediante `cube_all`                                                                                                                                                    |
+| `texture.faces`      | Objeto | (Solo bloques) Textura por cara. Claves: `top`, `bottom`, `north`, `south`, `east`, `west`, `side`                                                                                                                                |
+| `texture.faces.side` | String | Atajo: aplica a `north`, `south`, `east`, `west` si no están definidas individualmente                                                                                                                                            |
 
 > **`refs` vs `faces`:** `refs` lo maneja todo — una textura única con la clave `all` (`"refs": { "all": "..." }`), o texturas por cara con las claves de cara (`top`, `bottom`, `north`, `south`, `east`, `west`, `side`). `faces` es un alias legacy que solo sirve para texturas por cara. Usa `refs`. (La clave `block` es un alias legacy de `all`.) Nota: `all`/`block` solo funcionan dentro de `refs`, nunca dentro de `faces`.
 
@@ -894,6 +904,31 @@ Los ítems individuales (`type: "sword"`, `type: "bow"`, etc.) usan los mismos c
 
 > Con `harvest_level` ≥ 1, el bloque se comporta como las menas de vanilla: la herramienta equivocada o de nivel menor es lenta Y no suelta nada. Con nivel 0 (u omitido), `required_tool` solo da velocidad de minado — el bloque dropea con cualquier cosa, como la arena. Funciona con herramientas de otros mods que sigan los niveles de vanilla. Nota: cambiar `harvest_level` entre 0 y ≥1 requiere reiniciar (el requisito de drops se fija al arrancar); ajustarlo entre 1–4, o cambiar `required_tool`, aplica con `/customgear reload`.
 
+### Drops de Mobs
+
+Los ítems y la comida pueden caer de los mobs al morir mediante el objeto `mob_drops`:
+
+```json
+"mob_drops": {
+  "chance": 0.10,
+  "min": 1,
+  "max": 3,
+  "requires_player_kill": true,
+  "entities": ["all"]
+}
+```
+
+| Campo                  | Tipo    | Por defecto | Descripción                                                                                                                                                                                                                       |
+|------------------------|---------|-------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `chance`               | Double  | 0.05        | Probabilidad de drop por muerte (0.0 representando el 0% y 1.0 representando el 100%)                                                                                                                                             |
+| `min` / `max`          | Int     | 1 / 1       | Rango de cantidad soltada                                                                                                                                                                                                         |
+| `requires_player_kill` | Boolean | `true`      | Solo suelta cuando un jugador hizo la kill — evita que las granjas automáticas impriman dinero                                                                                                                                    |
+| `entities`             | List    | —           | **Obligatorio.** `["all"]` = todos los mobs (vanilla y de mods); IDs exactos (`"minecraft:zombie"`); tags de entidad (`"#minecraft:undead"`); comodines de mod (`"mekanism:*"`). Omitido = drop desactivado (con aviso en el log) |
+
+Los jugadores, armor stands, barcos y vagonetas nunca sueltan ítems. Los cambios aplican en vivo con `/customgear reload` — puedes ajustar la economía de tu servidor sin reiniciar.
+
+Los ítems con `mob_drops` muestran una sección **"Lo sueltan:"** en su tooltip, con los mobs de origen y la probabilidad de drop.
+
 ---
 
 ## Comandos
@@ -911,6 +946,7 @@ Los ítems individuales (`type: "sword"`, `type: "bow"`, etc.) usan los mismos c
 - Tags de minado de bloques — cambios de `required_tool` y ajustes de `harvest_level` (1–4)
 - Durabilidad mostrada
 - Texturas y modelos — **tras presionar F3+T** (el juego solo recarga los recursos del cliente bajo demanda)
+- Configuración de drops de mobs (`chance`, `min`/`max`, `entities`)
 
 ### Qué requiere reinicio completo del juego
 - Daño de ataque y velocidad de ataque
@@ -919,6 +955,8 @@ Los ítems individuales (`type: "sword"`, `type: "bow"`, etc.) usan los mismos c
 - Activar/desactivar el requisito de drops de un bloque (`harvest_level` 0 ↔ ≥1)
 - Agregar o eliminar ítems (archivos JSON nuevos o eliminados)
 - Cambiar ID de ítems
+- Cambios de `fire_resistant`
+- Cambiar una capa de armadura entre mecanismos (reference ↔ custom ↔ transparent)
 
 ---
 

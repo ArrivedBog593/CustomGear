@@ -2,6 +2,40 @@
 
 Todas las notas de cambios importantes para el proyecto UltimateCustomGear.
 
+## [1.4.0] - 2026-07-16
+
+### ⚠️ Notas Importantes
+- `fire_resistant` y los cambios de capas de armadura se fijan al arrancar — requieren reiniciar el juego, no `/customgear reload`
+- Los drops de mobs SÍ son recargables en caliente: ajusta `chance`/`min`/`max`/`entities` en vivo con `/customgear reload`
+
+### ✨ Nuevas Características
+
+#### Drops de Mobs (economía de ítems)
+- Nuevo campo `mob_drops` en ítems y comida — los mobs sueltan tu ítem al morir, con `chance` configurable (0-1), cantidad `min`/`max` y filtro de entidades
+- `entities` es explícito: `["all"]` para todos los mobs (vanilla y de mods), ID exactos (`"minecraft:zombie"`), tags de entidad (`"#minecraft:undead"`) o comodines de mod (`"mekanism:*"`). Omitirlo desactiva el drop con un aviso en el log
+- `requires_player_kill` (por defecto `true`) — los mobs muertos por el entorno no sueltan nada, así las granjas automáticas no imprimen dinero
+- Los barcos, vagonetas y armor stands nunca sueltan ítems; los jugadores siempre están excluidos
+- Totalmente recargable en caliente — balancea la economía de tu servidor en vivo
+- Los ítems con drops de mobs muestran una sección **"Lo sueltan:"** en el tooltip con los mobs de origen y la probabilidad (nombres de entidad traducidos, listas largas recortadas; se actualiza con el reload)
+
+#### Ítems Resistentes al Fuego
+- Nuevo campo `fire_resistant` en ítems, comida, gear (aplica a todas las piezas del set), bloques y fluidos — el ítem tirado sobrevive al fuego y la lava, como la netherita
+- En fluidos protege la cubeta llena (sí, las cubetas de lava de vanilla se queman en la lava — las tuyas no tienen por qué)
+- NO hace al portador inmune al fuego (usa efectos de resistencia al fuego para eso)
+
+#### Armadura Transparente
+- Nuevo valor `"transparent"` para `armor_layers` — la armadura conserva stats, efectos y bonos de conjunto, pero no se dibuja sobre el cuerpo. Ideal para "accesorios" con stats que no tapan el skin
+- Funciona en ambos modos de textura. En modo reference aplica a la armadura completa (pon ambas capas); la mezcla por capa solo está disponible en modo custom
+
+### 🐛 Correcciones
+- Arregladas las texturas de gear en modo custom (piezas de armadura, capas, herramientas, armas, frames de tensado de arcos) que se resolvían contra el nombre viejo de la carpeta del mod y nunca cargaban desde los zips de packs de contenido
+
+### 🔧 Cambios Técnicos
+(mismas clases que la lista en inglés: `MobDropHandler` nuevo, campos en las 4 clases de datos, helpers `buildProps` en todas las clases `Custom*Item` + `BlockRegistry`/`FluidRegistry`, `GearModelGenerator` sin `GEAR_FOLDER` y con PNG transparente, intercept en `CustomArmorItem.buildLayers`)
+
+### 📦 Dependencias
+No se agregaron dependencias nuevas.
+
 ## [1.3.1] - 2026-07-05
 
 ### ✨ Nuevas Características
@@ -48,13 +82,13 @@ No se agregaron dependencias nuevas.
 
 #### Bloques — Herramienta Requerida y Nivel de Cosecha
 - Nuevo campo `required_tool` — qué herramienta mina el bloque: `sword`, `pickaxe`, `axe`, `shovel`, `hoe` o `none` (por defecto)
-- `required_tool: "sword"` hace que el bloque se mine más rápido con cualquier espada (como las hojas) — nota: las espadas aceleran el minado pero no condicionan los drops, y `harvest_level` no aplica con ellas
+- `required_tool: "sword"` hace que el bloque se mine más rápido con cualquier espada (como las hojas) — nota: las espadas aceleran el minado, pero no condicionan los drops, y `harvest_level` no aplica con ellas
 - Nuevo campo `harvest_level` — nivel de herramienta requerido para obtener drops: 0 (madera), 1 (piedra), 2 (hierro), 3 (diamante), 4 (netherite)
 - `required_tool` solo otorga velocidad de minado (como la arena con la pala); `harvest_level` ≥ 1 es lo que condiciona los drops a la herramienta del nivel correcto, como las menas de vanilla
 - Implementado mediante tags de bloques de vanilla inyectados como datos de servidor — totalmente compatible con herramientas de otros mods que sigan los niveles de vanilla
 
 #### Packs de Contenido (.zip)
-- El contenido ahora puede distribuirse como **archivos .zip** colocados en `.minecraft/ultimatecustomgear/packs/` — los JSONs y texturas de adentro cargan exactamente igual que los archivos sueltos
+- El contenido ahora puede distribuirse como **archivos .zip** colocados en `.minecraft/ultimatecustomgear/packs/` — los JSON y texturas de adentro cargan exactamente igual que los archivos sueltos
 - Los archivos sueltos tienen prioridad sobre los zips: puedes sobreescribir localmente un ítem específico de un pack poniendo tu propia versión suelta
 - Solo se admite `.zip`; los `.rar`/`.7z` y los archivos dejados en la carpeta raíz generan mensajes en el log explicando cómo corregirlo
 - `/customgear reload` detecta zips agregados o actualizados sin reiniciar
@@ -72,7 +106,7 @@ No se agregaron dependencias nuevas.
 - Cualquier casilla de ingrediente acepta un **tag** con el prefijo `#`, p. ej. `"#minecraft:planks"` (cualquier tabla) o `"#c:ingots/iron"` (lingotes de hierro de cualquier mod) — funciona en shaped, shapeless, smelting, blasting y smithing
 
 #### Validación Completa de Recetas
-- Las recetas shaped ahora se validan por completo con mensajes claros: longitud de filas (1-3), filas desiguales, símbolos del patrón sin definir en `key`, entradas de `key` sin usar, e IDs de ítem/tag malformados
+- Las recetas shaped ahora se validan por completo con mensajes claros: longitud de filas (1-3), filas desiguales, símbolos del patrón sin definir en `key`, entradas de `key` sin usar, e ID de ítem/tag malformados
 - Las recetas shapeless con más de 9 ingredientes se rechazan con mensaje
 
 ### 🐛 Correcciones

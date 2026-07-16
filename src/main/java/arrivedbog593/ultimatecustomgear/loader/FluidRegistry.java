@@ -91,11 +91,16 @@ public class FluidRegistry {
                 CustomFluid.createBlock(sourceRef[0], data));
 
         bucketRef[0] = FLUID_BUCKETS.register(data.id + "_bucket", () ->
-                new BucketItem(sourceRef[0].get(), new Item.Properties()
-                        .craftRemainder(Items.BUCKET)
-                        .stacksTo(1)));
+                new BucketItem(sourceRef[0].get(), bucketProps(data)));
 
         FLUID_MAP.put(ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
+    }
+
+    private static Item.Properties bucketProps(FluidData data) {
+        Item.Properties p = new Item.Properties()
+                .craftRemainder(Items.BUCKET)
+                .stacksTo(1);
+        return data.fireResistant ? p.fireResistant() : p;
     }
 
     private static BaseFlowingFluid.Properties buildProps(

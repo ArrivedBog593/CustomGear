@@ -4,6 +4,7 @@ import arrivedbog593.ultimatecustomgear.data.BlockData;
 import arrivedbog593.ultimatecustomgear.data.FluidData;
 import arrivedbog593.ultimatecustomgear.data.GearData;
 import arrivedbog593.ultimatecustomgear.data.ItemData;
+import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,7 +23,7 @@ import static arrivedbog593.ultimatecustomgear.resources.ModelConstants.*;
 public final class LangGenerator {
 
     private static final Logger LOGGER = LogManager.getLogger("CustomGear");
-    private static final com.google.gson.Gson GSON =
+    private static final Gson GSON =
             new GsonBuilder().setPrettyPrinting().create();
 
     private LangGenerator() {}

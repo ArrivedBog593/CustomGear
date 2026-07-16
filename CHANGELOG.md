@@ -2,6 +2,44 @@
 
 All important changelog notes for the UltimateCustomGear project.
 
+## [1.4.0] - 2026-07-16
+
+### ⚠️ Important Notes
+- `fire_resistant` and armor layer changes are baked at startup — they require a game restart, not `/customgear reload`
+- Mob drops ARE hot-reloadable: tune `chance`/`min`/`max`/`entities` live with `/customgear reload`
+
+### ✨ New Features
+
+#### Mob Drops (item economy)
+- New `mob_drops` field on items and food — mobs drop your item on death, with configurable `chance` (0-1), `min`/`max` count and entity filter
+- `entities` is explicit: `["all"]` for every mob (vanilla and modded), exact IDs (`"minecraft:zombie"`), entity tags (`"#minecraft:undead"`) or mod wildcards (`"mekanism:*"`). Omitting it disables the drop with a log warning
+- `requires_player_kill` (default `true`) — mobs killed by the environment drop nothing, so automated farms can't print currency
+- Boats, minecarts and armor stands never drop items; players are always excluded
+- Fully hot-reloadable — balance your server economy live
+- Items with mob drops show a **"Dropped by"** tooltip section with the source mobs and drop chance (localized entity names, long lists truncated; updates with reload)
+
+#### Fire Resistant Items
+- New `fire_resistant` field on items, food, gear (applies to every piece of a set), blocks and fluids — the dropped item survives fire and lava, like netherite
+- On fluids it protects the filled bucket (yes, vanilla lava buckets burn in lava — yours don't have to)
+- Does NOT make the wearer fire-immune (use fire resistance effects for that)
+
+#### Transparent Armor
+- New `"transparent"` value for `armor_layers` — the armor keeps all stats, effects and set bonuses but draws nothing on the body. Ideal for stat "accessories" that don't cover the skin
+- Works in both texture modes. In reference mode it applies to the whole armor (set both layers); per-layer mixing is only available in custom mode
+
+### 🐛 Bug Fixes
+- Fixed custom-mode gear textures (armor pieces, armor layers, tools, weapons, bow pulling frames) resolving against the mod's old folder name and never loading from content pack zips
+
+### 🔧 Technical Changes
+- `MobDropHandler.java` — new: `LivingDropsEvent` handler reading `ITEM_MAP` at event time (hot-reloadable); supports `all`, `#entity_tags` and `mod:*` wildcards; excludes players and armor stands
+- `ItemData.java` — new `mob_drops` (`MobDropsData`) and `fire_resistant` fields; `GearData`, `BlockData`, `FluidData` — new `fire_resistant` field
+- All `Custom*Item` classes — properties construction extracted to `buildProps` helpers applying `fireResistant()`; `BlockRegistry` (`blockItemProps`) and `FluidRegistry` (`bucketProps`) apply it to BlockItems and buckets
+- `GearModelGenerator.java` — removed the stale `GEAR_FOLDER` constant; custom gear textures resolve through `TextureLoader.resolveUserResource` (content roots); injects a generated fully-transparent PNG for `"transparent"` layers
+- `CustomArmorItem.java` — `buildLayers` intercepts `"transparent"` and points the armor material at the injected transparent texture
+
+### 📦 Dependencies
+No new dependencies added.
+
 ## [1.3.1] - 2026-07-05
 
 ### ✨ New Features

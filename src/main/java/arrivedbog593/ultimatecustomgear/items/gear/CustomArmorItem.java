@@ -25,11 +25,15 @@ public class CustomArmorItem extends ArmorItem {
         super(
                 buildMaterial(data, piece),
                 pieceToType(piece),
-                new Properties()
-                        .durability(data.pieces.get(piece).durability)
+                buildProps(data, piece)
         );
         this.initialGearData = data;
         this.piece = piece;
+    }
+
+    private static Properties buildProps(GearData data, String piece) {
+        Properties p = new Properties().durability(data.pieces.get(piece).durability);
+        return data.fireResistant ? p.fireResistant() : p;
     }
 
     private GearData getGearData() {
@@ -80,6 +84,14 @@ public class CustomArmorItem extends ArmorItem {
     private static List<ArmorMaterial.Layer> buildLayers(GearData data) {
         if (data.texture == null || data.texture.armorLayers == null) {
             return List.of(new ArmorMaterial.Layer(ResourceLocation.withDefaultNamespace("iron")));
+        }
+
+        // "transparent" layers: point at the customgear location, where
+        // GearModelGenerator injects a fully transparent PNG — works in
+        // BOTH modes (the mode only matters for how real refs are parsed)
+        if ("transparent".equals(data.texture.armorLayers.get("layer_1"))) {
+            return List.of(new ArmorMaterial.Layer(
+                    ResourceLocation.fromNamespaceAndPath("customgear", data.id)));
         }
 
         if (data.texture.mode != null && data.texture.mode.equals("reference")) {

@@ -22,6 +22,11 @@ public class ItemData {
     @SerializedName("tags")
     public List<String> tags;
 
+    /** If true, the ITEM survives fire and lava when dropped (like netherite).
+     *  Does NOT make the wearer fire-immune (use fire_resistance effects for that). */
+    @SerializedName("fire_resistant")
+    public boolean fireResistant = false;
+
     /** Texture path */
     public GearData.TextureData texture;
 
@@ -91,5 +96,21 @@ public class ItemData {
          * 1.0 = always applies. Default: 1.0
          */
         public float probability = 1.0f;
+    }
+
+    // ───── Mob drop fields (only used when type = "mob_drop") ────────────────────────────
+
+    /** Drops from mobs — the source of an item economy. */
+    @SerializedName("mob_drops")
+    public MobDropsData mobDrops;
+
+    public static class MobDropsData {
+        public double chance = 0.05;
+        public int min = 1;
+        public int max = 1;
+        /** Entity type IDs; null/empty = every living mob (players excluded) */
+        public List<String> entities;
+        @SerializedName("requires_player_kill")
+        public boolean requiresPlayerKill = true;
     }
 }

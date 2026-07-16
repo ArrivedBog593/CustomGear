@@ -9,29 +9,38 @@
 
 ## Features
 
-- Add custom **armor sets** with per-piece defense, durability, toughness, and knockback resistance
-- Add custom **tool sets** (pickaxe, axe, shovel, hoe) and individual tools with custom damage, speed, and mining speed
-- Add custom **weapon sets** (sword, bow, crossbow, shield) and individual weapons
-- Add custom **bows** with configurable arrow damage and charge speed, with full drawing animation
-- Add custom **crossbows** with configurable arrow damage and charge speed, with full loading animation
-- Add custom **shields** with configurable durability and full 3D rendering in hand and inventory
-- Add custom **food items** with nutrition, saturation, eating duration, always-edible flag, and on-eat effects
-- Add custom **blocks** with per-face textures — different texture on each of the 6 faces
-- Add custom **directional blocks** that rotate to face the player when placed, like a furnace
-- Per-piece armor effects (e.g., helmet gives Night Vision when worn individually)
-- Set bonus effects when wearing the required number of armor pieces
-- Held effects per tool/weapon (e.g., pickaxe gives Haste, sword gives Strength)
-- **Native recipe system** — define crafting recipes directly in JSON files, no external mods needed
-- **Content packs** — distribute all your content as a single `.zip` file that players drop into `packs/`
-- **Multiplayer content verification** — the server checks at login that clients have matching content files, with configurable enforcement
+### Content Creation
+- **Armor sets** with per-piece stats (durability, defense, toughness, knockback resistance)
+- **Weapons** — swords, bows, crossbows, and shields with custom damage, durability, and charge speed
+- **Tools** — pickaxes, axes, shovels, and hoes with mining speed, harvest tiers, and area-tilling
+- **Food items** with nutrition, saturation, eating speed, and on-eat effects
+- **Blocks** — including directional and gravity-affected, with per-face textures, light, sounds, and mining requirements
+- **Fluids** with custom colors, contact effects, and burning behavior
+
+### Effects & Gameplay
+- Held effects, piece effects, and full-set bonuses
+- **Mob drops** — any item can drop from mobs with configurable chance, count, and entity filters (hot-reloadable: balance your economy live)
+- `fire_resistant` items that survive fire and lava, like netherite — works on items, food, gear, blocks, and buckets
+- **Transparent armor** — armor with full stats and effects that draws nothing on the body
+
+### Textures & Models
+- Reference vanilla/modded textures or provide your own PNG files
+- Per-face block textures, bow-pulling animations, custom armor layers
+
+### Recipes & Tags
+- **Native recipe system** — shaped, shapeless, smelting, blasting, and smithing, defined in JSON
 - Recipe ingredients support **tags** (`"#minecraft:planks"` = any plank type, including items from other mods)
-- Content can **belong to tags** via a `tags` field, so your items/blocks work in other mods' recipes (e.g., tag an item `c:ingots` and any mod using that tag accepts it)
-- Full multi-language support — define the full item name per language with no format restrictions
-- Custom textures with a flexible path system, or reuse models from other mods
-- JSON files can be organized in any subfolder structure inside `.minecraft/ultimatecustomgear/`
-- Compatible with JEI — recipes are fully visible
-- All items are enchantable with vanilla and modded enchantments
-- `/customgear reload` command to reload names, effects, and recipes without restarting (textures after F3+T)
+- Content can **belong to tags** via a `tags` field, so your items work in other mods' recipes
+
+### Server & Multiplayer
+- **Content packs** — distribute everything as a single `.zip` that players drop into `packs/`
+- **Multiplayer content verification** — the server checks at login that clients have matching files, with configurable enforcement
+- `/customgear reload` — update names, effects, recipes, and drops without restarting
+
+### Quality of Life
+- Full multi-language support per item
+- Informative tooltips (effects, set bonuses, harvest levels, mob drops)
+- Clear validation errors that name the file and the exact problem
 
 ---
 
@@ -299,7 +308,7 @@ Instant food (`eat_duration: 0`) and slow food (`eat_duration: 10` = 10 seconds)
     }
   },
   "recipes": {
-    "sword": { "type": "smithing_transform", "template": "minecraft:netherite_upgrade_smithing_template", "base": "mymod:my_diamond_sword", "addition": "minecraft:netherite_ingot" },
+    "sword": { "type": "smithing_transform", "template": "minecraft:netherite_upgrade_smithing_template", "base": "mymod:my_diamond_sword", "addition": "minecraft:netherite_ingot" }
   }
 }
 ```
@@ -740,6 +749,7 @@ JSONs and textures inside the zip load exactly like loose files — subfolders i
 | `enchantable`    | Boolean | Whether the item can be enchanted                                                                                                                                                                        |
 | `enchantability` | Int     | Higher = better enchantments. Iron = 9, Gold = 25, Diamond = 10                                                                                                                                          |
 | `tags`           | List    | Tags this content belongs to, WITHOUT `#` (e.g. `["c:ingots", "c:ingots/ruby"]`). Lets recipes that accept `#that_tag` use it. See **Tags** below. Works on items, food, blocks and fluids (not on sets) |
+| `fire_resistant` | Boolean | The dropped item survives fire and lava, like netherite (on fluids: the filled bucket). Does not protect the wearer from fire. Requires restart                                                          |
 
 ### Food Fields
 
@@ -826,14 +836,14 @@ Individual items (`type: "sword"`, `type: "bow"`, etc.) use the same fields as a
 
 ### Texture Fields
 
-| Field                | Type   | Description                                                                                                   |
-|----------------------|--------|---------------------------------------------------------------------------------------------------------------|
-| `texture.mode`       | String | `default`, `custom`, or `reference`                                                                           |
-| `texture.refs`       | Map    | For `custom`: relative path to a PNG inside `ultimatecustomgear/`. For `reference`: full resource location    |
-| `armor_layers`       | Map    | (Armor sets only) `layer_1` and `layer_2` paths for the in-world armor texture                                |
-| `texture.refs.block` | String | (Simple blocks) Resource location used for all 6 faces via `cube_all`                                         |
-| `texture.faces`      | Object | (Blocks only) Per-face texture configuration. Keys: `top`, `bottom`, `north`, `south`, `east`, `west`, `side` |
-| `texture.faces.side` | String | Shortcut: applies to `north`, `south`, `east`, `west` if not individually defined                             |
+| Field                | Type   | Description                                                                                                                                                                                                         |
+|----------------------|--------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `texture.mode`       | String | `default`, `custom`, or `reference`                                                                                                                                                                                 |
+| `texture.refs`       | Map    | For `custom`: relative path to a PNG inside `ultimatecustomgear/`. For `reference`: full resource location                                                                                                          |
+| `armor_layers`       | Map    | (Armor sets only) `layer_1` and `layer_2` paths for the in-world armor texture. The special value `"transparent"` makes the armor invisible when worn (stats and effects intact); in reference mode set both layers |
+| `texture.refs.block` | String | (Simple blocks) Resource location used for all 6 faces via `cube_all`                                                                                                                                               |
+| `texture.faces`      | Object | (Blocks only) Per-face texture configuration. Keys: `top`, `bottom`, `north`, `south`, `east`, `west`, `side`                                                                                                       |
+| `texture.faces.side` | String | Shortcut: applies to `north`, `south`, `east`, `west` if not individually defined                                                                                                                                   |
 
 > **`refs` vs `faces`:** `refs` handles everything — a single texture with the `all` key (`"refs": { "all": "..." }`), or per-face textures with the face keys (`top`, `bottom`, `north`, `south`, `east`, `west`, `side`). `faces` is a legacy alias that only works for per-face textures. Use `refs`. (The `block` key is a legacy alias of `all`.) Note: `all`/`block` only work inside `refs`, never inside `faces`.
 
@@ -894,6 +904,31 @@ Individual items (`type: "sword"`, `type: "bow"`, etc.) use the same fields as a
 
 > With `harvest_level` ≥ 1, the block behaves like vanilla ore: the wrong tool or a lower tier is slow AND drops nothing. With level 0 (or omitted), `required_tool` only grants mining speed — the block drops with anything, like sand. Works with modded tools that follow vanilla tiers. Note: switching `harvest_level` between 0 and ≥1 requires a restart (the drop requirement is baked at startup); adjusting it between 1–4, or changing `required_tool`, applies with `/customgear reload`.
 
+### Mob Drops
+
+Items and food can drop from mobs on death via the `mob_drops` object:
+
+```json
+"mob_drops": {
+  "chance": 0.10,
+  "min": 1,
+  "max": 3,
+  "requires_player_kill": true,
+  "entities": ["all"]
+}
+```
+
+| Field                  | Type    | Default | Description                                                                                                                                                                                                   |
+|------------------------|---------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `chance`               | Double  | 0.05    | Drop probability per kill (0.0 representing 0% chance and 1.0 representing 100% chance)                                                                                                                       |
+| `min` / `max`          | Int     | 1 / 1   | Dropped count range                                                                                                                                                                                           |
+| `requires_player_kill` | Boolean | `true`  | Only drops when a player made the kill — prevents automated farms from printing currency                                                                                                                      |
+| `entities`             | List    | —       | **Required.** `["all"]` = every mob (vanilla and modded); exact IDs (`"minecraft:zombie"`); entity tags (`"#minecraft:undead"`); mod wildcards (`"mekanism:*"`). Omitted = drop disabled (with a log warning) |
+
+Players, armor stands, boats, and minecarts never drop items. Changes apply live with `/customgear reload` — you can tune your server's economy without restarting.
+
+Items with `mob_drops` show a **"Dropped by"** section in their tooltip, with the source mobs and the drop chance.
+
 ---
 
 ## Commands
@@ -911,6 +946,7 @@ Individual items (`type: "sword"`, `type: "bow"`, etc.) use the same fields as a
 - Block mining tags — `required_tool` changes and `harvest_level` adjustments (1–4)
 - Durability display
 - Textures and models — **after pressing F3+T** (the game only reloads client resources on demand)
+- Mob drop settings (`chance`, `min`/`max`, `entities`)
 
 ### What requires a full game restart
 - Attack damage and attack speed
@@ -919,6 +955,8 @@ Individual items (`type: "sword"`, `type: "bow"`, etc.) use the same fields as a
 - Enabling/disabling a block's drop requirement (`harvest_level` 0 ↔ ≥1)
 - Adding or removing items (new or deleted JSON files)
 - Changing item IDs
+- `fire_resistant` changes
+- Switching an armor layer between mechanisms (reference ↔ custom ↔ transparent)
 
 ---
 
