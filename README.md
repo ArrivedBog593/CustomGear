@@ -993,6 +993,77 @@ Only the server's setting matters — a client's local config has no effect when
 
 ---
 
+What's new in v2.0.0 — 3D Animated Armor with Geckolib
+
+You can now define armor with animated 3D models (instead of the usual flat texture) using GeckoLib 4.9.2. This is fully optional — if you don't configure it, your armor keeps working as a classic Minecraft armor item.
+
+Requirements
+
+
+The GeckoLib mod must be installed (version 4.9.2 or compatible).
+If GeckoLib isn't loaded, the system automatically ignores the 3D model and falls back to the standard flat texture. You don't need to remove the config for players without GeckoLib — it simply won't render in 3D for them.
+
+
+How to enable it
+
+In your armor's data file (JSON), add the render_mode field with value "model_3d" inside the texture block:
+
+json{
+  "id": "dragon_scale",
+  "type": "armor_set",
+  "names": {
+    "en_us": "Dragon Scale",
+    "es_mx": "Escama de Dragón"
+  },
+  "durability": 550,
+  "enchantable": true,
+  "enchantability": 15,
+  "pieces": {
+    "helmet":     { "durability": 165, "defense": 3, "toughness": 2.0, "knockback_resistance": 0.0 },
+    "chestplate": { "durability": 240, "defense": 8, "toughness": 2.0, "knockback_resistance": 0.0 },
+    "leggings":   { "durability": 225, "defense": 6, "toughness": 2.0, "knockback_resistance": 0.0 },
+    "boots":      { "durability": 195, "defense": 3, "toughness": 2.0, "knockback_resistance": 0.0 }
+  },
+  "set_bonus": {
+    "required_pieces": 4,
+    "effects": [
+      { "effect": "minecraft:fire_resistance", "amplifier": 0 }
+    ]
+  },
+  "texture": {
+    "render_mode": "model_3d"
+  }
+}
+
+That's all you need. No file paths required — the system builds them automatically from the armor's id (dragon_scale in the example).
+
+Where the model files go
+
+The system automatically looks for these three files, all based on your armor's id:
+
+FileExpected pathModel (.geo.json)assets/customgear/geo/armor/<id>.geo.jsonAnimation (.animation.json)assets/customgear/animations/armor/<id>.animation.jsonTexture (.png)assets/customgear/textures/armor/<id>.png
+
+Following the example above (id: "dragon_scale"), you need:
+
+assets/customgear/geo/armor/dragon_scale.geo.json
+assets/customgear/animations/armor/dragon_scale.animation.json
+assets/customgear/textures/armor/dragon_scale.png
+
+
+⚠️ All three files are required for the 3D armor to display correctly. If one is missing, GeckoLib may fail to render or show the armor without texture/animation.
+
+
+
+Per-piece behavior
+
+The model, animation, and texture are shared across the whole armor set, not per piece — meaning the helmet, chestplate, leggings, and boots of dragon_scale all reference the same .geo.json/.animation.json/.png. Your 3D model (built in Blockbench or another GeckoLib-compatible tool) is what defines how each piece looks/animates based on the equipped slot.
+
+Automatic fallback
+
+If GeckoLib isn't installed on a given server, or if you don't set render_mode: "model_3d", the armor still registers normally as a classic item using the standard flat Minecraft armor texture. You don't need two separate configs for this — it's automatic.
+
+
+
 ## Compatibility
 
 - Minecraft 1.21.1

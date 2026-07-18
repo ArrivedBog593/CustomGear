@@ -24,24 +24,16 @@ public class GearRegistry {
     public static final DeferredRegister<Item> ITEMS =
             DeferredRegister.create(BuiltInRegistries.ITEM, "customgear");
 
-    // FIX: ConcurrentHashMap para lectura segura en múltiples hilos.
-    // Se expone como mapa inmutable mediante getters para que otros mods no lo modifiquen directamente.
+   
     private static volatile Map<ResourceLocation, GearData> gearMap = new ConcurrentHashMap<>();
     private static volatile Map<ResourceLocation, String>   toolTypeMap = new ConcurrentHashMap<>();
 
-    /**
-     * Acceso directo (paquete interno) para lookups de alto rendimiento en tick events.
-     * No expuesto como public para evitar modificaciones externas.
-     */
+    
     public static GearData lookupGear(ResourceLocation loc) {
         return gearMap.get(loc);
     }
 
-    /**
-     * Reemplaza ambos mapas de forma atómica durante el reload.
-     * Los items que estén leyendo el mapa antiguo lo terminan de leer sin NPE;
-     * las lecturas posteriores ya usan el mapa nuevo.
-     */
+    
     public static void atomicSwap(Map<ResourceLocation, GearData> newGearMap,
                                   Map<ResourceLocation, String>   newToolTypeMap) {
         gearMap     = new ConcurrentHashMap<>(newGearMap);

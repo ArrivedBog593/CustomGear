@@ -2,6 +2,16 @@
 
 All important changelog notes for the UltimateCustomGear project.
 
+
+## [2.0.0] - 2026-07-18 (BETA)
+
+
+New: Support for 3D animated armor via GeckoLib 4.9.2 integration.
+New: render_mode: "model_3d" field inside texture in the armor data JSON, to enable the 3D model per set.
+New: Automatic loading of 3D assets (model, animation, texture) based on the armor's id, no manual path configuration needed.
+Improved: Automatic fallback to classic (flat-texture) armor when GeckoLib isn't loaded on the server/client.
+Fixed: Build configuration adjusted to properly handle neoforge.mods.toml.
+
 ## [1.4.0] - 2026-07-16
 
 ### ⚠️ Important Notes

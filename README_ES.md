@@ -980,6 +980,75 @@ Solo importa el valor del servidor — la config local del cliente no tiene efec
 
 ---
 
+Novedades v2.0.0 — Armaduras 3D con Geckolib
+
+Ahora podés definir armaduras con modelos 3D animados (en vez de la textura plana de siempre) usando GeckoLib 4.9.2. Esto es completamente opcional: si no lo configurás, tu armadura sigue funcionando como una armadura clásica de Minecraft.
+
+Requisitos
+
+
+Tener el mod GeckoLib instalado (versión 4.9.2 o compatible).
+Si GeckoLib no está cargado, el sistema ignora automáticamente el modelo 3D y usa la textura plana de siempre. No hace falta que quites la config si tus jugadores no tienen GeckoLib — simplemente no se va a renderizar en 3D para ellos.
+
+
+Cómo activarlo
+
+En tu archivo de datos de la armadura (JSON), agregá dentro del bloque texture el campo render_mode con el valor "model_3d":
+
+json{
+  "id": "dragon_scale",
+  "type": "armor_set",
+  "names": {
+    "en_us": "Dragon Scale",
+    "es_mx": "Escama de Dragón"
+  },
+  "durability": 550,
+  "enchantable": true,
+  "enchantability": 15,
+  "pieces": {
+    "helmet":     { "durability": 165, "defense": 3, "toughness": 2.0, "knockback_resistance": 0.0 },
+    "chestplate": { "durability": 240, "defense": 8, "toughness": 2.0, "knockback_resistance": 0.0 },
+    "leggings":   { "durability": 225, "defense": 6, "toughness": 2.0, "knockback_resistance": 0.0 },
+    "boots":      { "durability": 195, "defense": 3, "toughness": 2.0, "knockback_resistance": 0.0 }
+  },
+  "set_bonus": {
+    "required_pieces": 4,
+    "effects": [
+      { "effect": "minecraft:fire_resistance", "amplifier": 0 }
+    ]
+  },
+  "texture": {
+    "render_mode": "model_3d"
+  }
+}
+
+Con eso alcanza. No hace falta indicar rutas de archivo: el sistema arma las rutas solo, usando el id de la armadura (dragon_scale en el ejemplo).
+
+Dónde van los archivos del modelo
+
+El sistema busca automáticamente estos tres archivos, todos basados en el id de tu armadura:
+
+ArchivoRuta esperadaModelo (.geo.json)assets/customgear/geo/armor/<id>.geo.jsonAnimación (.animation.json)assets/customgear/animations/armor/<id>.animation.jsonTextura (.png)assets/customgear/textures/armor/<id>.png
+
+Siguiendo el ejemplo de arriba (id: "dragon_scale"), necesitás:
+
+assets/customgear/geo/armor/dragon_scale.geo.json
+assets/customgear/animations/armor/dragon_scale.animation.json
+assets/customgear/textures/armor/dragon_scale.png
+
+
+⚠️ Los tres archivos son obligatorios para que la armadura 3D se vea bien. Si falta alguno, GeckoLib puede fallar al renderizar o mostrar la armadura sin textura/animación.
+
+
+
+Comportamiento pieza por pieza
+
+El modelo, la animación y la textura son por armadura completa, no por pieza — es decir, el casco, pechera, pantalones y botas de dragon_scale comparten el mismo .geo.json/.animation.json/.png, y es tu modelo 3D (hecho en Blockbench u otra herramienta compatible con GeckoLib) el que define cómo se ve/anima cada pieza según el slot equipado.
+
+Fallback automático
+
+Si en algún server GeckoLib no está instalado, o si no ponés render_mode: "model_3d", la armadura se registra igual pero como ítem clásico, usando la textura plana estándar de armadura de Minecraft. No hay que crear dos configuraciones distintas para esto — es automático.
+
 ## Referencia de ID
 
 | Tipo                      | Patrón de ID                        | Ejemplo                               |

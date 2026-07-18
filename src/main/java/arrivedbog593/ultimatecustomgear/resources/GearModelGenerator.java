@@ -33,8 +33,8 @@ public final class GearModelGenerator {
     private static final String ERROR_REFS_MISSING_KEY        = "[CustomGear] 'refs' missing key '{}' for: {}";
     private static final String ERROR_REFS_MISSING_KEY_IN     = "[CustomGear] 'refs' missing key '{}' in: {}";
     private static final String ERROR_REFS_REQUIRED_SIMPLE    = "[CustomGear] 'refs' is required in reference mode: {}";
-    private static final String ERROR_MODEL3D_MISSING_FIELD   = "[CustomGear] render_mode 'model_3d' pero falta '{}' en texture para: {}";
-    private static final String ERROR_MODEL3D_FILE_NOT_FOUND  = "[CustomGear] Archivo de modelo 3D no encontrado ({}): {}";
+    private static final String ERROR_MODEL3D_MISSING_FIELD   = "[CustomGear] render_mode 'ender_mode 'model_3d' but '{}' is missing in texture for: {}";
+    private static final String ERROR_MODEL3D_FILE_NOT_FOUND  = "[CustomGear] 3D file not found ({}): {}";
 
     // ── Public entry point ────────────────────────────────────────────────────
 
@@ -323,8 +323,6 @@ public final class GearModelGenerator {
         String ref = data.texture.armorLayers.get(layerKey);
         if (ref == null) return;
         if (ref.equals("transparent")) {
-            // Same invisibility mechanism as custom mode: inject a fully
-            // transparent PNG at the layer's texture location
             pack.addRaw(armorTextureLoc(data.id, layerKey), TRANSPARENT_LAYER_PNG);
             return;
         }

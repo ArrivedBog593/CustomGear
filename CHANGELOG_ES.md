@@ -2,6 +2,17 @@
 
 Todas las notas de cambios importantes para el proyecto UltimateCustomGear.
 
+
+
+## [2.0.0] - 2026-07-18 (BETA)
+
+
+Nuevo: Soporte para armaduras 3D animadas mediante integración con GeckoLib 4.9.2.
+Nuevo: Campo render_mode: "model_3d" dentro de texture en el JSON de datos de armadura, para activar el modelo 3D por set.
+Nuevo: Carga automática de assets 3D (modelo, animación y textura) a partir del id de la armadura, sin necesidad de configurar rutas manualmente.
+Mejora: El sistema hace fallback automático a la armadura clásica (textura plana) si GeckoLib no está cargado en el servidor/cliente.
+Fix: Ajustada la configuración de build para manejar correctamente neoforge.mods.toml.
+
 ## [1.4.0] - 2026-07-16
 
 ### ⚠️ Notas Importantes
