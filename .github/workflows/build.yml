@@ -3,7 +3,7 @@ name: Build and Release
 on:
   push:
     branches:
-      - "Neo/1.21.1"
+      - "GeckoLib3D"
 
 jobs:
   build:
