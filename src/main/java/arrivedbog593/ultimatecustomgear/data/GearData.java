@@ -173,5 +173,18 @@ public class GearData {
         public Map<String, String> refs;
         @SerializedName("armor_layers")
         public Map<String, String> armorLayers;
+
+   
+        @SerializedName("render_mode")
+        public String renderMode;
+
+        @SerializedName("armor_model")
+        public String armorModel;
+
+        @SerializedName("armor_animation")
+        public String armorAnimation;
+
+        @SerializedName("armor_texture")
+        public String armorTexture;
     }
 }

@@ -1,34 +1,25 @@
 package arrivedbog593.ultimatecustomgear.resources;
 
 import arrivedbog593.ultimatecustomgear.data.GearData;
+import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
 
 import static arrivedbog593.ultimatecustomgear.resources.ModelConstants.*;
 
-/**
- * Generates item models for all gear types:
- * armor sets, tool sets, weapon sets, and individual weapons/tools.
- * <p>
- * Also handles:
- *   - Bow/crossbow animation models (pulling/charged overrides)
- *   - Shield BEWLR models (builtin/entity)
- *   - Vanilla shield texture injection into the item atlas
- */
+
 public final class GearModelGenerator {
 
     private static final Logger LOGGER = LogManager.getLogger("CustomGear");
-    // NOTE: custom texture paths resolve through TextureLoader.resolveUserResource
-    // (loose config folder + every pack zip). The old GEAR_FOLDER constant pointed
-    // at "./customgear" — the mod's OLD folder name — so custom gear textures
-    // never resolved correctly and never loaded from zips.
+
 
     private GearModelGenerator() {}
 
@@ -42,6 +33,8 @@ public final class GearModelGenerator {
     private static final String ERROR_REFS_MISSING_KEY        = "[CustomGear] 'refs' missing key '{}' for: {}";
     private static final String ERROR_REFS_MISSING_KEY_IN     = "[CustomGear] 'refs' missing key '{}' in: {}";
     private static final String ERROR_REFS_REQUIRED_SIMPLE    = "[CustomGear] 'refs' is required in reference mode: {}";
+    private static final String ERROR_MODEL3D_MISSING_FIELD   = "[CustomGear] render_mode 'model_3d' pero falta '{}' en texture para: {}";
+    private static final String ERROR_MODEL3D_FILE_NOT_FOUND  = "[CustomGear] Archivo de modelo 3D no encontrado ({}): {}";
 
     // ── Public entry point ────────────────────────────────────────────────────
 
@@ -62,6 +55,9 @@ public final class GearModelGenerator {
         if (data.texture == null || data.texture.mode == null) {
             generateDefaultModels(pack, data);
             return;
+        }
+        if ("armor_set".equals(data.type) && "model_3d".equals(data.texture.renderMode)) {
+            loadArmorModel3D(pack, data);
         }
         switch (data.texture.mode) {
             case "custom"    -> loadCustom(pack, data);
@@ -152,6 +148,30 @@ public final class GearModelGenerator {
             }
         } else {
             LOGGER.error(ERROR_LAYER_NOT_DEFINED, layerNum, data.id);
+        }
+    }
+
+    private static void loadArmorModel3D(DynamicResourcePack pack, GearData data) {
+        GearData.TextureData tex = data.texture;
+        copyModel3DAsset(pack, tex.armorModel, "geo/armor/" + data.id + ".geo.json", "armor_model", data.id);
+        copyModel3DAsset(pack, tex.armorAnimation, "animations/armor/" + data.id + ".animation.json", "armor_animation", data.id);
+        copyModel3DAsset(pack, tex.armorTexture, "textures/armor/" + data.id + ".png", "armor_texture", data.id);
+    }
+
+    private static void copyModel3DAsset(DynamicResourcePack pack, String ref, String targetPath, String fieldName, String gearId) {
+        if (ref == null || ref.isBlank()) {
+            LOGGER.error(ERROR_MODEL3D_MISSING_FIELD, fieldName, gearId);
+            return;
+        }
+        Optional<Path> resolved = TextureLoader.resolveUserResource(ref);
+        if (resolved.isEmpty()) {
+            LOGGER.error(ERROR_MODEL3D_FILE_NOT_FOUND, fieldName, ref);
+            return;
+        }
+        try {
+            pack.addRaw(ResourceLocation.fromNamespaceAndPath(NAMESPACE, targetPath), Files.readAllBytes(resolved.get()));
+        } catch (IOException e) {
+            LOGGER.error(ERROR_MODEL3D_FILE_NOT_FOUND, fieldName, resolved.get());
         }
     }
 

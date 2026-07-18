@@ -8,6 +8,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -69,11 +70,22 @@ public class GearRegistry {
 
     private static void registerArmor(GearData data) {
         if (data.pieces == null) return;
+        boolean useGeckoModel = data.texture != null
+                && "model_3d".equals(data.texture.renderMode)
+                && ModList.get().isLoaded("geckolib");
+
         String[] pieces = {"helmet", "chestplate", "leggings", "boots"};
         for (String piece : pieces) {
             if (!data.pieces.containsKey(piece)) continue;
             String itemId = data.id + "_" + piece;
-            ITEMS.register(itemId, () -> new CustomArmorItem(data, piece));
+
+            if (useGeckoModel) {
+                ITEMS.register(itemId, () ->
+                        new arrivedbog593.ultimatecustomgear.items.gear.geo.GeckoArmorItem(data, piece));
+            } else {
+                ITEMS.register(itemId, () -> new CustomArmorItem(data, piece));
+            }
+
             gearMap.put(ResourceLocation.fromNamespaceAndPath("customgear", itemId), data);
         }
     }
