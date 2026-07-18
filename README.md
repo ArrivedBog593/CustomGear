@@ -1008,7 +1008,8 @@ How to enable it
 
 In your armor's data file (JSON), add the render_mode field with value "model_3d" inside the texture block:
 
-json{
+```json
+{
   "id": "dragon_scale",
   "type": "armor_set",
   "names": {
@@ -1034,6 +1035,7 @@ json{
     "render_mode": "model_3d"
   }
 }
+```
 
 That's all you need. No file paths required — the system builds them automatically from the armor's id (dragon_scale in the example).
 
