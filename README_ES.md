@@ -996,29 +996,83 @@ Cómo activarlo
 En tu archivo de datos de la armadura (JSON), agregá dentro del bloque texture el campo render_mode con el valor "model_3d":
 ```json
 {
-  "id": "dragon_scale",
+  "id": "test_geo_armor",
   "type": "armor_set",
   "names": {
-    "en_us": "Dragon Scale",
-    "es_mx": "Escama de Dragón"
+    "en_us": "Test Geo Armor",
+    "es_mx": "Armadura de Prueba Geo"
   },
-  "durability": 550,
+  "piece_names": {
+    "en_us": {
+      "helmet": "Test Geo Helmet",
+      "chestplate": "Test Geo Chestplate",
+      "leggings": "Test Geo Leggings",
+      "boots": "Test Geo Boots"
+    },
+    "es_mx": {
+      "helmet": "Casco de Prueba Geo",
+      "chestplate": "Pechera de Prueba Geo",
+      "leggings": "Pantalones de Prueba Geo",
+      "boots": "Botas de Prueba Geo"
+    }
+  },
+  "durability": 400,
   "enchantable": true,
-  "enchantability": 15,
+  "enchantability": 12,
   "pieces": {
-    "helmet":     { "durability": 165, "defense": 3, "toughness": 2.0, "knockback_resistance": 0.0 },
-    "chestplate": { "durability": 240, "defense": 8, "toughness": 2.0, "knockback_resistance": 0.0 },
-    "leggings":   { "durability": 225, "defense": 6, "toughness": 2.0, "knockback_resistance": 0.0 },
-    "boots":      { "durability": 195, "defense": 3, "toughness": 2.0, "knockback_resistance": 0.0 }
+    "helmet": {
+      "durability": 165,
+      "defense": 3,
+      "knockback_resistance": 0.0,
+      "toughness": 2.0
+    },
+    "chestplate": {
+      "durability": 240,
+      "defense": 8,
+      "knockback_resistance": 0.0,
+      "toughness": 2.0
+    },
+    "leggings": {
+      "durability": 225,
+      "defense": 6,
+      "knockback_resistance": 0.0,
+      "toughness": 2.0
+    },
+    "boots": {
+      "durability": 195,
+      "defense": 3,
+      "knockback_resistance": 0.0,
+      "toughness": 2.0
+    }
+  },
+  "piece_effects": {
+    "chestplate": [
+      { "effect": "minecraft:fire_resistance", "amplifier": 0 }
+    ]
   },
   "set_bonus": {
     "required_pieces": 4,
     "effects": [
-      { "effect": "minecraft:fire_resistance", "amplifier": 0 }
+      { "effect": "minecraft:regeneration", "amplifier": 0 }
     ]
   },
+  "fire_resistant": false,
   "texture": {
-    "render_mode": "model_3d"
+    "mode": "custom",
+    "render_mode": "model_3d",
+    "armor_model": "geo/armor/electromancer_armor.geo.json",
+    "armor_animation": "animations/armor/electromancer_armor.animation.json",
+    "armor_texture": "textures/armor/electromancer_layer.png",
+    "refs": {
+      "helmet": "textures/armor/electromancer_helmet.png",
+      "chestplate": "textures/armor/electromancer_chestplate.png",
+      "leggings": "textures/armor/electromancer_leggings.png",
+      "boots": "textures/armor/electromancer_boots.png"
+    },
+    "armor_layers": {
+      "layer_1": "textures/armor/electromancer_layer.png",
+      "layer_2": "textures/armor/electromancer_layer.png"
+    }
   }
 }
 ```
