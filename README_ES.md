@@ -994,8 +994,8 @@ Si GeckoLib no está cargado, el sistema ignora automáticamente el modelo 3D y 
 Cómo activarlo
 
 En tu archivo de datos de la armadura (JSON), agregá dentro del bloque texture el campo render_mode con el valor "model_3d":
-
-json{
+```json
+{
   "id": "dragon_scale",
   "type": "armor_set",
   "names": {
@@ -1021,6 +1021,7 @@ json{
     "render_mode": "model_3d"
   }
 }
+```
 
 Con eso alcanza. No hace falta indicar rutas de archivo: el sistema arma las rutas solo, usando el id de la armadura (dragon_scale en el ejemplo).
 
