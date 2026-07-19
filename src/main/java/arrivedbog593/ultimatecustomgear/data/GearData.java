@@ -86,6 +86,34 @@ public class GearData {
     @SerializedName("fire_resistant")
     public boolean fireResistant = false;
 
+    /**
+     * Damage resistances applied per equipped piece. Keys: damage type tags
+     * ("#minecraft:is_fire") or exact ids ("iceandfire:dragon_fire").
+     * Values: reduction per piece, 0.0-1.0. Piece-level maps merge with this
+     * one, winning only on the keys they declare.
+     */
+    @SerializedName("damage_resistances")
+    public Map<String, Double> damageResistances;
+
+    /**
+     * Resistances against specific attackers ("against WHOM"). Keys: entity
+     * ids ("minecraft:zombie"), entity tags ("#minecraft:undead"), mod
+     * wildcards ("mekanism:*"), "all", or a player ("player:Steve").
+     * Values: reduction per equipped piece, 0.0-1.0.
+     */
+    @SerializedName("attacker_resistances")
+    public Map<String, Double> attackerResistances;
+
+    @SerializedName("show_player_resistances")
+    public boolean showPlayerResistances = false;
+
+    /**
+     * Combined conditions: reduce only when the damage type AND the attacker
+     * match. Either key may be omitted to check just the other one.
+     */
+    @SerializedName("conditional_resistances")
+    public List<ConditionalResistance> conditionalResistances;
+
     // Texture
     public TextureData texture;
 
@@ -96,6 +124,27 @@ public class GearData {
         public int defense;
         public double knockback_resistance;
         public double toughness;
+        /**
+         * When true (default) the piece inherits the set-level resistances and
+         * its own entries merge on top, winning only on the keys it declares.
+         * When false the set-level resistances do not apply to this piece at
+         * all: only what it declares below counts, and declaring nothing means
+         * this piece contributes no resistance.
+         */
+        @SerializedName("inherit_set_resistances")
+        public boolean inheritSetResistances = true;
+
+        /** Per-piece damage_resistances. Merges with the set-level map. */
+        @SerializedName("damage_resistances")
+        public Map<String, Double> damageResistances;
+
+        /** Per-piece attacker_resistances. Merges with the set-level map. */
+        @SerializedName("attacker_resistances")
+        public Map<String, Double> attackerResistances;
+
+        /** Per-piece conditional_resistances. Merges by (attacker, damage) pair. */
+        @SerializedName("conditional_resistances")
+        public List<ConditionalResistance> conditionalResistances;
     }
 
     public static class ToolData {
@@ -173,5 +222,41 @@ public class GearData {
         public Map<String, String> refs;
         @SerializedName("armor_layers")
         public Map<String, String> armorLayers;
+        /**
+         * Optional 3D armor model (GeckoLib). Its presence — plus GeckoLib
+         * being installed — switches the worn armor from the flat
+         * armor_layers to a full 3D model. Values follow the texture "mode":
+         * file paths in custom mode, resource locations in reference mode.
+         */
+        @SerializedName("armor_3d")
+        public Armor3DData armor3d;
+    }
+
+    public static class Armor3DData {
+        /** Blockbench GeckoLib model (.geo.json). Required. */
+        public String model;
+
+        /** PNG painted for the model's UV layout. Required. */
+        public String texture;
+
+        /** Optional .animation.json — without it the model is static. */
+        public String animation;
+
+        /** True when both required fields are present. */
+        public boolean isComplete() {
+            return model != null && !model.isBlank()
+                    && texture != null && !texture.isBlank();
+        }
+    }
+
+    public static class ConditionalResistance {
+        /** Damage type tag or exact id. Optional if "attacker" is present. */
+        public String damage;
+
+        /** Entity key (id, #tag, mod:*, player:Name). Optional if "damage" is present. */
+        public String attacker;
+
+        /** Reduction per equipped piece, 0.0-1.0 */
+        public double amount;
     }
 }

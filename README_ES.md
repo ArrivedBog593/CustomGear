@@ -22,10 +22,12 @@
 - **Drops de mobs** — cualquier ítem puede caer de los mobs con probabilidad, cantidad y filtros de entidad configurables (recargable en caliente: balancea tu economía en vivo)
 - Ítems `fire_resistant` que sobreviven al fuego y la lava, como la netherita — funciona en ítems, comida, gear, bloques y cubetas
 - **Armadura transparente** — armadura con stats y efectos completos que no se dibuja sobre el cuerpo
+- **Resistencias de daño** — tres capas de reducción de daño por tipo de daño, por atacante, o ambos combinados (recargable en caliente)
 
 ### Texturas y Modelos
 - Referencia texturas de vanilla o de otros mods, o usa tus propios archivos PNG
 - Texturas por cara en bloques, animaciones de tensado de arcos, capas de armadura personalizadas
+- **Modelos de armadura 3D** con GeckoLib — usa modelos de Blockbench con animaciones opcionales en lugar de capas planas (dependencia opcional: sin ella la armadura cae a las capas 2D)
 
 ### Recetas y Tags
 - **Sistema nativo de recetas** — shaped, shapeless, smelting, blasting y smithing, definidas en JSON
@@ -99,6 +101,13 @@ El contenido también puede empaquetarse como archivos `.zip` dentro de `packs/`
   "nutrition": 4,
   "saturation": 1.2,
   "always_edible": true,
+  "fire_resistant": true,
+  "mob_drops": {
+    "entities": ["minecraft:zombie", "#minecraft:undead"],
+    "chance": 0.15,
+    "min": 1,
+    "max": 2
+  },
   "on_eat_effects": [
     { "effect": "minecraft:regeneration",    "amplifier": 1, "duration": 10,  "probability": 1.0 },
     { "effect": "minecraft:absorption",      "amplifier": 0, "duration": 120, "probability": 1.0 },
@@ -116,6 +125,9 @@ El contenido también puede empaquetarse como archivos `.zip` dentro de `packs/`
   }
 }
 ```
+
+Este objeto sobrevive al fuego y la lava cuando se deja caer, y los zombis y otros no muertos tienen un 
+15% de probabilidad de soltar 1-2 de ellos al morir.
 
 También se soporta comida instantánea (`eat_duration: 0`) y comida lenta (`eat_duration: 10` = 10 segundos).
 
@@ -179,6 +191,92 @@ También se soporta comida instantánea (`eat_duration: 0`) y comida lenta (`eat
   }
 }
 ```
+
+### Conjunto de Armadura con Modelo 3D y Resistencias — Ejemplo Completo
+
+```json
+{
+  "id": "dragonslayer_armor",
+  "type": "armor_set",
+  "piece_names": {
+    "es_mx": {
+      "helmet":     "Yelmo Mataдragones",
+      "chestplate": "Coraza Matadragones",
+      "leggings":   "Grebas Matadragones",
+      "boots":      "Escarpes Matadragones"
+    }
+  },
+  "pieces": {
+    "helmet":     { "durability": 407, "defense": 3, "toughness": 3.0, "knockback_resistance": 0.1 },
+    "chestplate": { "durability": 592, "defense": 8, "toughness": 3.0, "knockback_resistance": 0.1 },
+    "leggings":   { "durability": 555, "defense": 6, "toughness": 3.0, "knockback_resistance": 0.1 },
+    "boots":      {
+      "durability": 481, "defense": 3, "toughness": 3.0, "knockback_resistance": 0.1,
+      "damage_resistances": { "#minecraft:is_fall": 0.25 }
+    }
+  },
+  "damage_resistances": {
+    "#minecraft:is_fire": 0.125,
+    "#minecraft:is_projectile": 0.0625
+  },
+  "attacker_resistances": {
+    "#minecraft:undead": 0.10,
+    "minecraft:ender_dragon": 0.15
+  },
+  "conditional_resistances": [
+    { "attacker": "minecraft:blaze", "damage": "#minecraft:is_fire", "amount": 0.20 }
+  ],
+  "show_player_resistances": false,
+  "enchantable": true,
+  "enchantability": 15,
+  "set_bonus": {
+    "required_pieces": 4,
+    "effects": [ { "effect": "minecraft:fire_resistance", "amplifier": 0 } ]
+  },
+  "texture": {
+    "mode": "custom",
+    "refs": {
+      "helmet":     "armor/textures/item/dragonslayer_helmet.png",
+      "chestplate": "armor/textures/item/dragonslayer_chestplate.png",
+      "leggings":   "armor/textures/item/dragonslayer_leggings.png",
+      "boots":      "armor/textures/item/dragonslayer_boots.png"
+    },
+    "armor_layers": {
+      "layer_1": "transparent",
+      "layer_2": "transparent"
+    },
+    "armor_3d": {
+      "model":     "armor/geo/dragonslayer.geo.json",
+      "texture":   "armor/textures/armor/dragonslayer_3d.png",
+      "animation": "armor/geo/dragonslayer.animation.json"
+    }
+  }
+}
+```
+
+Lo que muestra este ejemplo:
+
+- **`armor_3d`** convierte las cuatro piezas en un modelo de GeckoLib. `refs`
+  sigue apuntando a PNG planos — esos son los íconos del inventario, que
+  siempre son 2D.
+- **`armor_layers: "transparent"`** es el respaldo deliberado en este caso: en
+  una instancia sin GeckoLib la armadura no dibuja nada, en lugar de caer a las
+  capas de hierro vanilla, que se verían fuera de lugar en este conjunto.
+- **Las resistencias del conjunto son por pieza**: `0.125` de fuego en cuatro
+  piezas es 50% con el set completo, y `0.0625` de proyectiles es 25%.
+- **Las botas agregan** su propio `damage_resistances`. Las entradas de pieza se
+  fusionan con las del conjunto: las botas siguen recibiendo las reducciones de
+  fuego y proyectiles, más su propia entrada de caída. Una pieza solo sobrescribe
+  las claves específicas que declara.
+- **La regla condicional** le gana a la entrada general de fuego: el ataque
+  ígneo de un blaze se reduce 20% por pieza (80% con el set completo) en vez de
+  12.5%, porque `conditional` tiene prioridad sobre `damage`.
+- El bono de conjunto y las resistencias se aplican de forma independiente: el
+  efecto de Resistencia al Fuego actúa primero, y el daño que sobreviva a eso lo
+  reduce después la armadura.
+
+> Todo excepto las stats base es recargable en caliente. Agregar o quitar el
+> bloque `armor_3d` requiere reiniciar.
 
 ### Set de Herramientas — Ejemplo completo
 
@@ -557,7 +655,7 @@ La cara `"north"` es la cara frontal — apunta hacia el jugador al colocar el b
 
 ## Recetas
 
-CustomGear soporta recetas de crafteo nativas definidas directamente en JSON. No se requieren mods externos.
+UltimateCustomGear soporta recetas de crafteo nativas definidas directamente en JSON. No se requieren mods externos.
 
 ### Tipos de receta
 
@@ -575,10 +673,12 @@ Cualquier casilla de ingrediente acepta un **tag** con el prefijo `#` — la
 receta aceptará cualquier ítem de ese tag:
 
 ```json
-"key": {
-  "P": "#minecraft:planks",
-  "I": "#c:ingots/iron",
-  "S": "minecraft:stick"
+{
+  "key": {
+    "P": "#minecraft:planks",
+    "I": "#c:ingots/iron",
+    "S": "minecraft:stick"
+  }
 }
 ```
 
@@ -587,41 +687,104 @@ Funciona en recetas shaped, shapeless, smelting, blasting y smithing. Las receta
 ### Receta de ítem individual
 
 ```json
-"recipe": {
-  "type": "shaped",
-  "pattern": [" G ", " G ", " S "],
-  "key": { "G": "mimod:mi_gema", "S": "minecraft:stick" }
+{
+  "recipe": {
+    "type": "shaped",
+    "pattern": [
+      " G ",
+      " G ",
+      " S "
+    ],
+    "key": {
+      "G": "mimod:mi_gema",
+      "S": "minecraft:stick"
+    }
+  }
 }
 ```
 
 Para múltiples recetas, usa un array:
 
 ```json
-"recipe": [
-  { "type": "shaped", ... },
-  { "type": "smelting", "ingredient": "mimod:mi_mineral", "experience": 1.0, "cooking_time": 200 }
-]
+{
+  "recipe": [
+    {
+      "type": "shaped",
+      ...
+    },
+    {
+      "type": "smelting",
+      "ingredient": "mimod:mi_mineral",
+      "experience": 1.0,
+      "cooking_time": 200
+    }
+  ]
+}
 ```
 
 ### Receta de set (armadura, herramientas, armas)
 
 ```json
-"recipes": {
-  "helmet":     { "type": "shaped", "pattern": ["GGG","G G","   "], "key": {"G": "mimod:mi_gema"} },
-  "chestplate": { "type": "shaped", "pattern": ["G G","GGG","GGG"], "key": {"G": "mimod:mi_gema"} },
-  "leggings":   { "type": "shaped", "pattern": ["GGG","G G","G G"], "key": {"G": "mimod:mi_gema"} },
-  "boots":      { "type": "shaped", "pattern": ["   ","G G","G G"], "key": {"G": "mimod:mi_gema"} }
+{
+  "recipes": {
+    "helmet": {
+      "type": "shaped",
+      "pattern": [
+        "GGG",
+        "G G",
+        "   "
+      ],
+      "key": {
+        "G": "mimod:mi_gema"
+      }
+    },
+    "chestplate": {
+      "type": "shaped",
+      "pattern": [
+        "G G",
+        "GGG",
+        "GGG"
+      ],
+      "key": {
+        "G": "mimod:mi_gema"
+      }
+    },
+    "leggings": {
+      "type": "shaped",
+      "pattern": [
+        "GGG",
+        "G G",
+        "G G"
+      ],
+      "key": {
+        "G": "mimod:mi_gema"
+      }
+    },
+    "boots": {
+      "type": "shaped",
+      "pattern": [
+        "   ",
+        "G G",
+        "G G"
+      ],
+      "key": {
+        "G": "mimod:mi_gema"
+      }
+    }
+  }
 }
 ```
 
 ### Receta de mesa de herrería
 
 ```json
-"recipe": {
-  "type": "smithing_transform",
-  "template": "minecraft:netherite_upgrade_smithing_template",
-  "base": "mimod:mi_espada_diamante",
-  "addition": "minecraft:netherite_ingot"
+{
+  "recipe": {
+    "type": "smithing_transform",
+    "template": "minecraft:netherite_upgrade_smithing_template",
+    "base": "mimod:mi_espada_diamante",
+    "addition": "minecraft:netherite_ingot"
+  }
 }
 ```
 
@@ -645,7 +808,7 @@ Dos caras del mismo sistema:
 
 Un tag es simplemente la suma de todo lo que lo declara — puedes usar tags de vanilla, tags de convención (`c:`) compartidos entre mods, o inventar los tuyos (`customgear:magic_gems`). Tus tags se fusionan con los existentes del mismo nombre.
 
-Los **bloques** se agregan a los registries de tags de bloque y de ítem (para qué las recetas, que consumen la forma de ítem, acepten tu bloque). Los **fluidos** etiquetan el fluido y su cubeta. **Los sets de armadura/ herramientas/armas aún no están soportados** (sus IDs se derivan por pieza).
+Los **bloques** se agregan a los registries de tags de bloque y de ítem (para qué las recetas, que consumen la forma de ítem, acepten tu bloque). Los **fluidos** etiquetan el fluido y su cubeta. **Los sets de armadura/ herramientas/armas aún no están soportados** (sus ID se derivan por pieza).
 
 ### Tags comunes
 
@@ -691,25 +854,38 @@ Hay tres modos de textura disponibles:
 | `reference` | Reutiliza el modelo de otro ítem (vanilla o de otro mod)                   |
 | `custom`    | Usa tus propios archivos PNG colocados en la carpeta `ultimatecustomgear/` |
 
+> ⚠️ **`reference` crea una dependencia dura.** Las resource locations apuntan a
+> archivos que pertenecen a otro mod, así que ese mod pasa a ser **obligatorio**
+> para que tu contenido se vea bien. Sin él, el ítem muestra el cuadriculado de
+> textura faltante, y un modelo de armadura 3D declarado así simplemente no se
+> renderiza. Las referencias a vanilla (`minecraft:...`) siempre son seguras. Si
+> quieres que tu pack se sostenga solo, usa `custom` y mete los PNG dentro.
+
 ### Ejemplo modo reference
 
 ```json
-"texture": {
-  "mode": "reference",
-  "refs": { "sword": "minecraft:item/netherite_sword" }
+{
+  "texture": {
+    "mode": "reference",
+    "refs": {
+      "sword": "minecraft:item/netherite_sword"
+    }
+  }
 }
 ```
 
 Para arcos y ballestas, opcionalmente puedes incluir modelos de frames de tensado/carga personalizados:
 
 ```json
-"texture": {
-  "mode": "reference",
-  "refs": {
-    "bow":           "otromod:item/arco_epico",
-    "bow_pulling_0": "otromod:item/arco_epico_pulling_0",
-    "bow_pulling_1": "otromod:item/arco_epico_pulling_1",
-    "bow_pulling_2": "otromod:item/arco_epico_pulling_2"
+{
+  "texture": {
+    "mode": "reference",
+    "refs": {
+      "bow": "otromod:item/arco_epico",
+      "bow_pulling_0": "otromod:item/arco_epico_pulling_0",
+      "bow_pulling_1": "otromod:item/arco_epico_pulling_1",
+      "bow_pulling_2": "otromod:item/arco_epico_pulling_2"
+    }
   }
 }
 ```
@@ -768,18 +944,26 @@ Los JSON y texturas dentro del zip cargan exactamente igual que los archivos sue
 
 ### Campos de armadura
 
-| Campo                         | Tipo   | Descripción                                                                                            |
-|-------------------------------|--------|--------------------------------------------------------------------------------------------------------|
-| `pieces`                      | Map    | Define cada pieza. Claves: `helmet`, `chestplate`, `leggings`, `boots`                                 |
-| `pieces.durability`           | Int    | Durabilidad de esta pieza                                                                              |
-| `pieces.defense`              | Int    | Puntos de armadura que provee esta pieza                                                               |
-| `pieces.toughness`            | Float  | Resistencia de armadura por pieza. Netherite = 3.0                                                     |
-| `pieces.knockback_resistance` | Float  | Resistencia al retroceso. Máximo 1.0. Valores mayores causan glitches de física                        |
-| `piece_names`                 | Map    | Nombre completo de cada pieza por idioma. Cada idioma define las cuatro piezas de forma independiente. |
-| `piece_effects`               | Map    | Efectos aplicados al portar una pieza específica individualmente                                       |
-| `set_bonus`                   | Object | Efectos aplicados al tener el número requerido de piezas equipadas                                     |
-| `set_bonus.required_pieces`   | Int    | Número de piezas necesarias para activar el bonus                                                      |
-| `set_bonus.effects`           | List   | Lista de efectos a aplicar cuando el set está completo                                                 |
+| Campo                            | Tipo   | Descripción                                                                                            |
+|----------------------------------|--------|--------------------------------------------------------------------------------------------------------|
+| `pieces`                         | Map    | Define cada pieza. Claves: `helmet`, `chestplate`, `leggings`, `boots`                                 |
+| `pieces.durability`              | Int    | Durabilidad de esta pieza                                                                              |
+| `pieces.defense`                 | Int    | Puntos de armadura que provee esta pieza                                                               |
+| `pieces.toughness`               | Float  | Resistencia de armadura por pieza. Netherite = 3.0                                                     |
+| `pieces.knockback_resistance`    | Float  | Resistencia al retroceso. Máximo 1.0. Valores mayores causan glitches de física                        |
+| `piece_names`                    | Map    | Nombre completo de cada pieza por idioma. Cada idioma define las cuatro piezas de forma independiente. |
+| `piece_effects`                  | Map    | Efectos aplicados al portar una pieza específica individualmente                                       |
+| `set_bonus`                      | Object | Efectos aplicados al tener el número requerido de piezas equipadas                                     |
+| `set_bonus.required_pieces`      | Int    | Número de piezas necesarias para activar el bonus                                                      |
+| `set_bonus.effects`              | List   | Lista de efectos a aplicar cuando el set está completo                                                 |
+| `damage_resistances`             | Map    | Reducción de daño por tipo de daño. Ver [Resistencias de Daño](#resistencias-de-daño)                  |
+| `attacker_resistances`           | Map    | Reducción de daño por atacante. Ver [Resistencias de Daño](#resistencias-de-daño)                      |
+| `conditional_resistances`        | List   | Reducción para una combinación de atacante + tipo de daño                                              |
+| `show_player_resistances`        | Bool   | Mostrar las entradas `player:` en el tooltip. Por defecto `false` (quedan ocultas)                     |
+| `pieces.damage_resistances`      | Map    | Entradas por pieza — se fusionan con el mapa del conjunto y ganan solo en las claves declaradas        |
+| `pieces.attacker_resistances`    | Map    | Entradas por pieza — se fusionan con el mapa del conjunto                                              |
+| `pieces.conditional_resistances` | List   | Reglas por pieza — se fusionan por el par `attacker` + `damage`                                        |
+| `pieces.inherit_set_resistances` | Bool   | `false` hace que la pieza ignore todas las resistencias del conjunto. Por defecto `true`               |
 
 ### Campos de herramientas
 
@@ -847,6 +1031,73 @@ Los ítems individuales (`type: "sword"`, `type: "bow"`, etc.) usan los mismos c
 
 > **`refs` vs `faces`:** `refs` lo maneja todo — una textura única con la clave `all` (`"refs": { "all": "..." }`), o texturas por cara con las claves de cara (`top`, `bottom`, `north`, `south`, `east`, `west`, `side`). `faces` es un alias legacy que solo sirve para texturas por cara. Usa `refs`. (La clave `block` es un alias legacy de `all`.) Nota: `all`/`block` solo funcionan dentro de `refs`, nunca dentro de `faces`.
 
+### Modelos de Armadura 3D (GeckoLib)
+
+Con [GeckoLib](https://www.curseforge.com/minecraft/mc-mods/geckolib) instalado,
+las armaduras pueden renderizarse como un modelo 3D completo al vestirlas
+—cuernos, hombreras, capas, incluso animaciones— en vez de las capas planas
+de vanilla.
+
+Modela tu armadura en [Blockbench](https://www.blockbench.net/) con el formato
+**GeckoLib Animated Model**, usando los nombres de hueso estándar de armadura
+(`armorHead`, `armorBody`, `armorRightArm`, `armorLeftArm`, `armorRightLeg`,
+`armorLeftLeg`, `armorRightBoot`, `armorLeftBoot`), y declara los archivos
+exportados en `texture.armor_3d`:
+
+```json
+{
+  "texture": {
+    "mode": "custom",
+    "refs": {
+      "helmet": "textures/mi_casco_icono.png",
+      "chestplate": "textures/mi_pechera_icono.png",
+      "leggings": "textures/mis_pantalones_icono.png",
+      "boots": "textures/mis_botas_icono.png"
+    },
+    "armor_layers": {
+      "layer_1": "textures/mi_armadura_layer_1.png",
+      "layer_2": "textures/mi_armadura_layer_2.png"
+    },
+    "armor_3d": {
+      "model": "models/mi_armadura.geo.json",
+      "texture": "textures/mi_armadura_3d.png",
+      "animation": "models/mi_armadura.animation.json"
+    }
+  }
+}
+```
+
+| Campo       | Obligatorio | Descripción                                                        |
+|-------------|-------------|--------------------------------------------------------------------|
+| `model`     | Sí          | El `.geo.json` exportado desde Blockbench                          |
+| `texture`   | Sí          | PNG pintado para las UV de ese modelo (no es el ícono ni una capa) |
+| `animation` | No          | `.animation.json`; sin él el modelo es estático                    |
+
+**Cómo se combinan los tres sistemas de textura:**
+
+| Declarado                                  | Con GeckoLib  | Sin GeckoLib                |
+|--------------------------------------------|---------------|-----------------------------|
+| Solo `armor_layers`                        | Capas planas  | Capas planas                |
+| `armor_layers` + `armor_3d`                | **Modelo 3D** | Capas planas (respaldo)     |
+| Solo `armor_3d`                            | **Modelo 3D** | Capas de hierro vanilla     |
+| `armor_layers: "transparent"` + `armor_3d` | **Modelo 3D** | Armadura invisible          |
+
+> Declara siempre `armor_layers` junto a `armor_3d` — es tu red de seguridad
+> para instancias sin GeckoLib. Declarar solo `armor_3d` no rompe nada, pero la
+> armadura cae a las capas de hierro vanilla, que casi nunca es lo que quieres.
+> `refs` sigue controlando el ícono del inventario, que siempre es 2D. El modelo
+> 3D reemplaza a las capas cuando está activo; nunca se dibujan juntos.
+
+**Modos:** en modo `custom` los tres valores son rutas a tus propios archivos
+(carpeta de config o zips de packs, como cualquier otra textura custom). En
+modo `reference` son resource locations de assets de otro mod
+(p. ej. `"otromod:geo/armor/su_armadura.geo.json"`) — no se copia nada, pero
+**ese mod pasa a ser obligatorio** para que tu armadura se vea.
+
+GeckoLib es una dependencia opcional: el mod funciona sin él.
+El render 3D se fija al registrar — agregar o quitar `armor_3d` requiere
+reiniciar.
+
 ### Campos de receta
 
 | Campo          | Tipo         | Descripción                                                                           |
@@ -902,19 +1153,23 @@ Los ítems individuales (`type: "sword"`, `type: "bow"`, etc.) usan los mismos c
 | `texture.faces`        | Objeto  | —           | Textura por cara. Claves: `top`, `bottom`, `north`, `south`, `east`, `west`, `side`                                                                                                                                               |
 | `texture.faces.side`   | String  | —           | Atajo: aplica a `north`, `south`, `east`, `west` si no están definidas individualmente                                                                                                                                            |
 
-> Con `harvest_level` ≥ 1, el bloque se comporta como las menas de vanilla: la herramienta equivocada o de nivel menor es lenta Y no suelta nada. Con nivel 0 (u omitido), `required_tool` solo da velocidad de minado — el bloque dropea con cualquier cosa, como la arena. Funciona con herramientas de otros mods que sigan los niveles de vanilla. Nota: cambiar `harvest_level` entre 0 y ≥1 requiere reiniciar (el requisito de drops se fija al arrancar); ajustarlo entre 1–4, o cambiar `required_tool`, aplica con `/customgear reload`.
+> Con `harvest_level` ≥ 1, el bloque se comporta como las menas de vanilla: la herramienta equivocada o de nivel menor es lenta Y no suelta nada. Con nivel 0 (u omitido), `required_tool` solo da velocidad de minado — el bloque se obtiene con cualquier cosa, como la arena. Funciona con herramientas de otros mods que sigan los niveles de vanilla. Nota: cambiar `harvest_level` entre 0 y ≥1 requiere reiniciar (el requisito de drops se fija al arrancar); ajustarlo entre 1–4, o cambiar `required_tool`, aplica con `/customgear reload`.
 
 ### Drops de Mobs
 
 Los ítems y la comida pueden caer de los mobs al morir mediante el objeto `mob_drops`:
 
 ```json
-"mob_drops": {
-  "chance": 0.10,
-  "min": 1,
-  "max": 3,
-  "requires_player_kill": true,
-  "entities": ["all"]
+{
+  "mob_drops": {
+    "chance": 0.10,
+    "min": 1,
+    "max": 3,
+    "requires_player_kill": true,
+    "entities": [
+      "all"
+    ]
+  }
 }
 ```
 
@@ -925,9 +1180,151 @@ Los ítems y la comida pueden caer de los mobs al morir mediante el objeto `mob_
 | `requires_player_kill` | Boolean | `true`      | Solo suelta cuando un jugador hizo la kill — evita que las granjas automáticas impriman dinero                                                                                                                                    |
 | `entities`             | List    | —           | **Obligatorio.** `["all"]` = todos los mobs (vanilla y de mods); IDs exactos (`"minecraft:zombie"`); tags de entidad (`"#minecraft:undead"`); comodines de mod (`"mekanism:*"`). Omitido = drop desactivado (con aviso en el log) |
 
+`min` puede ser `0`, igual que las caídas normales como la carne podrida (0-2). 
+Recuerda que se combina con `chance`: una probabilidad del 25% de obtener 0-2 
+drops ocurre aproximadamente un 17% del tiempo.
+
 Los jugadores, armor stands, barcos y vagonetas nunca sueltan ítems. Los cambios aplican en vivo con `/customgear reload` — puedes ajustar la economía de tu servidor sin reiniciar.
 
 Los ítems con `mob_drops` muestran una sección **"Lo sueltan:"** en su tooltip, con los mobs de origen y la probabilidad de drop.
+
+### Resistencias de Daño
+
+Las armaduras pueden reducir el daño entrante mediante tres capas, disponibles a
+nivel de conjunto y dentro de `pieces.<pieza>`:
+
+```json
+{
+  "damage_resistances": {
+    "#minecraft:is_projectile": 0.125,
+    "minecraft:lava": 0.20,
+    "iceandfire:dragon_fire": 0.225
+  },
+  "attacker_resistances": {
+    "minecraft:skeleton": 0.05,
+    "#minecraft:undead": 0.10,
+    "mekanism:*": 0.05,
+    "player:AlgunNombre": 1.0
+  },
+  "conditional_resistances": [
+    {
+      "attacker": "minecraft:skeleton",
+      "damage": "#minecraft:is_projectile",
+      "amount": 0.10
+    },
+    {
+      "attacker": "minecraft:skeleton",
+      "damage": "minecraft:mob_attack",
+      "amount": 0.15
+    }
+  ],
+  "show_player_resistances": false
+}
+```
+
+| Campo                     | Tipo | Descripción                                                                                                                 |
+|---------------------------|------|-----------------------------------------------------------------------------------------------------------------------------|
+| `damage_resistances`      | Map  | Tipo de daño → reducción. ID exactos, tags (`#`) y tipos de mods. Ver [DAMAGE_TYPES.md](DAMAGE_TYPES.md)                    |
+| `attacker_resistances`    | Map  | Atacante → reducción. ID de entidad exactos, tags de entidad (`#`), comodines de mod (`mod:*`), jugadores (`player:Nombre`) |
+| `conditional_resistances` | List | Reglas con `attacker`, `damage` y `amount` — solo aplican cuando ambos coinciden                                            |
+| `show_player_resistances` | Bool | `false` por defecto: las entradas `player:` nunca aparecen en el tooltip                                                    |
+| `inherit_set_resistances` | Bool | Dentro de una pieza: `false` hace que ignore todas las resistencias del conjunto. Por defecto `true`                        |
+
+**Los valores son por pieza equipada.** `0.125` en las cuatro piezas es 50% con
+el conjunto completo puesto, y 25% con dos piezas. Diseña pensando en el set
+completo y luego divide.
+
+**Nivel de conjunto y por pieza.** Las entradas declaradas dentro de
+`pieces.<pieza>` **se fusionan** con las del conjunto, ganando solo en las
+claves que declaran. El alcance fusiona; las capas reemplazan. Son dos reglas
+independientes.
+
+```json
+{
+  "damage_resistances": {
+    "#minecraft:is_fall": 0.10,
+    "#minecraft:is_fire": 0.10
+  },
+  "pieces": {
+    "boots": {
+      "durability": 481,
+      "defense": 3,
+      "damage_resistances": {
+        "#minecraft:is_fall": 0.15
+      }
+    }
+  }
+}
+```
+
+Las botas resisten caída al `0.15` **y siguen resistiendo fuego al `0.10`**; las
+otras tres piezas conservan `0.10` en ambas. Reducción total de caída con el
+conjunto completo: 45%.
+
+Para sacar una pieza por completo de las resistencias del conjunto, pon
+`inherit_set_resistances` en `false` dentro de ella. Esa pieza usará solo lo que
+declare — y una que no declare nada no aporta ninguna resistencia:
+
+```json
+{
+  "pieces": {
+    "chestplate": {
+      "durability": 592,
+      "defense": 8,
+      "inherit_set_resistances": false,
+      "damage_resistances": {
+        "#minecraft:is_projectile": 0.15
+      }
+    },
+    "helmet": {
+      "durability": 407,
+      "defense": 3,
+      "inherit_set_resistances": false
+    }
+  }
+}
+```
+
+Las reglas condicionales se fusionan por su par `attacker` + `damage`: una regla
+de pieza con el mismo par reemplaza a la del conjunto, y cualquier otra se suma.
+
+**Especificidad, no acumulación.** Cada pieza equipada se resuelve por su
+cuenta: las tres capas se evalúan en orden — `conditional` → `attacker` →
+`damage` — y **la primera capa con alguna coincidencia reemplaza a las más
+generales para esa pieza, aunque su valor sea menor.** Dentro de una capa, las
+entradas que coinciden se suman; después se suman las piezas.
+
+Como cada pieza se resuelve por separado, una regla condicional en una pieza no
+silencia a las demás: las otras siguen aportando por la capa que les haya
+coincidido.
+
+Con un conjunto completo usando los valores de arriba:
+
+| Ataque entrante              | Capa que gana      | Reducción |
+|------------------------------|--------------------|-----------|
+| Flecha de esqueleto          | conditional (0.10) | 40%       |
+| Melee de esqueleto           | conditional (0.15) | 60%       |
+| Flecha de pillager o jugador | damage (0.125)     | 50%       |
+| Melee de zombi               | ninguna            | 0%        |
+
+Fíjate en la primera y la tercera fila: la flecha de un **esqueleto** se reduce
+*menos* (40%) que la flecha de cualquier otro (50%), porque la regla específica
+reemplazó a la general. Si quieres que el caso específico sea más fuerte, dale
+un valor mayor.
+
+Las reducciones se limitan a 1.0 (100%). **No hay techo de balance** — la
+inmunidad total es una decisión de diseño válida y el mod no la va a cuestionar.
+
+Los proyectiles se atribuyen a su dueño: una flecha cuenta como
+`minecraft:skeleton`, no como la entidad flecha. Esto aplica a
+`attacker_resistances` y a la mitad `attacker` de las reglas condicionales.
+
+**Entradas de jugador ocultas.** `player:Nombre` coincide con un nombre de
+usuario exacto de Minecraft (no el de Discord, y distingue mayúsculas). Estas
+entradas se excluyen del tooltip para que una armadura sorpresa o de evento no
+se delate — pon `show_player_resistances` en `true` para mostrarlas.
+
+Todo lo de esta sección aplica en vivo con `/customgear reload`.
 
 ---
 
@@ -947,6 +1344,7 @@ Los ítems con `mob_drops` muestran una sección **"Lo sueltan:"** en su tooltip
 - Durabilidad mostrada
 - Texturas y modelos — **tras presionar F3+T** (el juego solo recarga los recursos del cliente bajo demanda)
 - Configuración de drops de mobs (`chance`, `min`/`max`, `entities`)
+- Resistencias de daño, de atacante y condicionales (incluido `show_player_resistances`)
 
 ### Qué requiere reinicio completo del juego
 - Daño de ataque y velocidad de ataque
@@ -957,12 +1355,13 @@ Los ítems con `mob_drops` muestran una sección **"Lo sueltan:"** en su tooltip
 - Cambiar ID de ítems
 - Cambios de `fire_resistant`
 - Cambiar una capa de armadura entre mecanismos (reference ↔ custom ↔ transparent)
+- Agregar o quitar el bloque `armor_3d` (el render 3D se fija al registrar)
 
 ---
 
 ## Multijugador
 
-**El cliente y el servidor deben tener los mismos archivos de contenido.** Los stats de los ítems se fijan al arrancar el juego, así que archivos diferentes causan desincronizaciones invisibles (tu tooltip dice un daño y el servidor aplica otro). Para prevenirlo, el mod verifica el contenido al conectar comparando hashes — el empaque no importa: un servidor usando un zip coincide con clientes usando los mismos JSONs sueltos, y viceversa.
+**El cliente y el servidor deben tener los mismos archivos de contenido.** Los stats de los ítems se fijan al arrancar el juego, así que archivos diferentes causan desincronizaciones invisibles (tu tooltip dice un daño y el servidor aplica otro). Para prevenirlo, el mod verifica el contenido al conectar comparando hashes — el empaque no importa: un servidor usando un zip coincide con clientes usando los mismos JSON sueltos, y viceversa.
 
 Lo que ocurre ante una diferencia se configura **en el servidor** en `config/ultimatecustomgear-common.toml`:
 
@@ -974,7 +1373,7 @@ Lo que ocurre ante una diferencia se configura **en el servidor** en `config/ult
 
 Solo importa el valor del servidor — la config local del cliente no tiene efecto al conectarse a un servidor.
 
-**Distribuir contenido:** empaca tus JSONs (y texturas) de `ultimatecustomgear` en un zip, compártelo, y que tus jugadores lo coloquen en su carpeta `.minecraft/ultimatecustomgear/packs/`.
+**Distribuir contenido:** empaca tus JSON (y texturas) de `ultimatecustomgear` en un zip, compártelo, y que tus jugadores lo coloquen en su carpeta `.minecraft/ultimatecustomgear/packs/`.
 
 > Ambos lados deben usar la misma versión del mod: los clientes 1.3.0 no pueden entrar a servidores anteriores y viceversa (cambio de protocolo de red).
 

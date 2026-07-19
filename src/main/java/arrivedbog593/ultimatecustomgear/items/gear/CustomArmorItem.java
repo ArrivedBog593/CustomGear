@@ -150,5 +150,8 @@ public class CustomArmorItem extends ArmorItem {
         GearData data = getGearData();
         TooltipHelper.addPieceEffectsTooltip(tooltipComponents, data, piece);
         TooltipHelper.addSetBonusTooltip(tooltipComponents, data);
+        TooltipHelper.addDamageResistancesTooltip(tooltipComponents, data, piece);
+        TooltipHelper.addAttackerResistancesTooltip(tooltipComponents, data, piece);
+        TooltipHelper.addConditionalResistancesTooltip(tooltipComponents, data, piece);
     }
 }

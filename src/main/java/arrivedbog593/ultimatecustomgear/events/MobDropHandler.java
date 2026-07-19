@@ -2,10 +2,9 @@ package arrivedbog593.ultimatecustomgear.events;
 
 import arrivedbog593.ultimatecustomgear.data.ItemData;
 import arrivedbog593.ultimatecustomgear.loader.ItemRegistry;
+import arrivedbog593.ultimatecustomgear.util.EntityMatcher;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.tags.TagKey;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.decoration.ArmorStand;
@@ -16,7 +15,6 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -43,12 +41,13 @@ import java.util.Map;
  */
 public class MobDropHandler {
 
+    @SuppressWarnings("unused") // event bus reflection
     @SubscribeEvent
     public static void onLivingDrops(LivingDropsEvent event) {
         LivingEntity entity = event.getEntity();
         if (entity.level().isClientSide()) return;
         if (entity instanceof Player) return; // players never drop economy items
-        if (entity instanceof ArmorStand) return; // crafteable → coin exploit
+        if (entity instanceof ArmorStand) return; // crafteable → drop exploit
 
         boolean playerKill = event.getSource().getEntity() instanceof Player;
         ResourceLocation entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
@@ -59,12 +58,13 @@ public class MobDropHandler {
             if (drops == null) continue;
 
             if (drops.requiresPlayerKill && !playerKill) continue;
-            if (!matchesEntity(drops.entities, entity, entityId)) continue;
+            if (!EntityMatcher.matchesAny(drops.entities, entity)) continue;
             if (random.nextDouble() >= drops.chance) continue;
 
-            int min = Math.max(1, drops.min);
+            int min = Math.max(0, drops.min);
             int max = Math.max(min, drops.max);
             int count = min + (max > min ? random.nextInt(max - min + 1) : 0);
+            if (count <= 0) continue; // 0 is a valid roll: this time nothing drops
 
             Item item = BuiltInRegistries.ITEM.get(entry.getKey());
             event.getDrops().add(new ItemEntity(
@@ -74,28 +74,4 @@ public class MobDropHandler {
         }
     }
 
-    /**
-     * Entity filter. null/empty = every living mob. Entries can be:
-     *   - exact id:      "minecraft:zombie"
-     *   - entity tag:    "#minecraft:undead" (any undead mob)
-     *   - mod wildcard:  "minecraftmod:*" (every mob from that mod)
-     */
-    private static boolean matchesEntity(List<String> entities, LivingEntity entity,
-                                         ResourceLocation entityId) {
-        if (entities == null || entities.isEmpty()) return false; // must be explicit — see validator
-        for (String e : entities) {
-            if (e == null || e.isBlank()) continue;
-            if (e.equals("all")) return true;
-            if (e.startsWith("#")) {
-                ResourceLocation tagRl = ResourceLocation.tryParse(e.substring(1));
-                if (tagRl != null && entity.getType().is(
-                        TagKey.create(Registries.ENTITY_TYPE, tagRl))) return true;
-            } else if (e.endsWith(":*")) {
-                if (entityId.getNamespace().equals(e.substring(0, e.length() - 2))) return true;
-            } else if (entityId.toString().equals(e)) {
-                return true;
-            }
-        }
-        return false;
-    }
 }

@@ -2,6 +2,58 @@
 
 Todas las notas de cambios importantes para el proyecto UltimateCustomGear.
 
+## [1.5.0] - 2026-07-19
+
+### ⚠️ Notas Importantes
+- Las resistencias son totalmente recargables en caliente — ajusta cualquier valor en vivo con `/customgear reload`
+- Agregar o quitar el bloque `armor_3d` requiere reiniciar el juego (la clase del ítem se decide al registrarlo)
+- GeckoLib es una dependencia **opcional**: sin él el mod arranca normal y la armadura 3D cae a `armor_layers` (o a las capas de hierro vanilla si no se declararon)
+
+### ✨ Nuevas Características
+
+#### Drops de Mobs
+- `mob_drops.min` ahora acepta `0`, igual que las caídas normales que pueden salir vacías (la carne podrida es 0-2). Esto se combina con `chance`: un 25% de posibilidades de que salga algo de 0-2 ocurre aproximadamente un 17% del tiempo
+
+#### Resistencias de Daño (tres capas)
+- Tres campos nuevos en armaduras — `damage_resistances` (por tipo de daño), `attacker_resistances` (por atacante) y `conditional_resistances` (atacante + tipo de daño combinados). 
+- Disponibles a nivel de conjunto y por pieza. Las entradas de pieza **se fusionan** con las del conjunto, ganando solo en las claves que declaran — el resto del conjunto sigue aplicando a esa pieza. `inherit_set_resistances: false` saca a una pieza del conjunto por completo
+- Cada pieza equipada resuelve su propia especificidad y luego se suman las piezas, así que una regla en una pieza nunca silencia a las demás
+- Los valores son **por pieza equipada**: `0.125` en un set de cuatro piezas es 50% con el conjunto completo puesto
+- **Modelo de especificidad, no de acumulación:** `conditional` > `attacker` > `damage`. La primera capa con alguna coincidencia *reemplaza* a las más generales **para esa pieza**, aunque su valor sea menor. Dentro de una capa, las entradas que coinciden se suman; después se suman las piezas
+- Acepta tipos de daño exactos (`"minecraft:arrow"`), tags de tipo de daño (`"#minecraft:is_projectile"`) y tipos de mods (`"iceandfire:dragon_fire"`) — la lista completa está en [DAMAGE_TYPES.md](DAMAGE_TYPES.md)
+- `attacker_resistances` acepta entidades exactas, tags de entidad (`"#minecraft:undead"`), comodines de mod (`"mekanism:*"`) y jugadores específicos (`"player:Nombre"`)
+- Los proyectiles heredan a su dueño: una flecha se atribuye al esqueleto que la disparó, no a la flecha
+- Se limita a 1.0, **sin techo de balance** — la inmunidad total es una decisión de diseño legítima
+- Las entradas `player:` se ocultan del tooltip por defecto para que una armadura sorpresa siga siendo sorpresa; el nuevo campo `show_player_resistances` (por defecto `false`) las hace visibles
+- Secciones nuevas de tooltip para cada capa, recortadas a 4 entradas con "…y N más"
+
+#### Armaduras 3D con GeckoLib
+- Nuevo bloque opcional `texture.armor_3d` con `model`, `texture` (ambos obligatorios) y `animation` (opcional) — su sola presencia cambia la pieza a renderizado 3D
+- Respeta el `mode` que lo rodea: en `custom` los archivos se copian al pack dinámico; en `reference` son resource locations de otro mod, que pasa a ser obligatorio
+- Cae limpiamente a las capas 2D cuando GeckoLib no está presente
+
+### 🐛 Correcciones
+- Los `on_eat_effects` de la comida se horneaban en `FoodProperties` al construirse: el tooltip se actualizaba con el reload, pero al comer se aplicaban los efectos viejos. Ahora los efectos (y `getUseDuration`) leen el mapa vivo de ítems, así que el reload funciona de punta a punta
+- Las armaduras sin `armor_layers` declaradas generaban íconos rotos (magenta) en el inventario — un return temprano se saltaba la generación de los modelos de ítem. Las capas ahora sí son opcionales
+- El contador "…y N más" de la sección **Lo sueltan:** del tooltip contaba entradas vacías, reportando más fuentes de las que existían
+
+### 🔧 Cambios Técnicos
+- `DamageResistanceHandler.java` — nuevo: resuelve las tres capas al momento del daño leyendo `GEAR_MAP` vía `GearLookup` (recargable en caliente); atribuye los proyectiles con `source.getEntity()`
+- `MobDropHandler.java` — `min` ahora puede ser `0`; un resultado de cero simplemente no deja nada en lugar de ajustarse a uno
+- `EntityMatcher.java` — nuevo en `util/`: comparación de entidades (ID exacto, tags, `mod:*`, `player:`) extraída de `MobDropHandler` para que el handler de resistencias la comparta
+- `ResistanceResolver.java` — nuevo en `util/`: fusiona las resistencias del conjunto con las de la pieza y respeta `inherit_set_resistances`. Tanto `DamageResistanceHandler` como `TooltipHelper` resuelven a través de él, así que el tooltip nunca puede desviarse de la reducción real
+- `GearData.java` — nuevos `damageResistances`, `attackerResistances`, `conditionalResistances` (conjunto y por pieza), `showPlayerResistances`, la clase `ConditionalResistance`, y `Armor3DData` dentro de `TextureData`
+- `GearParser.java` — validación de los tres campos de resistencia
+- `UniversalParser.java` — `mob_drops.min` ahora acepta `0` (antes se rechazaba el ítem completo), con mensajes separados para un `min` negativo y para un `max` menor que `min`
+- `TooltipHelper.java` — tres nuevas secciones de resistencia, las entradas se filtran antes de mostrarse para qué las ocultas y las de valor cero nunca lleguen al conteo de "…y N más"; la misma corrección aplicada a la sección existente "Causado por"
+- `GeckoArmorItem.java` — nuevo en `items/gear/geo/`; `GearRegistry.registerArmor` elige la clase del ítem y `GearModelGenerator` copia los archivos del modelo en modo `custom`
+- `CustomFoodItem.java` — los `on_eat_effects` salieron de `FoodProperties` y se aplican en `finishUsingItem`
+
+### 📦 Dependencias
+- **GeckoLib** — opcional, solo necesaria para `armor_3d`
+
+---
+
 ## [1.4.0] - 2026-07-16
 
 ### ⚠️ Notas Importantes
@@ -31,10 +83,16 @@ Todas las notas de cambios importantes para el proyecto UltimateCustomGear.
 - Arregladas las texturas de gear en modo custom (piezas de armadura, capas, herramientas, armas, frames de tensado de arcos) que se resolvían contra el nombre viejo de la carpeta del mod y nunca cargaban desde los zips de packs de contenido
 
 ### 🔧 Cambios Técnicos
-(mismas clases que la lista en inglés: `MobDropHandler` nuevo, campos en las 4 clases de datos, helpers `buildProps` en todas las clases `Custom*Item` + `BlockRegistry`/`FluidRegistry`, `GearModelGenerator` sin `GEAR_FOLDER` y con PNG transparente, intercept en `CustomArmorItem.buildLayers`)
+- `MobDropHandler.java` — nuevo: handler de `LivingDropsEvent` que lee `ITEM_MAP` en el momento del evento (recargable en caliente); soporta comodines `all`, `#entity_tags` y `mod:*`; excluye jugadores y estandartes de armadura
+- `ItemData.java` — nuevos campos `mob_drops` (`MobDropsData`) y `fire_resistant`; `GearData`, `BlockData`, `FluidData` — nuevo campo `fire_resistant`
+- Todas las clases `Custom*Item` — la construcción de propiedades se extrajo a ayudas `buildProps` aplicando `fireResistant()`; `BlockRegistry` (`blockItemProps`) y `FluidRegistry` (`bucketProps`) lo aplican a BlockItems y cubos
+- `GearModelGenerator.java` — eliminada la constante obsoleta `GEAR_FOLDER`; texturas de equipo personalizadas se resuelven mediante `TextureLoader.resolveUserResource` (raíces de contenido); inyecta un PNG totalmente transparente generado para capas "transparent"
+- `CustomArmorItem.java` — `buildLayers` intercepta "transparent" y apunta el material de la armadura a la textura transparente inyectada
 
 ### 📦 Dependencias
 No se agregaron dependencias nuevas.
+
+---
 
 ## [1.3.1] - 2026-07-05
 

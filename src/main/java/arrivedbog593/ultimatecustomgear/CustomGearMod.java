@@ -122,6 +122,7 @@ public class CustomGearMod {
         NeoForge.EVENT_BUS.register(HeldEffectHandler.class);
         NeoForge.EVENT_BUS.register(ArrowDamageHandler.class);
         NeoForge.EVENT_BUS.register(MobDropHandler.class);
+        NeoForge.EVENT_BUS.register(DamageResistanceHandler.class);
     }
 
     private void onAddPackFinders(AddPackFindersEvent event) {

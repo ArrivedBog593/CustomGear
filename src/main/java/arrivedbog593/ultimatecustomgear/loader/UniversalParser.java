@@ -253,17 +253,26 @@ public class UniversalParser {
                 LOGGER.warn("[CustomGear] Item '{}': mob_drops has no 'entities' — the drop is "
                         + "DISABLED. Use \"entities\": [\"all\"] for every mob, or list specific "
                         + "ids/#tags/mod:* wildcards", data.id);
-
+                // Not a hard error: the item is still valid, its drop is just off.
             }
             if (data.mobDrops.chance < 0 || data.mobDrops.chance > 1) {
                 LOGGER.warn("[CustomGear] Item '{}': mob_drops.chance must be 0.0-1.0 (got {})",
                         data.id, data.mobDrops.chance);
                 return false;
             }
-            if (data.mobDrops.min < 1 || data.mobDrops.max < data.mobDrops.min) {
-                LOGGER.warn("[CustomGear] Item '{}': mob_drops min/max invalid (min {} max {})",
-                        data.id, data.mobDrops.min, data.mobDrops.max);
+            if (data.mobDrops.min < 0) {
+                LOGGER.warn("[CustomGear] Item '{}': mob_drops.min cannot be negative (got {})",
+                        data.id, data.mobDrops.min);
                 return false;
+            }
+            if (data.mobDrops.max < data.mobDrops.min) {
+                LOGGER.warn("[CustomGear] Item '{}': mob_drops.max ({}) is lower than min ({})",
+                        data.id, data.mobDrops.max, data.mobDrops.min);
+                return false;
+            }
+            if (data.mobDrops.min == 0 && data.mobDrops.max == 0) {
+                LOGGER.warn("[CustomGear] Item '{}': mob_drops min and max are both 0 — the drop "
+                        + "will never produce anything", data.id);
             }
         }
         return true;

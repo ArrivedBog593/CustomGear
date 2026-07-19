@@ -9,6 +9,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -72,15 +73,8 @@ public class CustomFoodItem extends Item {
         if (data.alwaysEdible) builder.alwaysEdible();
         if (data.fastFood)     builder.fast();
 
-        if (data.onEatEffects != null) {
-            for (ItemData.FoodEffectData effectData : data.onEatEffects) {
-                MobEffectInstance instance = resolveEffect(effectData);
-                if (instance != null) {
-                    builder.effect(instance, effectData.probability);
-                }
-            }
-        }
-
+        // Effects are NOT baked here: they are applied from live data in
+        // finishUsingItem so /customgear reload can change them without a restart
         return builder.build();
     }
 
@@ -112,11 +106,10 @@ public class CustomFoodItem extends Item {
     }
 
     @Override
-    public int getUseDuration(@NotNull ItemStack stack, @NotNull net.minecraft.world.entity.LivingEntity entity) {
-        if (itemData.eatDuration >= 0) {
-            return (int)(itemData.eatDuration * 20); // seconds to ticks
-        }
-        return itemData.fastFood ? 16 : 32;
+    public int getUseDuration(@NotNull ItemStack stack, @NotNull LivingEntity entity) {
+        ItemData data = liveData();
+        if (data.eatDuration >= 0) return (int)(data.eatDuration * 20);
+        return data.fastFood ? 16 : 32;
     }
 
     @Override
@@ -129,5 +122,31 @@ public class CustomFoodItem extends Item {
         ItemData data = live != null ? live : itemData;
         TooltipHelper.addFoodEffectsTooltip(tooltipComponents, data);
         TooltipHelper.appendMobDrops(data, tooltipComponents);
+    }
+
+    @Override
+    public @NotNull ItemStack finishUsingItem(@NotNull ItemStack stack,
+                                              @NotNull net.minecraft.world.level.Level level,
+                                              @NotNull net.minecraft.world.entity.LivingEntity entity) {
+        ItemStack result = super.finishUsingItem(stack, level, entity);
+        if (!level.isClientSide()) {
+            applyEatEffects(entity, liveData());
+        }
+        return result;
+    }
+
+    /** Live ItemData lookup so reload-time changes take effect immediately. */
+    private ItemData liveData() {
+        ItemData live = ItemRegistry.ITEM_MAP.get(BuiltInRegistries.ITEM.getKey(this));
+        return live != null ? live : itemData;
+    }
+
+    private static void applyEatEffects(net.minecraft.world.entity.LivingEntity entity, ItemData data) {
+        if (data.onEatEffects == null) return;
+        for (ItemData.FoodEffectData ed : data.onEatEffects) {
+            if (ed.probability < 1.0f && entity.getRandom().nextFloat() >= ed.probability) continue;
+            MobEffectInstance instance = resolveEffect(ed);
+            if (instance != null) entity.addEffect(instance);
+        }
     }
 }

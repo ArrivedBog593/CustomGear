@@ -53,6 +53,13 @@ repositories {
             includeGroup "de.mari_023"
         }
     }
+    maven {
+        name = "Geckolib Maven"
+        url = "https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/"
+        content {
+            includeGroup "software.bernie.geckolib"
+        }
+    }
 }
 
 base {
@@ -110,9 +117,13 @@ configurations {
 }
 
 dependencies {
+    // JEI
     compileOnly "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
     compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
     localRuntime "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
+
+    // Geckolib
+    implementation "software.bernie.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
@@ -128,7 +139,8 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
             mod_license            : mod_license,
             mod_version            : mod_version,
             mod_description        : mod_description,
-            jei_version            : jei_version
+            jei_version            : jei_version,
+            geckolib_version        : geckolib_version
     ]
     inputs.properties replaceProperties
     expand replaceProperties

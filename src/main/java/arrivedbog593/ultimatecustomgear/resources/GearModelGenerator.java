@@ -1,12 +1,14 @@
 package arrivedbog593.ultimatecustomgear.resources;
 
 import arrivedbog593.ultimatecustomgear.data.GearData;
+import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
@@ -33,7 +35,6 @@ public final class GearModelGenerator {
     private GearModelGenerator() {}
 
     // ── Error messages ────────────────────────────────────────────────────────
-    private static final String ERROR_ARMOR_LAYERS_REQUIRED   = "[CustomGear] 'armor_layers' is required for armor in custom mode: {}";
     private static final String ERROR_LAYER_NOT_FOUND         = "[CustomGear] Layer {} not found: {}";
     private static final String ERROR_LAYER_NOT_DEFINED       = "[CustomGear] 'layer_{}' not defined in armor_layers for: {}";
     private static final String ERROR_REFS_REQUIRED           = "[CustomGear] 'refs' is required for {} in {} mode: {}";
@@ -62,6 +63,15 @@ public final class GearModelGenerator {
         if (data.texture == null || data.texture.mode == null) {
             generateDefaultModels(pack, data);
             return;
+        }
+        // Copy the 3D assets into the pack ONLY in custom mode; in reference
+        // mode the resource locations point at another mod's assets and
+        // nothing needs copying.
+        if ("armor_set".equals(data.type)
+                && data.texture.armor3d != null
+                && data.texture.armor3d.isComplete()
+                && !"reference".equals(data.texture.mode)) {
+            loadArmor3D(pack, data);
         }
         switch (data.texture.mode) {
             case "custom"    -> loadCustom(pack, data);
@@ -120,12 +130,17 @@ public final class GearModelGenerator {
     }
 
     private static void loadCustomArmor(DynamicResourcePack pack, GearData data) {
-        if (!hasArmorLayers(data)) {
-            LOGGER.error(ERROR_ARMOR_LAYERS_REQUIRED, data.id);
-            return;
+        // Layers are optional: an armor may rely on armor_3d (GeckoLib) or fall
+        // back to the vanilla iron layers. Missing layers must NOT prevent the
+        // item icons from being generated.
+        if (hasArmorLayers(data)) {
+            loadArmorLayer(pack, data, "layer_1");
+            loadArmorLayer(pack, data, "layer_2");
+        } else if (data.texture.armor3d == null) {
+            LOGGER.warn("[CustomGear] Armor '{}' has no armor_layers and no armor_3d — "
+                    + "the worn armor will use the vanilla iron layers", data.id);
         }
-        loadArmorLayer(pack, data, "layer_1");
-        loadArmorLayer(pack, data, "layer_2");
+
         if (!hasRefs(data)) {
             LOGGER.error(ERROR_REFS_REQUIRED, "armor pieces", "custom", data.id);
             return;
@@ -152,6 +167,34 @@ public final class GearModelGenerator {
             }
         } else {
             LOGGER.error(ERROR_LAYER_NOT_DEFINED, layerNum, data.id);
+        }
+    }
+
+    /** Copies the user's GeckoLib assets into the dynamic pack (custom mode). */
+    private static void loadArmor3D(DynamicResourcePack pack, GearData data) {
+        GearData.Armor3DData armor3d = data.texture.armor3d;
+        copy3DAsset(pack, armor3d.model,     "geo/armor/" + data.id + ".geo.json",              "model",     data.id);
+        copy3DAsset(pack, armor3d.texture,   "textures/armor/" + data.id + ".png",              "texture",   data.id);
+        copy3DAsset(pack, armor3d.animation, "animations/armor/" + data.id + ".animation.json", "animation", data.id);
+    }
+
+    private static void copy3DAsset(DynamicResourcePack pack, String ref, String targetPath,
+                                    String fieldName, String gearId) {
+        // animation is optional: a null value is not an error
+        if (ref == null || ref.isBlank()) return;
+
+        Optional<Path> resolved = TextureLoader.resolveUserResource(ref);
+        if (resolved.isEmpty()) {
+            LOGGER.error("[CustomGear] armor_3d.{} not found in config folder or any pack zip "
+                    + "for '{}': {}", fieldName, gearId, ref);
+            return;
+        }
+        try {
+            pack.addRaw(ResourceLocation.fromNamespaceAndPath(NAMESPACE, targetPath),
+                    Files.readAllBytes(resolved.get()));
+        } catch (IOException e) {
+            LOGGER.error("[CustomGear] Could not read armor_3d.{} for '{}': {}",
+                    fieldName, gearId, e.getMessage());
         }
     }
 

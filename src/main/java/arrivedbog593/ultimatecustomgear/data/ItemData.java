@@ -98,17 +98,23 @@ public class ItemData {
         public float probability = 1.0f;
     }
 
-    // ───── Mob drop fields (only used when type = "mob_drop") ────────────────────────────
+    // ───── Mob drop fields (available on any item type) ─────
 
     /** Drops from mobs — the source of an item economy. */
     @SerializedName("mob_drops")
     public MobDropsData mobDrops;
 
     public static class MobDropsData {
+        /** Probability that this item drops at all, 0.0-1.0 */
         public double chance = 0.05;
+
+        /** Minimum amount. 0 is allowed: the roll can come up empty, like
+         *  vanilla's 0-2 rotten flesh. Note this compounds with 'chance'. */
         public int min = 1;
         public int max = 1;
-        /** Entity type IDs; null/empty = every living mob (players excluded) */
+
+        /** Entity type IDs. Empty or absent DISABLES the drop — use "all" if
+         *  you really want every mob. Players and armor stands never drop. */
         public List<String> entities;
         @SerializedName("requires_player_kill")
         public boolean requiresPlayerKill = true;

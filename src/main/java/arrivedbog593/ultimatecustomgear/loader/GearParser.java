@@ -143,6 +143,49 @@ public class GearParser {
             return false;
         }
 
+        if (data.damageResistances != null) {
+            validateResistanceMap(data.id, "set", data.damageResistances);
+        }
+        if (data.pieces != null) {
+            for (Map.Entry<String, GearData.PieceData> p : data.pieces.entrySet()) {
+                if (p.getValue() != null && p.getValue().damageResistances != null) {
+                    validateResistanceMap(data.id, p.getKey(), p.getValue().damageResistances);
+                }
+            }
+        }
+
+        if (data.attackerResistances != null) {
+            validateResistanceMap(data.id, "set (attacker)", data.attackerResistances);
+        }
+        if (data.conditionalResistances != null) {
+            validateConditionalList(data.id, "set", data.conditionalResistances);
+        }
+        if (data.pieces != null) {
+            for (Map.Entry<String, GearData.PieceData> p : data.pieces.entrySet()) {
+                GearData.PieceData pd = p.getValue();
+                if (pd == null) continue;
+                if (pd.attackerResistances != null) {
+                    validateResistanceMap(data.id, p.getKey() + " (attacker)", pd.attackerResistances);
+                }
+                if (pd.conditionalResistances != null) {
+                    validateConditionalList(data.id, p.getKey(), pd.conditionalResistances);
+                }
+            }
+        }
+
+        if (data.texture != null && data.texture.armor3d != null) {
+            GearData.Armor3DData a3d = data.texture.armor3d;
+            if (!a3d.isComplete()) {
+                LOGGER.warn("[CustomGear] Gear '{}': armor_3d needs both 'model' and 'texture' "
+                        + "— 3D rendering disabled, falling back to armor_layers", data.id);
+            }
+            if (data.texture.armorLayers == null) {
+                LOGGER.info("[CustomGear] Gear '{}': armor_3d declared without armor_layers — "
+                        + "the armor will not render on instances without GeckoLib. Declaring "
+                        + "both is recommended.", data.id);
+            }
+        }
+
         if (!validateNumericRanges(data, path)) return false;
 
         if (data.pieceEffects != null) {
@@ -317,5 +360,44 @@ public class GearParser {
             return false;
         }
         return true;
+    }
+
+    private static void validateResistanceMap(String id, String where, Map<String, Double> map) {
+        double sum = 0;
+        for (Map.Entry<String, Double> e : map.entrySet()) {
+            String key = e.getKey().startsWith("#") ? e.getKey().substring(1) : e.getKey();
+            if (ResourceLocation.tryParse(key) == null) {
+                LOGGER.warn("[CustomGear] Gear '{}' ({}): malformed damage type '{}' — entry ignored",
+                        id, where, e.getKey());
+            }
+            if (e.getValue() == null || e.getValue() < 0 || e.getValue() > 1) {
+                LOGGER.warn("[CustomGear] Gear '{}' ({}): damage resistance for '{}' must be 0.0-1.0 (got {})",
+                        id, where, e.getKey(), e.getValue());
+            } else {
+                sum = Math.max(sum, e.getValue());
+            }
+        }
+        if (sum * 4 >= 1.0 && "set".equals(where)) {
+            LOGGER.info("[CustomGear] Gear '{}': full set reaches 100% resistance for some damage "
+                    + "types (immunity). If intentional, ignore this note.", id);
+        }
+    }
+
+    private static void validateConditionalList(String id, String where,
+                                                List<GearData.ConditionalResistance> list) {
+        for (GearData.ConditionalResistance c : list) {
+            if (c == null) continue;
+            boolean hasDamage   = c.damage != null && !c.damage.isBlank();
+            boolean hasAttacker = c.attacker != null && !c.attacker.isBlank();
+            if (!hasDamage && !hasAttacker) {
+                LOGGER.warn("[CustomGear] Gear '{}' ({}): a conditional_resistances entry has "
+                        + "neither 'damage' nor 'attacker' — entry ignored", id, where);
+                continue;
+            }
+            if (c.amount < 0 || c.amount > 1) {
+                LOGGER.warn("[CustomGear] Gear '{}' ({}): conditional resistance amount must be "
+                        + "0.0-1.0 (got {})", id, where, c.amount);
+            }
+        }
     }
 }

@@ -2,6 +2,58 @@
 
 All important changelog notes for the UltimateCustomGear project.
 
+## [1.5.0] - 2026-07-19
+
+### ⚠️ Important Notes
+- Resistances are fully hot-reloadable — tune every value live with `/customgear reload`
+- Adding or removing the `armor_3d` block requires a game restart (the item class is chosen at registration)
+- GeckoLib is an **optional** dependency: without it the mod starts normally and 3D armor falls back to `armor_layers` (or to the vanilla iron layers if none were declared)
+
+### ✨ New Features
+
+#### Mob Drops
+- `mob_drops.min` now accepts `0`, matching vanilla drops that can roll empty (rotten flesh is 0-2). It compounds with `chance`: a 25% chance of 0-2 drops something roughly 17% of the time
+
+#### Damage Resistances (three layers)
+- Three new fields on armor — `damage_resistances` (by damage type), `attacker_resistances` (by attacker) and `conditional_resistances` (attacker + damage type combined).
+- Available at set level and per piece. Piece entries **merge** with the set ones, winning only on the keys they declare — the rest of the set still applies to that piece. `inherit_set_resistances: false` opts a piece out of the set entirely
+- Each equipped piece resolves its own specificity and the pieces then add up, so a rule on one piece never silences the others
+- Values are **per equipped piece**: `0.125` on a four-piece set is 50% with the full set worn
+- **Specificity model, not accumulation:** `conditional` > `attacker` > `damage`. The first layer with any match *replaces* the more general ones **for that piece**, even when its value is lower. Within a layer, matching entries add up; the pieces then add up
+- Accepts exact damage types (`"minecraft:arrow"`), damage type tags (`"#minecraft:is_projectile"`) and modded types (`"iceandfire:dragon_fire"`) — see [DAMAGE_TYPES.md](DAMAGE_TYPES.md) for the full list
+- `attacker_resistances` accepts exact entities, entity tags (`"#minecraft:undead"`), mod wildcards (`"mekanism:*"`) and specific players (`"player:Name"`)
+- Projectiles inherit their owner: an arrow is attributed to the skeleton that fired it, not to the arrow
+- Clamped to 1.0, with **no balance ceiling** — total immunity is a legitimate design choice
+- `player:` entries are hidden from the tooltip by default so surprise armor stays a surprise; the new `show_player_resistances` field (default `false`) makes them visible
+- New tooltip sections for each layer, capped at 4 entries with "…and N more"
+
+#### 3D Armor with GeckoLib
+- New optional `texture.armor_3d` block with `model`, `texture` (both required) and `animation` (optional) — its mere presence switches the piece to 3D rendering
+- Respects the surrounding `mode`: in `custom` the files are copied into the dynamic pack; in `reference` they are resource locations belonging to another mod, which then becomes required
+- Falls back cleanly to 2D layers when GeckoLib is absent
+
+### 🐛 Bug Fixes
+- Food `on_eat_effects` were baked into `FoodProperties` at construction: the tooltip updated on reload but eating still applied the old effects. Effects (and `getUseDuration`) now read the live item map, so reload works end to end
+- Armor with no `armor_layers` declared produced broken (magenta) inventory icons — an early return skipped item model generation. Layers are now genuinely optional
+- The "…and N more" counter in the **Dropped by** tooltip section counted blank entries, reporting more sources than existed
+
+### 🔧 Technical Changes
+- `DamageResistanceHandler.java` — new: resolves the three layers at damage time reading `GEAR_MAP` through `GearLookup` (hot-reloadable); attributes projectiles via `source.getEntity()`
+- `MobDropHandler.java` — `min` may now be `0`; a roll of zero simply drops nothing instead of being clamped up to one
+- `EntityMatcher.java` — new in `util/`: entity matching (exact ID, tags, `mod:*`, `player:`) extracted from `MobDropHandler` so the resistance handler can share it
+- `ResistanceResolver.java` — new in `util/`: merges set-level and piece-level resistances and honors `inherit_set_resistances`. Both `DamageResistanceHandler` and `TooltipHelper` resolve through it so the tooltip can never drift from the real reduction
+- `GearData.java` — new `damageResistances`, `attackerResistances`, `conditionalResistances` (set and per piece), `showPlayerResistances`, `ConditionalResistance` class, and `Armor3DData` inside `TextureData`
+- `GearParser.java` — validation of the three resistance fields
+- `UniversalParser.java` — `mob_drops.min` now accepts `0` (the whole item was previously rejected), with separate messages for a negative `min` and for `max` below `min`
+- `TooltipHelper.java` — three new resistance sections, entries filtered before rendering so hidden and zero-valued ones never reach the "…and N more" count; the same fix applied to the existing "Dropped by" section
+- `GeckoArmorItem.java` — new in `items/gear/geo/`; `GearRegistry.registerArmor` picks the item class, `GearModelGenerator` copies the model files in `custom` mode
+- `CustomFoodItem.java` — `on_eat_effects` moved out of `FoodProperties` and applied in `finishUsingItem`
+
+### 📦 Dependencies
+- **GeckoLib** — optional, only required for `armor_3d`
+
+---
+
 ## [1.4.0] - 2026-07-16
 
 ### ⚠️ Important Notes
@@ -18,9 +70,9 @@ All important changelog notes for the UltimateCustomGear project.
 - Fully hot-reloadable — balance your server economy live
 - Items with mob drops show a **"Dropped by"** tooltip section with the source mobs and drop chance (localized entity names, long lists truncated; updates with reload)
 
-#### Fire Resistant Items
+#### Fire-Resistant Items
 - New `fire_resistant` field on items, food, gear (applies to every piece of a set), blocks and fluids — the dropped item survives fire and lava, like netherite
-- On fluids it protects the filled bucket (yes, vanilla lava buckets burn in lava — yours don't have to)
+- On fluids, it protects the filled bucket (yes, vanilla lava buckets burn in lava — yours don't have to)
 - Does NOT make the wearer fire-immune (use fire resistance effects for that)
 
 #### Transparent Armor
@@ -39,6 +91,8 @@ All important changelog notes for the UltimateCustomGear project.
 
 ### 📦 Dependencies
 No new dependencies added.
+
+---
 
 ## [1.3.1] - 2026-07-05
 
@@ -137,7 +191,7 @@ No new dependencies added.
 - `ContentRoots.java` — new: mounts the loose folder plus every zip in `packs/` as uniform content roots (deterministic alphabetical order)
 - `GlobalIdValidator.java` — new: validates all final derived IDs across item/block/fluid registries before registration, atomic per-entry claims
 - `ContentHasher.java` — new: canonical (key-sorted, whitespace/packaging independent) hash of all content JSONs across all roots, captured at load time
-- `CustomGearNetworking.java`, `HashCheckPayload.java`, `HashCheckAckPayload.java` — new: configuration-phase handshake with server-decided enforcement travelling in the payload; protocol version "2"
+- `CustomGearNetworking.java`, `HashCheckPayload.java`, `HashCheckAckPayload.java` — new: configuration-phase handshake with server-decided enforcement traveling in the payload; protocol version "2"
 - `CustomGearConfig.java` — new: COMMON config with `content_handshake_mode`
 - `GearParser.java` / `UniversalParser.java` — iterate all content roots; cache keys prefixed per-root (`packs/foo.zip!path`)
 - `TextureLoader.java` — custom resources resolved through the content session (fixes the legacy `./customgear` path)

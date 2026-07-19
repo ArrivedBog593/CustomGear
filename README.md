@@ -22,10 +22,12 @@
 - **Mob drops** — any item can drop from mobs with configurable chance, count, and entity filters (hot-reloadable: balance your economy live)
 - `fire_resistant` items that survive fire and lava, like netherite — works on items, food, gear, blocks, and buckets
 - **Transparent armor** — armor with full stats and effects that draws nothing on the body
+- **Damage resistances** — three layers of damage reduction by damage type, by attacker, or both combined (hot-reloadable)
 
 ### Textures & Models
 - Reference vanilla/modded textures or provide your own PNG files
 - Per-face block textures, bow-pulling animations, custom armor layers
+- **3D armor models** via GeckoLib — use Blockbench models with optional animations instead of flat layers (optional dependency: without it, the armor falls back to 2D layers)
 
 ### Recipes & Tags
 - **Native recipe system** — shaped, shapeless, smelting, blasting, and smithing, defined in JSON
@@ -99,6 +101,13 @@ Content can also be packaged as `.zip` files inside `packs/` — see the **Conte
   "nutrition": 4,
   "saturation": 1.2,
   "always_edible": true,
+  "fire_resistant": true,
+  "mob_drops": {
+    "entities": ["minecraft:zombie", "#minecraft:undead"],
+    "chance": 0.15,
+    "min": 1,
+    "max": 2
+  },
   "on_eat_effects": [
     { "effect": "minecraft:regeneration",    "amplifier": 1, "duration": 10,  "probability": 1.0 },
     { "effect": "minecraft:absorption",      "amplifier": 0, "duration": 120, "probability": 1.0 },
@@ -116,6 +125,9 @@ Content can also be packaged as `.zip` files inside `packs/` — see the **Conte
   }
 }
 ```
+
+This item survives fire and lava when dropped, and zombies and other undead have
+a 15% chance to drop 1-2 of it on death.
 
 Instant food (`eat_duration: 0`) and slow food (`eat_duration: 10` = 10 seconds) are also supported.
 
@@ -179,6 +191,89 @@ Instant food (`eat_duration: 0`) and slow food (`eat_duration: 10` = 10 seconds)
   }
 }
 ```
+
+### Armor Set with 3D Model and Resistances — Full Example
+
+```json
+{
+  "id": "dragonslayer_armor",
+  "type": "armor_set",
+  "piece_names": {
+    "en_us": {
+      "helmet":     "Dragonslayer Helm",
+      "chestplate": "Dragonslayer Cuirass",
+      "leggings":   "Dragonslayer Greaves",
+      "boots":      "Dragonslayer Sabatons"
+    }
+  },
+  "pieces": {
+    "helmet":     { "durability": 407, "defense": 3, "toughness": 3.0, "knockback_resistance": 0.1 },
+    "chestplate": { "durability": 592, "defense": 8, "toughness": 3.0, "knockback_resistance": 0.1 },
+    "leggings":   { "durability": 555, "defense": 6, "toughness": 3.0, "knockback_resistance": 0.1 },
+    "boots":      {
+      "durability": 481, "defense": 3, "toughness": 3.0, "knockback_resistance": 0.1,
+      "damage_resistances": { "#minecraft:is_fall": 0.25 }
+    }
+  },
+  "damage_resistances": {
+    "#minecraft:is_fire": 0.125,
+    "#minecraft:is_projectile": 0.0625
+  },
+  "attacker_resistances": {
+    "#minecraft:undead": 0.10,
+    "minecraft:ender_dragon": 0.15
+  },
+  "conditional_resistances": [
+    { "attacker": "minecraft:blaze", "damage": "#minecraft:is_fire", "amount": 0.20 }
+  ],
+  "show_player_resistances": false,
+  "enchantable": true,
+  "enchantability": 15,
+  "set_bonus": {
+    "required_pieces": 4,
+    "effects": [ { "effect": "minecraft:fire_resistance", "amplifier": 0 } ]
+  },
+  "texture": {
+    "mode": "custom",
+    "refs": {
+      "helmet":     "armor/textures/item/dragonslayer_helmet.png",
+      "chestplate": "armor/textures/item/dragonslayer_chestplate.png",
+      "leggings":   "armor/textures/item/dragonslayer_leggings.png",
+      "boots":      "armor/textures/item/dragonslayer_boots.png"
+    },
+    "armor_layers": {
+      "layer_1": "transparent",
+      "layer_2": "transparent"
+    },
+    "armor_3d": {
+      "model":     "armor/geo/dragonslayer.geo.json",
+      "texture":   "armor/textures/armor/dragonslayer_3d.png",
+      "animation": "armor/geo/dragonslayer.animation.json"
+    }
+  }
+}
+```
+
+What this example shows:
+
+- **`armor_3d`** turns the four pieces into a GeckoLib model. `refs` still points
+  at flat PNGs — those are the inventory icons, which are always 2D.
+- **`armor_layers: "transparent"`** is the deliberate fallback here: on an
+  instance without GeckoLib the armor draws nothing instead of falling back to
+  the vanilla iron layers, which would look wrong for this set.
+- **Set-level resistances** are per piece: `0.125` fire on four pieces is 50%
+  with the full set, and `0.0625` projectiles is 25%.
+- **The boots add** their own `damage_resistances`. Piece entries merge with the
+  set-level ones: the boots still get the fire and projectile reductions, plus
+  their own fall entry. A piece only overrides the specific keys it declares.
+- **The conditional rule** beats the more general fire entry: a blaze's fire
+  attack is reduced by 20% per piece (80% with the full set) instead of 12.5%,
+  because `conditional` outranks `damage`.
+- Set bonus and resistances stack independently: the Fire Resistance effect
+  applies first, and whatever damage survives it is then reduced by the armor.
+
+> Everything except the base stats is hot-reloadable. Adding or removing the
+> `armor_3d` block requires a restart.
 
 ### Tool Set — Full Example
 
@@ -557,7 +652,7 @@ The `"north"` face is the front face — it points toward the player when the bl
 
 ## Recipes
 
-CustomGear supports native crafting recipes defined directly in JSON. No external mods are required.
+UltimateCustomGear supports native crafting recipes defined directly in JSON. No external mods are required.
 
 ### Recipe types
 
@@ -575,10 +670,12 @@ Any ingredient slot accepts a **tag** with the `#` prefix — the recipe will
 accept any item in that tag:
 
 ```json
-"key": {
-  "P": "#minecraft:planks",
-  "I": "#c:ingots/iron",
-  "S": "minecraft:stick"
+{
+  "key": {
+    "P": "#minecraft:planks",
+    "I": "#c:ingots/iron",
+    "S": "minecraft:stick"
+  }
 }
 ```
 
@@ -587,41 +684,104 @@ Works in shaped, shapeless, smelting, blasting, and smithing recipes. Recipes wi
 ### Individual item recipe
 
 ```json
-"recipe": {
-  "type": "shaped",
-  "pattern": [" G ", " G ", " S "],
-  "key": { "G": "mymod:my_gem", "S": "minecraft:stick" }
+{
+  "recipe": {
+    "type": "shaped",
+    "pattern": [
+      " G ",
+      " G ",
+      " S "
+    ],
+    "key": {
+      "G": "mymod:my_gem",
+      "S": "minecraft:stick"
+    }
+  }
 }
 ```
 
 For multiple recipes, use an array:
 
 ```json
-"recipe": [
-  { "type": "shaped", ... },
-  { "type": "smelting", "ingredient": "mymod:my_ore", "experience": 1.0, "cooking_time": 200 }
-]
+{
+  "recipe": [
+    {
+      "type": "shaped",
+      ...
+    },
+    {
+      "type": "smelting",
+      "ingredient": "mymod:my_ore",
+      "experience": 1.0,
+      "cooking_time": 200
+    }
+  ]
+}
 ```
 
 ### Set recipe (armor, tools, weapons)
 
 ```json
-"recipes": {
-  "helmet":     { "type": "shaped", "pattern": ["GGG","G G","   "], "key": {"G": "mymod:my_gem"} },
-  "chestplate": { "type": "shaped", "pattern": ["G G","GGG","GGG"], "key": {"G": "mymod:my_gem"} },
-  "leggings":   { "type": "shaped", "pattern": ["GGG","G G","G G"], "key": {"G": "mymod:my_gem"} },
-  "boots":      { "type": "shaped", "pattern": ["   ","G G","G G"], "key": {"G": "mymod:my_gem"} }
+{
+  "recipes": {
+    "helmet": {
+      "type": "shaped",
+      "pattern": [
+        "GGG",
+        "G G",
+        "   "
+      ],
+      "key": {
+        "G": "mymod:my_gem"
+      }
+    },
+    "chestplate": {
+      "type": "shaped",
+      "pattern": [
+        "G G",
+        "GGG",
+        "GGG"
+      ],
+      "key": {
+        "G": "mymod:my_gem"
+      }
+    },
+    "leggings": {
+      "type": "shaped",
+      "pattern": [
+        "GGG",
+        "G G",
+        "G G"
+      ],
+      "key": {
+        "G": "mymod:my_gem"
+      }
+    },
+    "boots": {
+      "type": "shaped",
+      "pattern": [
+        "   ",
+        "G G",
+        "G G"
+      ],
+      "key": {
+        "G": "mymod:my_gem"
+      }
+    }
+  }
 }
 ```
 
 ### Smithing table recipe
 
 ```json
-"recipe": {
-  "type": "smithing_transform",
-  "template": "minecraft:netherite_upgrade_smithing_template",
-  "base": "mymod:my_diamond_sword",
-  "addition": "minecraft:netherite_ingot"
+{
+  "recipe": {
+    "type": "smithing_transform",
+    "template": "minecraft:netherite_upgrade_smithing_template",
+    "base": "mymod:my_diamond_sword",
+    "addition": "minecraft:netherite_ingot"
+  }
 }
 ```
 
@@ -691,25 +851,37 @@ Three texture modes are available:
 | `reference` | Reuses the model of another item (vanilla or modded)               |
 | `custom`    | Uses your own PNG files placed in the `ultimatecustomgear/` folder |
 
+> ⚠️ **`reference` creates a hard dependency.** The resource locations point at
+> files that belong to another mod, so that mod becomes **required** for your
+> content to look right. Without it the item shows the missing-texture
+> checkerboard, and a 3D armor model declared this way simply won't render.
+> Vanilla references (`minecraft:...`) are always safe. If you want your pack to
+> stand on its own, use `custom` and ship the PNGs inside it.
+
 ### Reference mode example
 
 ```json
-"texture": {
-  "mode": "reference",
-  "refs": { "sword": "minecraft:item/netherite_sword" }
+{
+  "texture": {
+    "mode": "reference",
+    "refs": {
+      "sword": "minecraft:item/netherite_sword"
+    }
+  }
 }
 ```
 
 For bows and crossbows, you can optionally include custom pulling/loading frame models:
 
 ```json
-"texture": {
-  "mode": "reference",
-  "refs": {
-    "bow":           "othermod:item/epic_bow",
-    "bow_pulling_0": "othermod:item/epic_bow_pulling_0",
-    "bow_pulling_1": "othermod:item/epic_bow_pulling_1",
-    "bow_pulling_2": "othermod:item/epic_bow_pulling_2"
+{
+  "texture": {
+    "mode": "reference", 
+    "refs": {
+      "bow":           "othermod:item/epic_bow", 
+      "bow_pulling_0": "othermod:item/epic_bow_pulling_0", 
+      "bow_pulling_1": "othermod:item/epic_bow_pulling_1", "bow_pulling_2": "othermod:item/epic_bow_pulling_2"
+    }
   }
 }
 ```
@@ -768,18 +940,26 @@ JSONs and textures inside the zip load exactly like loose files — subfolders i
 
 ### Armor Fields
 
-| Field                         | Type   | Description                                                                                 |
-|-------------------------------|--------|---------------------------------------------------------------------------------------------|
-| `pieces`                      | Map    | Defines each armor piece. Keys: `helmet`, `chestplate`, `leggings`, `boots`                 |
-| `pieces.durability`           | Int    | Durability of this piece                                                                    |
-| `pieces.defense`              | Int    | Armor points this piece provides                                                            |
-| `pieces.toughness`            | Float  | Armor toughness per piece. Netherite = 3.0                                                  |
-| `pieces.knockback_resistance` | Float  | Knockback resistance. Max is 1.0. Values above 1.0 cause physics glitches                   |
-| `piece_names`                 | Map    | Full name for each piece per language. Each language defines all four pieces independently. |
-| `piece_effects`               | Map    | Effects applied when a specific piece is worn individually                                  |
-| `set_bonus`                   | Object | Effects applied when the required number of pieces are worn                                 |
-| `set_bonus.required_pieces`   | Int    | Number of pieces needed to activate the bonus                                               |
-| `set_bonus.effects`           | List   | List of effects to apply when set is complete                                               |
+| Field                            | Type   | Description                                                                                 |
+|----------------------------------|--------|---------------------------------------------------------------------------------------------|
+| `pieces`                         | Map    | Defines each armor piece. Keys: `helmet`, `chestplate`, `leggings`, `boots`                 |
+| `pieces.durability`              | Int    | Durability of this piece                                                                    |
+| `pieces.defense`                 | Int    | Armor points this piece provides                                                            |
+| `pieces.toughness`               | Float  | Armor toughness per piece. Netherite = 3.0                                                  |
+| `pieces.knockback_resistance`    | Float  | Knockback resistance. Max is 1.0. Values above 1.0 cause physics glitches                   |
+| `piece_names`                    | Map    | Full name for each piece per language. Each language defines all four pieces independently. |
+| `piece_effects`                  | Map    | Effects applied when a specific piece is worn individually                                  |
+| `set_bonus`                      | Object | Effects applied when the required number of pieces are worn                                 |
+| `set_bonus.required_pieces`      | Int    | Number of pieces needed to activate the bonus                                               |
+| `set_bonus.effects`              | List   | List of effects to apply when set is complete                                               |
+| `damage_resistances`             | Map    | Damage reduction by damage type. See [Damage Resistances](#damage-resistances)              |
+| `attacker_resistances`           | Map    | Damage reduction by attacker. See [Damage Resistances](#damage-resistances)                 |
+| `conditional_resistances`        | List   | Damage reduction for an attacker + damage type combination                                  |
+| `show_player_resistances`        | Bool   | Show `player:` entries in the tooltip. Default `false` (they stay hidden)                   |
+| `pieces.damage_resistances`      | Map    | Per-piece entries — merge with the set-level map, winning only on declared keys             |
+| `pieces.attacker_resistances`    | Map    | Per-piece entries — merge with the set-level map                                            |
+| `pieces.conditional_resistances` | List   | Per-piece rules — merge by `attacker` + `damage` pair                                       |
+| `pieces.inherit_set_resistances` | Bool   | `false` makes the piece ignore all set-level resistances. Default `true`                    |
 
 ### Tool Fields
 
@@ -847,6 +1027,73 @@ Individual items (`type: "sword"`, `type: "bow"`, etc.) use the same fields as a
 
 > **`refs` vs `faces`:** `refs` handles everything — a single texture with the `all` key (`"refs": { "all": "..." }`), or per-face textures with the face keys (`top`, `bottom`, `north`, `south`, `east`, `west`, `side`). `faces` is a legacy alias that only works for per-face textures. Use `refs`. (The `block` key is a legacy alias of `all`.) Note: `all`/`block` only work inside `refs`, never inside `faces`.
 
+### 3D Armor Models (GeckoLib)
+
+With [GeckoLib](https://www.curseforge.com/minecraft/mc-mods/geckolib) installed,
+armor can render as a full 3D model when worn — horns, shoulder pads, capes,
+even animations — instead of the flat vanilla layers.
+
+Model your armor in [Blockbench](https://www.blockbench.net/) using the
+**GeckoLib Animated Model** format, using the standard armor bone names
+(`armorHead`, `armorBody`, `armorRightArm`, `armorLeftArm`, `armorRightLeg`,
+`armorLeftLeg`, `armorRightBoot`, `armorLeftBoot`), then declare the exported
+files in `texture.armor_3d`:
+
+```json
+{
+  "texture": {
+    "mode": "custom", 
+    "refs": {
+      "helmet": "textures/my_helmet_icon.png", 
+      "chestplate": "textures/my_chestplate_icon.png", 
+      "leggings": "textures/my_leggings_icon.png", 
+      "boots": "textures/my_boots_icon.png"
+    }, 
+    "armor_layers": {
+      "layer_1": "textures/my_armor_layer_1.png",
+      "layer_2": "textures/my_armor_layer_2.png"
+    }, 
+    "armor_3d": {
+      "model": "models/my_armor.geo.json",
+      "texture": "textures/my_armor_3d.png",
+      "animation": "models/my_armor.animation.json"
+    }
+  }
+}
+```
+
+| Field       | Required | Description                                                             |
+|-------------|----------|-------------------------------------------------------------------------|
+| `model`     | Yes      | The `.geo.json` exported from Blockbench                                |
+| `texture`   | Yes      | PNG painted for that model's UV layout (not the item icon, not a layer) |
+| `animation` | No       | `.animation.json`; without it the model is static                       |
+
+**How the three texture systems combine:**
+
+| Declared                                   | With GeckoLib | Without GeckoLib       |
+|--------------------------------------------|---------------|------------------------|
+| `armor_layers` only                        | Flat layers   | Flat layers            |
+| `armor_layers` + `armor_3d`                | **3D model**  | Flat layers (fallback) |
+| `armor_3d` only                            | **3D model**  | Vanilla iron layers    |
+| `armor_layers: "transparent"` + `armor_3d` | **3D model**  | Invisible armor        |
+
+> Always declare `armor_layers` alongside `armor_3d` — it is your safety net
+> for instances without GeckoLib. Declaring only `armor_3d` will not break
+> anything, but the armor falls back to the vanilla iron layers, which is
+> almost never what you want. `refs` still controls the inventory icon, which
+> is always 2D. The 3D model replaces the layers when active; they are never
+> drawn together.
+
+**Modes:** in `custom` mode the three values are paths to your own files
+(config folder or pack zips, like every other custom texture). In `reference`
+mode they are resource locations of assets shipped by another mod
+(e.g. `"othermod:geo/armor/their_armor.geo.json"`) — nothing is copied, but
+**that mod becomes required** for your armor to render.
+
+GeckoLib is an optional dependency: the mod runs fine without it.
+3D rendering is baked at registration — adding or removing `armor_3d`
+requires a restart.
+
 ### Recipe Fields
 
 | Field          | Type         | Description                                                                          |
@@ -909,12 +1156,14 @@ Individual items (`type: "sword"`, `type: "bow"`, etc.) use the same fields as a
 Items and food can drop from mobs on death via the `mob_drops` object:
 
 ```json
-"mob_drops": {
-  "chance": 0.10,
-  "min": 1,
-  "max": 3,
-  "requires_player_kill": true,
-  "entities": ["all"]
+{
+  "mob_drops": {
+    "chance": 0.10, 
+    "min": 1, 
+    "max": 3, 
+    "requires_player_kill": true, 
+    "entities": ["all"]
+}
 }
 ```
 
@@ -925,9 +1174,143 @@ Items and food can drop from mobs on death via the `mob_drops` object:
 | `requires_player_kill` | Boolean | `true`  | Only drops when a player made the kill — prevents automated farms from printing currency                                                                                                                      |
 | `entities`             | List    | —       | **Required.** `["all"]` = every mob (vanilla and modded); exact IDs (`"minecraft:zombie"`); entity tags (`"#minecraft:undead"`); mod wildcards (`"mekanism:*"`). Omitted = drop disabled (with a log warning) |
 
+`min` may be `0`, matching vanilla drops like rotten flesh (0-2). Remember it
+compounds with `chance`: a 25% chance of 0-2 drops something roughly 17% of the
+time.
+
 Players, armor stands, boats, and minecarts never drop items. Changes apply live with `/customgear reload` — you can tune your server's economy without restarting.
 
 Items with `mob_drops` show a **"Dropped by"** section in their tooltip, with the source mobs and the drop chance.
+
+### Damage Resistances
+
+Armor can reduce incoming damage through three layers, available at set level
+and inside `pieces.<piece>`:
+
+```json
+{
+  "damage_resistances": {
+    "#minecraft:is_projectile": 0.125, 
+    "minecraft:lava": 0.20, 
+    "iceandfire:dragon_fire": 0.225
+  },
+  "attacker_resistances": {
+    "minecraft:skeleton": 0.05,
+    "#minecraft:undead": 0.10,
+    "mekanism:*": 0.05,
+    "player:SomeName": 1.0
+  }, 
+  "conditional_resistances": [
+    {
+      "attacker": "minecraft:skeleton",
+      "damage": "#minecraft:is_projectile",
+      "amount": 0.10
+    },
+    {
+      "attacker": "minecraft:skeleton",
+      "damage": "minecraft:mob_attack",
+      "amount": 0.15
+    }
+  ], 
+  "show_player_resistances": false
+}
+```
+
+| Field                     | Type | Description                                                                                                 |
+|---------------------------|------|-------------------------------------------------------------------------------------------------------------|
+| `damage_resistances`      | Map  | Damage type → reduction. Exact IDs, tags (`#`), and modded types. See [DAMAGE_TYPES.md](DAMAGE_TYPES.md)    |
+| `attacker_resistances`    | Map  | Attacker → reduction. Exact entity IDs, entity tags (`#`), mod wildcards (`mod:*`), players (`player:Name`) |
+| `conditional_resistances` | List | Rules with `attacker`, `damage` and `amount` — applies only when both match                                 |
+| `show_player_resistances` | Bool | `false` by default: `player:` entries never appear in the tooltip                                           |
+| `inherit_set_resistances` | Bool | Inside a piece: `false` makes it ignore every set-level resistance. Default `true`                          |
+
+**Values are per equipped piece.** `0.125` on all four pieces is 50% with the
+full set worn, 25% with two pieces. Design around the full set, then divide.
+
+**Set level and per piece.** Entries declared inside `pieces.<piece>` **merge**
+with the set-level ones, winning only on the keys they declare. Scope merges;
+layers replace. The two rules are independent.
+
+```json
+{
+  "damage_resistances": {
+    "#minecraft:is_fall": 0.10,
+    "#minecraft:is_fire": 0.10
+  }, 
+  "pieces": {
+    "boots": {
+      "durability": 481, 
+      "defense": 3, 
+      "damage_resistances": {
+        "#minecraft:is_fall": 0.15
+      }
+    }
+  }
+}
+```
+
+The boots resist fall at `0.15` **and still resist fire at `0.10`**; the other
+three pieces keep `0.10` for both. Total fall reduction with the full set: 45%.
+
+To take a piece out of the set-level resistances entirely, set
+`inherit_set_resistances` to `false` inside it. That piece then uses only what
+it declares — and one that declares nothing contributes no resistance at all:
+
+```json
+{
+  "pieces": {
+    "chestplate": {
+      "durability": 592, "defense": 8, 
+      "inherit_set_resistances": false, 
+      "damage_resistances": { "#minecraft:is_projectile": 0.15 }
+    }, 
+    "helmet": {
+      "durability": 407, "defense": 3, 
+      "inherit_set_resistances": false
+    }
+  }
+}
+```
+
+Conditional rules merge by their `attacker` + `damage` pair: a piece rule with
+the same pair replaces the set rule, and any other one is added alongside it.
+
+**Specificity, not accumulation.** Each equipped piece resolves on its own: the
+three layers are evaluated in order — `conditional` → `attacker` → `damage` —
+and **the first layer with any match replaces the more general ones for that
+piece, even when its value is lower.** Within a layer, matching entries add
+together; the pieces then add together.
+
+Because pieces resolve independently, a conditional rule on one piece does not
+silence the others: they keep contributing through whichever layer matched for
+them.
+
+With a full set using the values above:
+
+| Incoming attack             | Layer that wins    | Reduction |
+|-----------------------------|--------------------|-----------|
+| Skeleton arrow              | conditional (0.10) | 40%       |
+| Skeleton melee              | conditional (0.15) | 60%       |
+| Pillager or player arrow    | damage (0.125)     | 50%       |
+| Zombie melee                | none               | 0%        |
+
+Note the third and first rows: a **skeleton's** arrow is reduced *less* (40%)
+than anyone else's arrow (50%), because the specific rule replaced the general
+one. If you want the specific case to be stronger, give it a higher value.
+
+Reductions are clamped to 1.0 (100%). **There is no balance ceiling** — total
+immunity is a valid design choice, and the mod will not second-guess it.
+
+Projectiles are attributed to their owner: an arrow counts as
+`minecraft:skeleton`, not as the arrow entity. This applies to
+`attacker_resistances` and to the `attacker` half of conditional rules.
+
+**Hidden player entries.** `player:Name` matches one exact Minecraft username
+(not a Discord name, and it is case-sensitive). These entries are excluded from
+the tooltip so that surprise or event armor doesn't announce itself — set
+`show_player_resistances` to `true` to display them.
+
+Everything here applies live with `/customgear reload`.
 
 ---
 
@@ -947,6 +1330,7 @@ Items with `mob_drops` show a **"Dropped by"** section in their tooltip, with th
 - Durability display
 - Textures and models — **after pressing F3+T** (the game only reloads client resources on demand)
 - Mob drop settings (`chance`, `min`/`max`, `entities`)
+- Damage, attacker, and conditional resistances (including `show_player_resistances`)
 
 ### What requires a full game restart
 - Attack damage and attack speed
@@ -957,6 +1341,7 @@ Items with `mob_drops` show a **"Dropped by"** section in their tooltip, with th
 - Changing item IDs
 - `fire_resistant` changes
 - Switching an armor layer between mechanisms (reference ↔ custom ↔ transparent)
+- Adding or removing the `armor_3d` block (3D rendering is baked at registration)
 
 ---
 
