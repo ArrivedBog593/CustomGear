@@ -1383,6 +1383,7 @@ Only the server's setting matters — a client's local config has no effect when
 - Minecraft 1.21.1
 - NeoForge 21.1.x
 - JEI (optional, recommended) — recipes are fully visible
+- GeckoLib (optional) — required only for 3D armor models
 - Modded enchantments work automatically on enchantable items
 - Models from any installed mod can be referenced with `reference` mode
 - Ingredients from any installed mod can be used in recipes

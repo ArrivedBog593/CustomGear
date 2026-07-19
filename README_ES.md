@@ -1397,6 +1397,7 @@ Solo importa el valor del servidor — la config local del cliente no tiene efec
 - Minecraft 1.21.1
 - NeoForge 21.1.x
 - JEI (opcional, recomendado) — las recetas son completamente visibles
+- GeckoLib (opcional) — requerido solo para modelos de armadura en 3D
 - Los encantamientos de otros mods funcionan automáticamente en ítems encantables
 - Los modelos de cualquier mod instalado pueden referenciarse con el modo `reference`
 - Los ingredientes de cualquier mod instalado pueden usarse en recetas
