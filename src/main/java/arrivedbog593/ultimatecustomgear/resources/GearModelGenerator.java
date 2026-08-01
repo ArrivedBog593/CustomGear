@@ -125,6 +125,7 @@ public final class GearModelGenerator {
             case "armor_set"  -> loadCustomArmor(pack, data);
             case "tool_set"   -> loadCustomToolSet(pack, data);
             case "weapon_set" -> loadCustomWeaponSet(pack, data);
+            case "bow", "crossbow", "shield" -> loadCustomWeapon(pack, data);
             default           -> loadCustomTool(pack, data);
         }
     }
@@ -272,15 +273,29 @@ public final class GearModelGenerator {
                 continue;
             }
             String itemId = data.id + "_" + weaponType;
-            if (weaponType.equals("bow")) {
-                loadCustomBowTextures(pack, data, itemId, ref);
-            } else {
-                loadToolTexture(pack, itemId, ref);
-                generateToolItemModel(pack, itemId);
+            switch (weaponType) {
+                case "bow"      -> loadCustomBowTextures(pack, data, itemId, ref);
+                case "crossbow" -> loadCustomCrossbowTextures(pack, data, itemId, ref);
+                case "shield"   -> generateShieldFlatModel(pack, itemId);
+                default         -> {
+                    loadToolTexture(pack, itemId, ref);
+                    generateToolItemModel(pack, itemId);
+                }
             }
         }
     }
 
+    /**
+     * Custom-mode bow: base texture plus the three pulling frames.
+     * <p>
+     * The parent is DEFAULT_BOW, never HANDHELD_PARENT. That parent is where
+     * the bow's display transforms live — with the handheld one the bow renders
+     * at tool scale and fills a quarter of the screen in first person.
+     * <p>
+     * Frames fall back INDIVIDUALLY to the vanilla frame. The previous
+     * all-or-nothing flag meant one missing texture dropped all three
+     * overrides, which freezes the animation with no visible cause.
+     */
     private static void loadCustomBowTextures(DynamicResourcePack pack, GearData data,
                                               String itemId, String baseRef) {
         Optional<Path> basePath = TextureLoader.resolveUserResource(baseRef);
@@ -290,23 +305,138 @@ public final class GearModelGenerator {
             return;
         }
         pack.addTexture(itemTextureLoc(itemId), basePath.get());
-        String[] frames = {"pulling_0", "pulling_1", "pulling_2"};
-        boolean hasAllFrames = true;
-        for (String frame : frames) {
-            String frameRef = data.texture.refs.get("bow_" + frame);
-            if (frameRef != null) {
-                Optional<Path> framePath = TextureLoader.resolveUserResource(frameRef);
-                if (framePath.isPresent()) {
-                    pack.addTexture(itemTextureLoc(itemId + "_" + frame), framePath.get());
-                } else {
-                    LOGGER.error(ERROR_TOOL_TEXTURE_NOT_FOUND, frameRef);
-                    hasAllFrames = false;
-                }
-            } else {
-                hasAllFrames = false;
-            }
+
+        Map<String, String> refs = data.texture.refs;
+        String p0 = customFrame(pack, itemId, "_pulling_0", refs,
+                "bow_pulling_0", DEFAULT_BOW_PULLING_0, DEFAULT_BOW);
+        String p1 = customFrame(pack, itemId, "_pulling_1", refs,
+                "bow_pulling_1", DEFAULT_BOW_PULLING_1, DEFAULT_BOW);
+        String p2 = customFrame(pack, itemId, "_pulling_2", refs,
+                "bow_pulling_2", DEFAULT_BOW_PULLING_2, DEFAULT_BOW);
+
+        String json = """
+        {
+          "parent": "%s",
+          "textures": { "layer0": "%s:item/%s" },
+          "overrides": [
+            { "predicate": { "pulling": 1 },               "model": "%s" },
+            { "predicate": { "pulling": 1, "pull": 0.65 }, "model": "%s" },
+            { "predicate": { "pulling": 1, "pull": 0.9 },  "model": "%s" }
+          ]
         }
-        generateBowItemModel(pack, itemId, hasAllFrames);
+        """.formatted(DEFAULT_BOW, NAMESPACE, itemId, p0, p1, p2);
+
+        pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Custom-mode crossbow. This did not exist: crossbows fell to the generic
+     * tool branch, so crossbow_pulling_*, crossbow_arrow and crossbow_firework
+     * were read nowhere in custom mode.
+     * <p>
+     * Override ORDER matters — Minecraft takes the LAST match, so charged has
+     * to come after the pulling entries and firework after charged, otherwise a
+     * loaded crossbow renders as a pulling frame.
+     */
+    private static void loadCustomCrossbowTextures(DynamicResourcePack pack, GearData data,
+                                                   String itemId, String baseRef) {
+        Optional<Path> basePath = TextureLoader.resolveUserResource(baseRef);
+        if (basePath.isEmpty()) {
+            LOGGER.error(ERROR_TOOL_TEXTURE_NOT_FOUND, baseRef);
+            generateParentOnlyModel(pack, itemId, DEFAULT_CROSSBOW);
+            return;
+        }
+        pack.addTexture(itemTextureLoc(itemId), basePath.get());
+
+        Map<String, String> refs = data.texture.refs;
+        String p0 = customFrame(pack, itemId, "_pulling_0", refs,
+                "crossbow_pulling_0", DEFAULT_CROSSBOW_PULLING_0, DEFAULT_CROSSBOW);
+        String p1 = customFrame(pack, itemId, "_pulling_1", refs,
+                "crossbow_pulling_1", DEFAULT_CROSSBOW_PULLING_1, DEFAULT_CROSSBOW);
+        String p2 = customFrame(pack, itemId, "_pulling_2", refs,
+                "crossbow_pulling_2", DEFAULT_CROSSBOW_PULLING_2, DEFAULT_CROSSBOW);
+        String arrow = customFrame(pack, itemId, "_arrow", refs,
+                "crossbow_arrow", DEFAULT_CROSSBOW_ARROW, DEFAULT_CROSSBOW);
+        String firework = customFrame(pack, itemId, "_firework", refs,
+                "crossbow_firework", DEFAULT_CROSSBOW_FIREWORK, DEFAULT_CROSSBOW);
+
+        String json = """
+        {
+          "parent": "%s",
+          "textures": { "layer0": "%s:item/%s" },
+          "overrides": [
+            { "predicate": { "pulling": 1 },                "model": "%s" },
+            { "predicate": { "pulling": 1, "pull": 0.58 },  "model": "%s" },
+            { "predicate": { "pulling": 1, "pull": 1.0 },   "model": "%s" },
+            { "predicate": { "charged": 1 },                "model": "%s" },
+            { "predicate": { "charged": 1, "firework": 1 }, "model": "%s" }
+          ]
+        }
+        """.formatted(DEFAULT_CROSSBOW, NAMESPACE, itemId, p0, p1, p2, arrow, firework);
+
+        pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Injects one animation-frame texture plus the child model wrapping it, and
+     * returns the model reference for the overrides array. Falls back to the
+     * vanilla frame when the key is absent or the file does not resolve, so a
+     * partial set of custom frames still animates.
+     *
+     * @param suffix    appended to itemId, e.g. "_pulling_0"
+     * @param refKey    key to look up in refs, e.g. "bow_pulling_0"
+     * @param vanilla   model reference to use when the user did not supply this
+     * @param parent    parent for the child model (carries display transforms)
+     */
+    private static String customFrame(DynamicResourcePack pack, String itemId, String suffix,
+                                      Map<String, String> refs, String refKey,
+                                      String vanilla, String parent) {
+        String ref = refs.get(refKey);
+        if (ref == null || ref.isBlank()) return vanilla;
+
+        Optional<Path> path = TextureLoader.resolveUserResource(ref);
+        if (path.isEmpty()) {
+            LOGGER.error(ERROR_TOOL_TEXTURE_NOT_FOUND, ref);
+            return vanilla;
+        }
+
+        String childId = itemId + suffix;
+        pack.addTexture(itemTextureLoc(childId), path.get());
+
+        String childJson = """
+        {
+          "parent": "%s",
+          "textures": { "layer0": "%s:item/%s" }
+        }
+        """.formatted(parent, NAMESPACE, childId);
+        pack.addRaw(itemModelLoc(childId), childJson.getBytes(StandardCharsets.UTF_8));
+
+        return NAMESPACE + ":item/" + childId;
+    }
+
+    /**
+     * Individual bow / crossbow / shield in custom mode. Mirrors
+     * loadReferenceWeapon — the missing counterpart that sent these types to
+     * loadCustomTool through the default branch.
+     */
+    private static void loadCustomWeapon(DynamicResourcePack pack, GearData data) {
+        if (!hasRefs(data)) {
+            LOGGER.error(ERROR_REFS_REQUIRED, data.type, "custom", data.id);
+            return;
+        }
+        String ref = data.texture.refs.get(data.type);
+        if (ref == null) {
+            LOGGER.error(ERROR_REFS_MISSING_KEY, data.type, data.id);
+            generateParentOnlyModel(pack, data.id, getDefaultWeaponParent(data.type));
+            return;
+        }
+        switch (data.type) {
+            case "bow"      -> loadCustomBowTextures(pack, data, data.id, ref);
+            case "crossbow" -> loadCustomCrossbowTextures(pack, data, data.id, ref);
+            // Shield ignores the ref by design in this version — the BEWLR
+            // hardcodes the vanilla atlas materials. See the shield notes.
+            default         -> generateShieldFlatModel(pack, data.id);
+        }
     }
 
     // ── Reference loading ─────────────────────────────────────────────────────
@@ -594,33 +724,6 @@ public final class GearModelGenerator {
               ]
             }
             """.formatted(ref, p0, p1, p2, arrow, firework);
-        }
-        pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
-    }
-
-    private static void generateBowItemModel(DynamicResourcePack pack,
-                                             String itemId, boolean withAnimation) {
-        String json;
-        if (withAnimation) {
-            json = """
-            {
-              "parent": "%s",
-              "textures": { "layer0": "%s:item/%s" },
-              "overrides": [
-                { "predicate": { "pulling": 1 },               "model": "%s:item/%s_pulling_0" },
-                { "predicate": { "pulling": 1, "pull": 0.65 }, "model": "%s:item/%s_pulling_1" },
-                { "predicate": { "pulling": 1, "pull": 0.9 },  "model": "%s:item/%s_pulling_2" }
-              ]
-            }
-            """.formatted(HANDHELD_PARENT, NAMESPACE, itemId,
-                    NAMESPACE, itemId, NAMESPACE, itemId, NAMESPACE, itemId);
-        } else {
-            json = """
-            {
-              "parent": "%s",
-              "textures": { "layer0": "%s:item/%s" }
-            }
-            """.formatted(HANDHELD_PARENT, NAMESPACE, itemId);
         }
         pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
     }

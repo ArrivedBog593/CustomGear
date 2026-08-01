@@ -32,6 +32,8 @@
   "tooltip.ultimatecustomgear.harvest_netherite": "Netherite",
 
   "tooltip.ultimatecustomgear.dropped_by": "Dropped by:",
+  "tooltip.ultimatecustomgear.dropped_by.looting_count": "Amount increased by Looting",
+  "tooltip.ultimatecustomgear.dropped_by.looting_chance": "Chance increased by Looting",
   "tooltip.ultimatecustomgear.dropped_by.any_mob": "Any mob",
   "tooltip.ultimatecustomgear.dropped_by.mod_mobs": "All %s mobs",
   "tooltip.ultimatecustomgear.dropped_by.more": "…and %s more",

@@ -8,6 +8,9 @@ import arrivedbog593.ultimatecustomgear.loader.ContentRoots;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
@@ -67,6 +70,9 @@ public final class TextureLoader {
         for (FluidData data : fluidList) {
             BlockModelGenerator.generateBucketModel(pack, data);
         }
+
+        // Pack logo
+        loadPackIcon(pack);
     }
 
     /**
@@ -132,6 +138,51 @@ public final class TextureLoader {
                 }
             }
             default -> GearModelGenerator.generateItemModelWithRef(pack, data.id, DEFAULT_ITEM);
+        }
+    }
+
+    // ── Pack logo ──────────────────────────────────────────────────────────────
+
+    /**
+     * Injects the dynamic pack's own pack.png — the icon shown next to
+     * "CustomGear Dynamic Pack" in the resource pack screen.
+     * <p>
+     * Precedence: a pack.png in the user's ultimatecustomgear/ folder wins, so
+     * a server owner can brand their content pack. Falling back to the icon
+     * bundled in the jar otherwise, and to nothing at all if that is missing
+     * too — a pack with no icon renders a default, it does not break.
+     * <p>
+     * Only the LOOSE config folder is checked, not pack zips: the icon belongs
+     * to the whole dynamic pack, which merges every root, so picking one zip's
+     * icon over another's would be arbitrary.
+     */
+    public static void loadPackIcon(DynamicResourcePack pack) {
+        // 1. User override
+        ContentRoots session = ContentRoots.current();
+        if (session != null) {
+            Path userIcon = session.configFolder().resolve("dynamic_pack_icon.png");
+            if (Files.isRegularFile(userIcon)) {
+                try {
+                    pack.addRootFile("pack.png", Files.readAllBytes(userIcon));
+                    LOGGER.info("[CustomGear] Using custom dynamic_pack_icon.png from the config folder");
+                    return;
+                } catch (IOException e) {
+                    LOGGER.warn("[CustomGear] Could not read dynamic_pack_icon.png: {} — "
+                            + "falling back to the bundled icon", e.getMessage());
+                }
+            }
+        }
+
+        // 2. Bundled default
+        try (InputStream in = TextureLoader.class.getResourceAsStream("/pack_icon.png")) {
+            if (in == null) {
+                LOGGER.debug("[CustomGear] No bundled pack_icon.png — dynamic pack will show "
+                        + "the default icon");
+                return;
+            }
+            pack.addRootFile("pack.png", in.readAllBytes());
+        } catch (IOException e) {
+            LOGGER.warn("[CustomGear] Could not load the bundled pack icon: {}", e.getMessage());
         }
     }
 }

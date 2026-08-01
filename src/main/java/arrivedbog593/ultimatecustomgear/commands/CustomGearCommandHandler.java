@@ -80,14 +80,22 @@ public class CustomGearCommandHandler {
                                     RecipeLoader.loadAll(DYNAMIC_PACK, validated.gear,
                                             validated.items, validated.blocks);
 
-                                    // 3.6. Regenerate block mining tags (required_tool / harvest_level)
-                                    BlockTagLoader.loadAll(DYNAMIC_PACK, validated.blocks);
+                                    // 3.6. Tag files: one shared builder, emitted once at 5.9
+                                    TagFileBuilder tagFiles = new TagFileBuilder();
+                                    BlockTagLoader.loadAll(tagFiles, validated.blocks);
+                                    GearTagLoader.loadAll(tagFiles, validated.gear);
 
-                                    // 3.7. Regenerate block loot tables (self-drop)
+                                    // 3.7. Generate loot tables (server data)
                                     BlockLootLoader.loadAll(DYNAMIC_PACK, validated.blocks);
 
-                                    // 3.8. Regenerate user-declared item/block/fluid tags
-                                    ItemTagLoader.loadAll(DYNAMIC_PACK, validated.items, validated.blocks, validated.fluids);
+                                    // 3.8. User-declared item/block/fluid tags — same builder
+                                    ItemTagLoader.loadAll(tagFiles, validated.items, validated.blocks, validated.fluids);
+
+                                    // 3.85. Foreign content declared into tags — same builder
+                                    TagPatchLoader.loadAll(tagFiles, universalResult.tagPatches);
+
+                                    // 3.9. Emit every tag file — must come after ALL tag sources
+                                    tagFiles.emit(DYNAMIC_PACK);
 
                                     // 4. Reload fluid, item and block data in registries
                                     FluidRegistry.updateFluidData(validated.fluids);

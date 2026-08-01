@@ -87,6 +87,18 @@ public class GearData {
     public boolean fireResistant = false;
 
     /**
+     * Whether this armor accepts smithing trims. Off by default: trims draw
+     * over the armor layers, so a set with transparent layers or a GeckoLib 3D
+     * model applies the trim but never shows it.
+     * <p>
+     * Opting out needs an explicit tag removal — vanilla's trimmable_armor is
+     * the union of the four slot tags, so armor inherits it just by being
+     * armor. See GearTagLoader.
+     */
+    @SerializedName("trimmable")
+    public boolean trimmable = false;
+
+    /**
      * Damage resistances applied per equipped piece. Keys: damage type tags
      * ("#minecraft:is_fire") or exact ids ("iceandfire:dragon_fire").
      * Values: reduction per piece, 0.0-1.0. Piece-level maps merge with this

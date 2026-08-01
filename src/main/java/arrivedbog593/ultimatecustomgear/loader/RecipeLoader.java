@@ -5,19 +5,13 @@ import arrivedbog593.ultimatecustomgear.data.GearData;
 import arrivedbog593.ultimatecustomgear.data.ItemData;
 import arrivedbog593.ultimatecustomgear.data.RecipeData;
 import arrivedbog593.ultimatecustomgear.resources.DynamicResourcePack;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
+import com.google.gson.*;
 import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Generates vanilla recipe JSONs from RecipeData and injects them into the
@@ -41,7 +35,16 @@ import java.util.Set;
  *   - shapeless → crafting table, ingredients in any order
  *   - smelting → furnace
  *   - blasting → blast furnace
+ *   - smoking → smoker
+ *   - campfire_cooking → campfire
+ *   - stonecutting → stonecutter
  *   - smithing_transform → smithing table
+ *   - passthrough → another mod's recipe type, copied verbatim
+ * <p>
+ * PASSTHROUGH is the deliberate exception: its body is copied verbatim and
+ * only the inner "type" is checked. Validating another mod's recipe schema
+ * would mean knowing it, and a validator that is right most of the time is
+ * worse than none — the mod's own deserializer is the authority there.
  */
 public class RecipeLoader {
 
@@ -108,12 +111,17 @@ public class RecipeLoader {
             LOGGER.warn("[CustomGear] Recipe for '{}' missing 'type' — skipping", itemId);
             return null;
         }
+        warnUnusedFields(itemId, data);
         return switch (data.type) {
             case "shaped"             -> buildShaped(itemId, data);
             case "shapeless"          -> buildShapeless(itemId, data);
-            case "smelting"           -> buildCooking("minecraft:smelting", itemId, data, 200);
-            case "blasting"           -> buildCooking("minecraft:blasting", itemId, data, 100);
+            case "smelting"           -> buildCooking("minecraft:smelting", itemId, data, 10f);
+            case "blasting"           -> buildCooking("minecraft:blasting", itemId, data, 5f);
+            case "smoking"            -> buildCooking("minecraft:smoking", itemId, data, 5f);
+            case "campfire_cooking"   -> buildCooking("minecraft:campfire_cooking", itemId, data, 30f);
+            case "stonecutting"       -> buildStonecutting(itemId, data);
             case "smithing_transform" -> buildSmithing(itemId, data);
+            case "passthrough"        -> buildPassthrough(itemId, data);
             default -> {
                 LOGGER.warn("[CustomGear] Recipe for '{}' has unknown type '{}' — skipping",
                         itemId, data.type);
@@ -209,7 +217,7 @@ public class RecipeLoader {
         }
         obj.add("key", key);
 
-        obj.add("result", buildResult(itemId, data.resultCount));
+        obj.add("result", buildResult(itemId, data.resultCount()));
         return obj;
     }
 
@@ -237,14 +245,14 @@ public class RecipeLoader {
         }
         obj.add("ingredients", ingredients);
 
-        obj.add("result", buildResult(itemId, data.resultCount));
+        obj.add("result", buildResult(itemId, data.resultCount()));
         return obj;
     }
 
-    // ── Cooking (smelting / blasting) ─────────────────────────────────────────
+    // ── Cooking (smelting / blasting / smoking / campfire) ───────────────────────────────
 
     private static JsonObject buildCooking(String type, String itemId,
-                                           RecipeData data, int defaultTime) {
+                                           RecipeData data, float defaultSeconds) {
         if (data.ingredient == null || data.ingredient.isBlank()) {
             LOGGER.warn("[CustomGear] {} recipe for '{}' missing 'ingredient' — skipping", type, itemId);
             return null;
@@ -258,9 +266,52 @@ public class RecipeLoader {
         obj.add("ingredient", ing);
 
         obj.add("result", buildResult(itemId, 1));
-        obj.addProperty("experience", data.experience);
-        obj.addProperty("cookingtime", data.cookingTime > 0 ? data.cookingTime : defaultTime);
+        obj.addProperty("experience", data.experience());
+        obj.addProperty("cookingtime", cookingTicks(data, itemId, defaultSeconds));
 
+        return obj;
+    }
+
+    /**
+     * Resolves cooking_time (seconds) to the ticks the datapack wants.
+     * <p>
+     * Also catches the most likely upgrade mistake. cooking_time was in TICKS
+     * before 1.6.0, and a leftover tick value is still perfectly valid as a
+     * number — 200 means 10s under the old unit and 200s under the new one, and
+     * nothing in the file says which was meant. The recipe would just be
+     * mysteriously slow. So anything over a minute gets flagged: no real recipe
+     * cooks that long, and every unconverted tick value from a normal recipe
+     * lands well above the line.
+     */
+    private static int cookingTicks(RecipeData data, String itemId, float defaultSeconds) {
+        if (data.cookingTime == 0) {
+            LOGGER.warn("[CustomGear] Recipe for '{}': cooking_time 0 is treated as 'not set' "
+                            + "and falls back to the default ({}s). Use a positive number of seconds.",
+                    itemId, defaultSeconds);
+            return Math.round(defaultSeconds * 20f);
+        }
+        float seconds = data.cookingTime > 0 ? data.cookingTime : defaultSeconds;
+        return Math.round(seconds * 20f);
+    }
+
+
+    // ── Stonecutting ────────────────────────────────────────────────────────────
+
+    private static JsonObject buildStonecutting(String itemId, RecipeData data) {
+        if (data.ingredient == null || data.ingredient.isBlank()) {
+            LOGGER.warn("[CustomGear] Stonecutting recipe for '{}' missing 'ingredient' — skipping",
+                    itemId);
+            return null;
+        }
+
+        JsonObject obj = new JsonObject();
+        obj.addProperty("type", "minecraft:stonecutting");
+
+        JsonObject ing = ingredient(data.ingredient, itemId, "ingredient");
+        if (ing == null) return null;
+        obj.add("ingredient", ing);
+
+        obj.add("result", buildResult(itemId, data.resultCount()));
         return obj;
     }
 
@@ -286,6 +337,64 @@ public class RecipeLoader {
         obj.add("addition", addition);
 
         obj.add("result", buildResult(itemId, 1));
+        return obj;
+    }
+
+    // ── Passthrough ───────────────────────────────────────────────────────────
+
+    private static JsonObject buildPassthrough(String itemId, RecipeData data) {
+        if (data.json == null) {
+            LOGGER.warn("[CustomGear] Passthrough recipe for '{}' missing 'json' — skipping. "
+                    + "The raw recipe body goes in a 'json' object.", itemId);
+            return null;
+        }
+
+        JsonElement innerType = data.json.get("type");
+        if (innerType == null || !innerType.isJsonPrimitive()) {
+            LOGGER.warn("[CustomGear] Passthrough recipe for '{}': the inner json has no 'type' — "
+                    + "skipping. Every recipe needs a type, e.g. \"create:mixing\".", itemId);
+            return null;
+        }
+
+        String typeStr = innerType.getAsString();
+        ResourceLocation typeRl = ResourceLocation.tryParse(typeStr);
+        if (typeRl == null) {
+            LOGGER.warn("[CustomGear] Passthrough recipe for '{}': malformed inner type '{}' — "
+                    + "skipping. Expected 'namespace:path'.", itemId, typeStr);
+            return null;
+        }
+
+        // deepCopy so the parsed data is never mutated — a /customgear reload
+        // reuses it, and a condition array appended twice would be a mess.
+        JsonObject obj = data.json.deepCopy();
+
+        // Collect the mods this recipe needs: the type's namespace plus any
+        // extras the user listed. LinkedHashSet keeps the order deterministic
+        // (content hash) and drops the duplicate when 'requires' repeats it.
+        Set<String> mods = new LinkedHashSet<>();
+        if (!typeRl.getNamespace().equals("minecraft")) {
+            mods.add(typeRl.getNamespace());
+        }
+        if (data.requires != null) {
+            for (String mod : data.requires) {
+                if (mod != null && !mod.isBlank()) mods.add(mod.trim());
+            }
+        }
+
+        if (!mods.isEmpty()) {
+            JsonArray conditions = new JsonArray();
+            for (String mod : mods) {
+                JsonObject condition = new JsonObject();
+                condition.addProperty("type", "neoforge:mod_loaded");
+                condition.addProperty("modid", mod);
+                conditions.add(condition);
+            }
+            obj.add("neoforge:conditions", conditions);
+        } else {
+            LOGGER.debug("[CustomGear] Passthrough recipe for '{}' targets a vanilla type — "
+                    + "no mod_loaded condition needed", itemId);
+        }
+
         return obj;
     }
 
@@ -332,5 +441,64 @@ public class RecipeLoader {
             result.addProperty("count", Math.min(count, 64));
         }
         return result;
+    }
+
+    /**
+     * Warns about fields the declared type will ignore.
+     * <p>
+     * RecipeData is one shared POJO for every recipe type, so Gson happily
+     * accepts "pattern" on a smelting recipe or "cooking_time" on a
+     * stonecutting one. Nothing breaks — the builder just never reads them, and
+     * the user is left thinking they configured something that does nothing.
+     * <p>
+     * Deliberately a single table rather than a check inside each builder: the
+     * per-builder version is how this ended up inconsistent in the first place,
+     * with stonecutting warning about cooking_time while shaped said nothing
+     * about a stray ingredient. A type missing from the switch below falls to
+     * an empty set and warns about everything, which is loud but obvious —
+     * better than silently validating nothing.
+     */
+    private static void warnUnusedFields(String itemId, RecipeData data) {
+        Set<String> used = switch (data.type) {
+            case "shaped"      -> Set.of("pattern", "key", "result_count");
+            case "shapeless"   -> Set.of("ingredients", "result_count");
+            case "smelting", "blasting", "smoking", "campfire_cooking"
+                    -> Set.of("ingredient", "experience", "cooking_time");
+            case "stonecutting"-> Set.of("ingredient", "result_count");
+            case "smithing_transform" -> Set.of("template", "base", "addition");
+            case "passthrough" -> Set.of("json", "requires");
+            default            -> Set.of();
+        };
+
+        // Declared fields, by their JSON name. Only non-null counts: that is
+        // why experience and result_count had to be boxed.
+        Map<String, Object> declared = new LinkedHashMap<>();
+        declared.put("pattern",      data.pattern);
+        declared.put("key",          data.key);
+        declared.put("ingredients",  data.ingredients);
+        declared.put("ingredient",   data.ingredient);
+        declared.put("experience",   data.experience);
+        declared.put("cooking_time", data.cookingTime > 0 ? data.cookingTime : null);
+        declared.put("template",     data.template);
+        declared.put("base",         data.base);
+        declared.put("addition",     data.addition);
+        declared.put("json",         data.json);
+        declared.put("requires",     data.requires);
+        declared.put("result_count", data.resultCount);
+
+        List<String> unused = new ArrayList<>();
+        for (Map.Entry<String, Object> entry : declared.entrySet()) {
+            if (entry.getValue() == null) continue;
+            if (used.contains(entry.getKey())) continue;
+            unused.add(entry.getKey());
+        }
+
+        if (!unused.isEmpty()) {
+            LOGGER.warn("[CustomGear] Recipe for '{}' of type '{}' declares {} that this type "
+                            + "ignores: {}. The recipe still works — those values simply do nothing.",
+                    itemId, data.type,
+                    unused.size() == 1 ? "a field" : "fields",
+                    String.join(", ", unused));
+        }
     }
 }

@@ -2,6 +2,94 @@
 
 Todas las notas de cambios importantes para el proyecto UltimateCustomGear.
 
+## [1.6.0] - 2026-08-01
+
+### 💥 CAMBIOS ROMPIENTES
+
+**Dos campos cambiaron de significado. Los packs de contenido existentes necesitan edición.**
+
+#### `cooking_time` ahora está en SEGUNDOS, no en ticks
+Todos los demás campos de tiempo del mod están en segundos (`eat_duration`, `duration` de efectos), y `cooking_time` era la excepción. **Divide tus valores actuales entre 20**: una receta escrita como `"cooking_time": 200` significaba 10 segundos y ahora significa 200 segundos.
+
+No falla nada — la receta sigue funcionando, solo que 20 veces más lenta — así que esto no aparecerá como un error. Revisa todas tus recetas de `smelting`, `blasting`, `smoking` y `campfire_cooking`.
+
+#### `requires_player_kill` ahora vale `false` por defecto
+Antes valía `true`. A los drops de vanilla no les importa quién dio el golpe final, y el default anterior hacía que cada drop personalizado se comportara distinto a todo lo demás del juego.
+
+Si llevas una economía de ítems, **declara `"requires_player_kill": true` explícitamente** — si no, una granja de daño por caída puede imprimir moneda. El parser avisa por cada ítem que deje el campo sin declarar, así que el log te dirá exactamente qué archivos revisar.
+
+Ojo que pide *daño reciente de un jugador*, no el golpe final: un mob que golpeaste y remató un creeper sigue contando como tuyo.
+
+### ⚠️ Notas Importantes
+- Los tags necesitan `/reload` después de `/customgear reload` — el gestor de tags solo revincula en una recarga de datapacks. Todo lo demás sigue siendo recargable en caliente
+- Las recetas `passthrough` se copian tal cual y solo están protegidas contra que el mod objetivo **falte**, no contra que sea otra **versión**. Un mod que cambie su esquema de recetas puede romper la carga del datapack entera
+- `charge_speed` ya no aparece en los tooltips: nunca afectó al tiempo de carga real. Ver Limitaciones Conocidas
+
+### ✨ Nuevas Características
+
+#### Parches de Tags
+- Nuevo tipo de contenido `tag_patch` — declara que contenido **ajeno** pertenece a un tag, lo inverso del campo `tags`. Necesario para todo lo que no sea un ítem que tú registraste: los tipos de daño de otros mods no se podían referenciar en absoluto
+- Se identifica por `registry` + `tag`, sin `id`. Dos parches que nombren el mismo par se fusionan
+- Las entradas se emiten siempre con `required: false`, así que un mod no instalado se ignora en vez de tirar el tag completo. Un typo sí se avisa cuando el namespace pertenece a un mod que SÍ está cargado
+- `remove` saca contenido **de** un tag, incluso si otro pack lo metió ahí. Es la única forma de salir de un tag heredado
+- Las eliminaciones sobre tags de `minecraft:` o `c:` se avisan — afectan a todos los mods que los lean
+
+#### Tags de Equipamiento
+- Armaduras, herramientas y armas ahora reciben los tags de vanilla que siempre debieron tener. El equipamiento nunca pasó por el sistema de tags, y por eso una espada personalizada no recibía ninguna oferta en la mesa de encantamientos mientras que una de diamante las recibía todas
+- Tags de slot (`#minecraft:chest_armor`…), tags de comportamiento (`#minecraft:swords`, `breaks_decorated_pots`) y, cuando `enchantable: true`, los `#minecraft:enchantable/*` correspondientes
+- También tags de convención (`c:armors`, `c:tools`, `c:tools/melee_weapon`…) para que otros mods reconozcan el equipamiento de este mod de forma genérica
+- Nuevo campo `trimmable` en `armor_set` (por defecto `false`). Apagado por defecto porque los adornos se dibujan sobre las capas de armadura: con `armor_layers: transparent` o un modelo 3D de GeckoLib el adorno se aplica pero nunca se ve
+
+#### Recetas
+- Tres tipos de vanilla que faltaban: `smoking`, `campfire_cooking` y `stonecutting`
+- `stonecutting` respeta `result_count` — cortar un bloque en varios es el caso normal
+- Nuevo tipo `passthrough`: entrega un cuerpo de receta crudo al juego sin tocarlo, para que el tipo de receta de otro mod (`create:mixing`, `create:pressing`…) pueda producir contenido de este mod sin que este mod conozca ese esquema. La condición `neoforge:mod_loaded` se deduce automáticamente del namespace del tipo interno; los mods extra van en `requires`
+- Declarar un campo que el tipo de receta ignora ahora genera un aviso nombrándolo
+
+#### Drops de Mobs
+- El nuevo `looting_mode` reemplaza a `affected_by_looting`, reflejando los dos mecanismos separados de vanilla:
+  - `"count"` (por defecto) — suma 0..nivel a la cantidad tirada, como los drops comunes (carne podrida, cuerda)
+  - `"chance"` — sube la probabilidad de drop y deja la cantidad intacta, como los drops raros (cabezas de esqueleto wither)
+  - `"none"` — el Saqueo no hace nada
+- Vanilla nunca aplica ambos al mismo drop, y este mod tampoco
+- `looting_chance_bonus` (por defecto `0.01`) define cuánta probabilidad suma cada nivel de Saqueo en modo `chance`. Tampoco es una constante universal en vanilla — cada loot table declara la suya
+- En modo `count` el bonus se aplica **antes** del descarte por cantidad cero y **no** se recorta contra `max`, igual que vanilla
+
+#### Icono del Pack Dinámico
+- El pack dinámico ahora muestra el logo del mod en la pantalla de paquetes de recursos
+- Sustitúyelo poniendo tu propio `dynamic_pack_icon.png` en la carpeta `ultimatecustomgear/` — cuadrado y potencia de dos (64×64 o 128×128)
+- El icono queda deliberadamente fuera del hash de contenido, así que personalizar tu pack nunca desincroniza a los clientes
+
+### 🐛 Correcciones
+- **Dos cargadores de tags podían sobrescribirse en silencio.** Un bloque que declarara `"tags": ["minecraft:mineable/pickaxe"]` aterrizaba en la ruta exacta que genera `required_tool`, y ganaba el último escrito — las entradas desaparecían sin aviso. Ahora todas las fuentes de tags alimentan un acumulador que fusiona y emite una sola vez
+- **Los arcos y ballestas individuales nunca funcionaron en modo de textura `custom`.** Caían a la rama genérica de herramientas: sin fases de tensado, sin transformaciones de display, renderizando a escala de herramienta. Las ballestas no tenían soporte de modo custom en absoluto, ni siquiera dentro de un `weapon_set`
+- **La animación de tensado del arco estaba desincronizada del disparo.** Escalaba con `charge_speed`, que no afecta al tensado real — con `charge_speed: 0.25` la animación iba 16 veces más rápido y se saltaba `bow_pulling_0` por completo
+- **La ballesta se podía disparar antes de terminar su animación.** El predicado de tensado dividía entre la duración de uso en vez de la duración de carga, así que la ballesta se cargaba mientras la animación seguía en el primer frame
+- Una textura de frame faltante tiraba todos los overrides de tensado en vez de solo ese, congelando la animación sin causa visible
+
+### 🔧 Cambios Técnicos
+- `TagFileBuilder.java` — nuevo en `loader/`: acumulador compartido para todos los archivos de tag. `add` llena `values`, `remove` emite el array `remove` de NeoForge. Cuando el mismo id se añade y se quita, **gana la eliminación**, con un aviso nombrándolo
+- `TagPatchData.java` / `TagPatchLoader.java` — nuevos: el tipo de contenido `tag_patch`
+- `GearTagLoader.java` — nuevo en `loader/`: deriva tags de vanilla y de convención del equipamiento registrado
+- `ItemTagLoader.java` / `BlockTagLoader.java` — ya no escriben al pack; alimentan el acumulador compartido
+- `RecipeLoader.java` — añadidos `buildStonecutting` y `buildPassthrough`; `buildCooking` ahora resuelve segundos a ticks; `warnUnusedFields` compara los campos declarados contra el tipo
+- `RecipeData.java` — `json` y `requires` para passthrough; `experience` y `resultCount` boxeados para poder distinguir un valor sin declarar de uno declarado con el default
+- `MobDropHandler.java` — el Saqueo se resuelve una vez por muerte a través del registro dinámico de encantamientos; la participación del jugador ahora pregunta por daño reciente en vez del golpe final
+- `GearModelGenerator.java` — añadidos `loadCustomWeapon`, `loadCustomCrossbowTextures` y `customFrame`; las armas individuales se enrutan correctamente en modo `custom`
+- `ClientSetup.java` — el `pull` del arco divide entre 20 ticks fijos, el de la ballesta entre `getChargeDuration`
+- `DynamicResourcePack.java` — `addRootFile` y un `getRootResource` funcional, que antes devolvía `null` incondicionalmente
+- `TextureLoader.java` — `loadPackIcon`
+
+### ⚙️ Limitaciones Conocidas
+- **`charge_speed` no cambia el tiempo de carga real.** `BowItem.getPowerForTime` y `CrossbowItem.getChargeDuration` son estáticos y no se pueden sobrescribir, así que un arco siempre se tensa en 1.0s y una ballesta en 1.25s. El campo solo alarga cuánto tiempo se puede mantener el clic, que ya son minutos de todos modos. Se quitó la línea del tooltip en vez de seguir prometiendo algo que nunca ocurrió
+- **Los adornos de herrería no se pueden quitar a las armaduras de otros mods**, solo a las de este. El `trimmable_armor` de vanilla es la unión de los cuatro tags de slot, así que una armadura lo hereda por el mero hecho de ser armadura
+- Los cambios de tags necesitan `/reload` después de `/customgear reload`
+
+### 📦 Dependencias
+No se agregaron dependencias nuevas.
+
+---
+
 ## [1.5.0] - 2026-07-19
 
 ### ⚠️ Notas Importantes

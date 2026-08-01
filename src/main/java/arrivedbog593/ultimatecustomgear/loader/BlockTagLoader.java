@@ -1,24 +1,19 @@
 package arrivedbog593.ultimatecustomgear.loader;
 
 import arrivedbog593.ultimatecustomgear.data.BlockData;
-import arrivedbog593.ultimatecustomgear.resources.DynamicResourcePack;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Generates block tag JSON files and injects them into the DynamicResourcePack
- * as SERVER_DATA, so Minecraft loads them through the normal data pack system.
+ * Feeds the TagFileBuilder with block tags derived from required_tool and
+ * harvest_level. The builder emits the files — see TagFileBuilder for why no
+ * loader writes tag files directly.
  * <p>
  * This controls:
  *   - Which tool mines the block efficiently (pickaxe, axe, shovel, hoe, sword)
@@ -59,12 +54,11 @@ import java.util.Map;
 public class BlockTagLoader {
 
     private static final Logger LOGGER = LogManager.getLogger("CustomGear");
-    private static final Gson   GSON   = new GsonBuilder().setPrettyPrinting().create();
 
     /** Vanilla's mineable tags. There is no mineable/sword — see class doc. */
     private static final String[] TOOL_TYPES = {"pickaxe", "axe", "shovel", "hoe"};
 
-    public static void loadAll(DynamicResourcePack pack, List<BlockData> blockList) {
+    public static void loadAll(TagFileBuilder tags, List<BlockData> blockList) {
         // Group blocks by tool type and harvest level
         Map<String, List<String>> byTool         = new HashMap<>();
         List<String>              swordEfficient = new ArrayList<>();
@@ -111,54 +105,20 @@ public class BlockTagLoader {
             }
         }
 
-        int count = 0;
-
         // Inject tool type tags (1.21 path: tags/block/ — singular)
         for (String tool : TOOL_TYPES) {
-            List<String> blocks = byTool.get(tool);
-            if (!blocks.isEmpty()) {
-                injectTag(pack, "tags/block/mineable/" + tool, blocks);
-                count++;
+            for (String blockId : byTool.get(tool)) {
+                tags.add("block", mc("mineable/" + tool), blockId, true);
             }
         }
-
-        // Inject sword efficiency tag
-        if (!swordEfficient.isEmpty()) {
-            injectTag(pack, "tags/block/sword_efficient", swordEfficient);
-            count++;
-        }
-
-        // Inject harvest level tags
-        if (!needsStone.isEmpty()) {
-            injectTag(pack, "tags/block/needs_stone_tool", needsStone);
-            count++;
-        }
-        if (!needsIron.isEmpty()) {
-            injectTag(pack, "tags/block/needs_iron_tool", needsIron);
-            count++;
-        }
-        if (!needsDiamond.isEmpty()) {
-            injectTag(pack, "tags/block/needs_diamond_tool", needsDiamond);
-            count++;
-        }
-
-        LOGGER.info("[CustomGear] Generated {} block tag files", count);
+        for (String blockId : swordEfficient) tags.add("block", mc("sword_efficient"), blockId, true);
+        for (String blockId : needsStone)     tags.add("block", mc("needs_stone_tool"), blockId, true);
+        for (String blockId : needsIron)      tags.add("block", mc("needs_iron_tool"), blockId, true);
+        for (String blockId : needsDiamond)   tags.add("block", mc("needs_diamond_tool"), blockId, true);
     }
 
-    private static void injectTag(DynamicResourcePack pack,
-                                  String path, List<String> blockIds) {
-        JsonObject obj = new JsonObject();
-        obj.addProperty("replace", false); // always false — never replace vanilla tags
-
-        JsonArray values = new JsonArray();
-        for (String id : blockIds) {
-            values.add(id);
-        }
-        obj.add("values", values);
-
-        ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(
-                "minecraft", path + ".json");
-        pack.addRaw(loc, GSON.toJson(obj).getBytes(StandardCharsets.UTF_8));
-        LOGGER.debug("[CustomGear] Injected tag: {}", loc);
+    private static ResourceLocation mc(String path) {
+        return ResourceLocation.fromNamespaceAndPath("minecraft", path);
     }
+
 }

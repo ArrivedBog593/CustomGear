@@ -33,6 +33,7 @@ public class DynamicResourcePack extends AbstractPackResources {
     // and /customgear reload mutates this map at runtime. A plain HashMap risks
     // ConcurrentModificationException if a resource reload overlaps a mutation.
     private final Map<ResourceLocation, byte[]> resources = new ConcurrentHashMap<>();
+    private final Map<String, byte[]> rootResources = new ConcurrentHashMap<>();
 
     /** Cached content hash — invalidated on every mutation (addTexture/addRaw/clear). */
     private volatile String cachedHash = null;
@@ -74,9 +75,21 @@ public class DynamicResourcePack extends AbstractPackResources {
         cachedHash = null;
     }
 
+    /**
+     * Adds a file to the pack ROOT, e.g. addRootFile("pack.png", bytes).
+     * <p>
+     * Deliberately does NOT invalidate cachedHash: root files are cosmetic and
+     * stay out of contentHash. See contentHash for why.
+     */
+    public void addRootFile(String name, byte[] data) {
+        rootResources.put(name, data);
+    }
+
     @Override
     public @Nullable IoSupplier<InputStream> getRootResource(String @NotNull ... elements) {
-        return null;
+        byte[] data = rootResources.get(String.join("/", elements));
+        if (data == null) return null;
+        return () -> new ByteArrayInputStream(data);
     }
 
     @Override
@@ -132,6 +145,7 @@ public class DynamicResourcePack extends AbstractPackResources {
 
     public void clear() {
         resources.clear();
+        rootResources.clear();
         cachedHash = null;
     }
 
@@ -144,7 +158,14 @@ public class DynamicResourcePack extends AbstractPackResources {
      * which is exactly the fallback we want instead of silent desync.
      * <p>
      * Cached because location() may be called many times per resource load;
-     * the cache is invalidated by any mutation of the resources map.
+     * the cache is invalidated by any mutation of the resources' map.
+     * <p>
+     * Root files (pack.png) are deliberately EXCLUDED. The hash drives the
+     * multiplayer handshake, so anything inside it must be something that
+     * changes gameplay. A server owner branding their pack with a custom icon
+     * would otherwise desync every client and, under ENFORCE, kick them all
+     * over a decorative image — and a player with their own local icon could
+     * not join any server at all.
      */
     public String contentHash() {
         String cached = cachedHash;

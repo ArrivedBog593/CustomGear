@@ -1,5 +1,6 @@
 package arrivedbog593.ultimatecustomgear.data;
 
+import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
 
 import java.util.List;
@@ -8,14 +9,15 @@ import java.util.Map;
 /**
  * Represents a single crafting recipe entry inside a gear/item JSON.
  * A recipe can be one of: shaped, shapeless, smelting, blasting, smoking,
- * smithing_transform.
+ * campfire_cooking, stonecutting, smithing_transform, passthrough.
  * <p>
  * In JSON, the "recipe" field can be either a single object or an array
  * of objects (for items that have multiple ways to be crafted).
  */
 public class RecipeData {
 
-    /** Recipe type: shaped, shapeless, smelting, blasting, smoking, smithing_transform */
+    /** Recipe type: shaped, shapeless, smelting, blasting, smoking,
+     *  campfire_cooking, stonecutting, smithing_transform, passthrough */
     public String type;
 
     // ── Shaped ───────────────────────────────────────────────────────────────
@@ -40,7 +42,7 @@ public class RecipeData {
      */
     public List<String> ingredients;
 
-    // ── Smelting / Blasting / Smoking ─────────────────────────────────────────
+    // ── Smelting / Blasting / Smoking / Campfire Cooking / Stonecutting ────────
 
     /**
      * Single input item ID for furnace-type recipes.
@@ -48,15 +50,31 @@ public class RecipeData {
      */
     public String ingredient;
 
-    /** XP granted when the recipe completes. Default: 0.1 */
-    public float experience = 0.1f;
+    /**
+     * XP granted when the recipe completes. Default: 0.1
+     * <p>
+     * Boxed so an undeclared value is distinguishable from a declared 0.1 —
+     * that is what lets the parser warn when it appears on a type that has no
+     * experience. NEVER read directly, use experience().
+     */
+    public Float experience;
+
+    /** Resolved XP: 0.1 when undeclared. */
+    public float experience() {
+        return experience != null ? experience : 0.1f;
+    }
 
     /**
-     * Ticks to cook. Default: 200 (smelting), 100 (blasting), 100 (smoking).
-     * Use -1 to keep the type default.
+     * Time to cook, in SECONDS. Decimals allowed (2.5 works).
+     * <p>
+     * CHANGED IN 1.6.0: this used to be in ticks. A recipe written for an older
+     * version reads 20x too slow now — divide the old value by 20.
+     * <p>
+     * Default: -1, meaning "use the type default": 10s smelting, 5s blasting,
+     * 5s smoking, 30s campfire. Ignored by stonecutting, which is instant.
      */
     @SerializedName("cooking_time")
-    public int cookingTime = -1;
+    public float cookingTime = -1;
 
     // ── Smithing Transform ────────────────────────────────────────────────────
 
@@ -79,12 +97,40 @@ public class RecipeData {
      */
     public String addition;
 
+    // ── Passthrough ───────────────────────────────────────────────────────────
+
+    /**
+     * Raw recipe body for type "passthrough", copied into the datapack as-is.
+     * Lets another mod's recipe type produce this mod's content without this
+     * mod understanding that schema.
+     * <p>
+     * The inner "type" decides which mod is required, so
+     * {"type": "create:mixing", ...} gets a create mod_loaded condition
+     * automatically. Unlike every other type, the RESULT comes from inside
+     * this object and is not controlled by the owning item.
+     */
+    public JsonObject json;
+
+    /**
+     * Extra mod IDs this passthrough recipe needs, beyond the one deduced from
+     * the inner type's namespace. Only for recipes that span several mods —
+     * the normal case needs nothing here.
+     */
+    public List<String> requires;
+
     // ── Common ────────────────────────────────────────────────────────────────
 
     /**
      * Number of items produced by this recipe. Default: 1.
-     * Only applies to shaped and shapeless recipes.
+     * Applies to shaped, shapeless, and stonecutting recipes.
+     * <p>
+     * Boxed for the same reason as experience — see above. Use resultCount().
      */
     @SerializedName("result_count")
-    public int resultCount = 1;
+    public Integer resultCount;
+
+    /** Resolved count: 1 when undeclared. */
+    public int resultCount() {
+        return resultCount != null ? resultCount : 1;
+    }
 }

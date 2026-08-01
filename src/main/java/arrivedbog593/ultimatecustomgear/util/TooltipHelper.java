@@ -175,11 +175,14 @@ public class TooltipHelper {
                             String.format("x%.2f", data.arrowDamageMultiplier))
                     .withStyle(ChatFormatting.DARK_GREEN));
         }
-        if (data.chargeSpeed > 0 && data.chargeSpeed != 1.0f) {
-            tooltipComponents.add(Component.translatable("tooltip.ultimatecustomgear.charge_speed",
-                            String.format("%.2f", data.chargeSpeed))
-                    .withStyle(ChatFormatting.DARK_GREEN));
-        }
+        // charge_speed is NOT shown: it does not affect the real charge time.
+        // BowItem.getPowerForTime and CrossbowItem.getChargeDuration are static,
+        // so the draw always completes in 20 / 25 ticks no matter what the field
+        // says — it only stretches how long the click can be HELD, which is
+        // already minutes either way. Showing a "Charge speed: 15.00" line
+        // promised something the game never delivered. The field is kept
+        // (removing it would break existing JSONs) and reserved for when the
+        // real charge time is implemented.
     }
 
     // Tooltip for tool mining stats (harvest level and mining speed)
@@ -257,6 +260,13 @@ public class TooltipHelper {
         if (visible.size() > shown) {
             tooltip.add(Component.translatable("tooltip.ultimatecustomgear.dropped_by.more",
                     visible.size() - shown).withStyle(ChatFormatting.DARK_GRAY));
+            if (d.isLootingCount()) {
+                tooltip.add(Component.translatable("tooltip.ultimatecustomgear.dropped_by.looting_count")
+                        .withStyle(ChatFormatting.DARK_GRAY));
+            } else if (d.isLootingChance()) {
+                tooltip.add(Component.translatable("tooltip.ultimatecustomgear.dropped_by.looting_chance")
+                        .withStyle(ChatFormatting.DARK_GRAY));
+            }
         }
     }
 

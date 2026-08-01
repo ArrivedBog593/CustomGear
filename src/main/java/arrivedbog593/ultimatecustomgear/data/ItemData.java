@@ -116,7 +116,61 @@ public class ItemData {
         /** Entity type IDs. Empty or absent DISABLES the drop — use "all" if
          *  you really want every mob. Players and armor stands never drop. */
         public List<String> entities;
+
+        /**
+         * Whether a player must be involved in the kill. Boxed on purpose:
+         * null means "not declared", which is what lets the parser warn that
+         * the default flipped to false in 1.6.0.
+         * NEVER read this field directly — use isPlayerKillRequired().
+         */
         @SerializedName("requires_player_kill")
-        public boolean requiresPlayerKill = true;
+        public Boolean requiresPlayerKill;
+
+        /** Resolved value. Undeclared = false since 1.6.0 (vanilla parity). */
+        public boolean isPlayerKillRequired() {
+            return requiresPlayerKill != null && requiresPlayerKill;
+        }
+
+        /**
+         * How the Looting enchantment affects this drop. Vanilla uses two
+         * separate mechanisms and never both at once, so this picks one:
+         * <ul>
+         *   <li>"count"  — adds 0..level extra items on top of the rolled
+         *       amount, the shape of enchanted_count_increase. This is what
+         *       common drops use (rotten flesh, string, gunpowder) and the
+         *       right choice for an item economy. DEFAULT.</li>
+         *   <li>"chance" — raises the drop probability instead, leaving the
+         *       amount alone. This is what rare drops use (wither skeleton
+         *       skulls, mob equipment): the roll decides IF it drops, never
+         *       how many.</li>
+         *   <li>"none"   — Looting does nothing for this item.</li>
+         * </ul>
+         * Unknown values fall back to "count" with a warning.
+         */
+        @SerializedName("looting_mode")
+        public String lootingMode = "count";
+
+        /**
+         * Probability added per Looting level in "chance" mode, e.g. 0.01 =
+         * +1 percentage point per level.
+         * <p>
+         * Defaults to vanilla's most familiar case: skull drops add 1 point
+         * per level. It is NOT a universal constant, which is why this is
+         * exposed — vanilla loot tables declare their own multiplier, and the
+         * shulker shell uses a much steeper curve. Ignored (with a warning)
+         * in any mode other than "chance".
+         */
+        @SerializedName("looting_chance_bonus")
+        public double lootingChanceBonus = 0.01;
+
+        /** True when Looting adds to the rolled amount. */
+        public boolean isLootingCount() {
+            return !"chance".equals(lootingMode) && !"none".equals(lootingMode);
+        }
+
+        /** True when Looting raises the drop probability instead. */
+        public boolean isLootingChance() {
+            return "chance".equals(lootingMode);
+        }
     }
 }

@@ -2,21 +2,110 @@
 
 All important changelog notes for the UltimateCustomGear project.
 
+## [1.6.0] - 2026-08-01
+
+### 💥 BREAKING CHANGES
+
+**Two fields changed meaning. Existing content packs need editing.**
+
+#### `cooking_time` is now in SECONDS, not ticks
+Every other time field in this mod is in seconds (`eat_duration`, effect `duration`), and `cooking_time` was the odd one out. **Divide your existing values by 20**: a recipe written as `"cooking_time": 200` meant 10 seconds and now means 200 seconds.
+
+Nothing errors — the recipe still works, just 20x slower — so this will not show up as a crash. Check every `smelting`, `blasting`, `smoking` and `campfire_cooking` recipe you have.
+
+#### `requires_player_kill` now defaults to `false`
+It used to default to `true`. Vanilla drops do not care who landed the blow, and the old default made every custom drop behave unlike everything else in the game.
+
+If you run an item economy, **declare `"requires_player_kill": true` explicitly** — otherwise a fall damage farm can print currency. The parser warns on every item that leaves the field undeclared, so the log will tell you exactly which files to check.
+
+Note it asks for *recent player damage*, not the killing blow: a mob you hit and a creeper finished still counts as yours.
+
+### ⚠️ Important Notes
+- Tags need `/reload` after `/customgear reload` — the tag manager only rebinds on a datapack reload. Everything else stays hot-reloadable
+- `passthrough` recipes are copied verbatim and are only protected against the target mod being **missing**, not against it being a different **version**. A mod that changes its recipe schema can break datapack loading entirely
+- `charge_speed` no longer appears in tooltips: it never affected the real charge time. See Known Limitations
+
+### ✨ New Features
+
+#### Tag Patches
+- New content type `tag_patch` — declares that **foreign** content belongs to a tag, the inverse of the `tags` field. Needed for anything that is not an item you registered: damage types from other mods could not be referenced at all before
+- Identified by `registry` + `tag`, no `id`. Two patches naming the same pair merge
+- Entries are always emitted with `required: false`, so an uninstalled mod is ignored instead of dropping the whole tag. A typo is warned about when the namespace belongs to a mod that IS loaded
+- `remove` takes content **out** of a tag, even when another pack puts it there. That is the only way out of an inherited tag
+- Removals from `minecraft:` or `c:` tags are warned about — they affect every mod that reads them
+
+#### Gear Tags
+- Armor, tools, and weapons now receive the vanilla tags they always should have had. Gear never went through the tag system at all, which is why a custom sword was offered nothing at the enchanting table while a diamond sword was offered everything
+- Slot tags (`#minecraft:chest_armor`…), behavior tags (`#minecraft:swords`, `breaks_decorated_pots`) and, when `enchantable: true`, the matching `#minecraft:enchantable/*` tags
+- Convention tags too (`c:armors`, `c:tools`, `c:tools/melee_weapon`…) so other mods recognize this mod's gear generically
+- New `trimmable` field on `armor_set` (default `false`). Off by default because trims draw over the armor layers: with `armor_layers: transparent` or a GeckoLib 3D model the trim applies but never shows
+
+#### Recipes
+- Three vanilla types that were missing: `smoking`, `campfire_cooking` and `stonecutting`
+- `stonecutting` honours `result_count` — cutting one block into several is the normal case
+- New `passthrough` type: hands a raw recipe body to the game untouched, so another mod's recipe type (`create:mixing`, `create:pressing`…) can produce this mod's content without this mod knowing that schema. A `neoforge:mod_loaded` condition is derived from the inner type's namespace automatically; extra mods go in `requires`
+- Declaring a field the recipe type ignores now logs a warning naming it
+
+#### Mob Drops
+- New `looting_mode` replaces `affected_by_looting`, mirroring vanilla's two separate mechanisms:
+  - `"count"` (default) — adds 0..levels to the rolled amount, like common drops (rotten flesh, string)
+  - `"chance"` — raises the drop probability instead and leaves the amount alone, like rare drops (wither skeleton skulls)
+  - `"none"` — Looting does nothing
+- Vanilla never applies both to the same drop, and neither does this
+- `looting_chance_bonus` (default `0.01`) sets how much probability each Looting level adds in `chance` mode. Not a universal constant in vanilla either — loot tables declare their own
+- In `count` mode the bonus applies **before** the empty check and is **not** clamped to `max`, matching vanilla
+
+#### Dynamic Pack Icon
+- The dynamic pack now shows the mod's logo in the resource pack screen
+- Override it by dropping your own `dynamic_pack_icon.png` in the `ultimatecustomgear/` folder — square, power of two (64×64 or 128×128)
+- The icon is deliberately excluded from the content hash, so branding your pack never desyncs clients
+
+### 🐛 Bug Fixes
+- **Two tag loaders could silently overwrite each other.** A block declaring `"tags": ["minecraft:mineable/pickaxe"]` landed on the exact path `required_tool` generates, and the last one written won — entries vanished with no warning. All tag sources now feed one accumulator that merges and emits once
+- **Individual bows and crossbows never worked in `custom` texture mode.** They fell through to the generic tool branch: no pulling frames, no display transforms, rendering at a tool scale. Crossbows had no custom-mode support at all, not even inside a `weapon_set`
+- **The bow's pull animation was desynced from the shot.** It scaled with `charge_speed`, which does not affect the real draw — at `charge_speed: 0.25` the animation ran 16x too fast and skipped `bow_pulling_0` entirely
+- **The crossbow could be fired before its animation finished.** The pull predicate divided by the use duration instead of the charge duration, so the crossbow loaded while the animation was still on the first frame
+- A missing frame texture dropped every pulling override instead of just that one, freezing the animation with no visible cause
+
+### 🔧 Technical Changes
+- `TagFileBuilder.java` — new in `loader/`: shared accumulator for every tag file. `add` fills `values`, `remove` emits NeoForge's `remove` array. When the same id is both added and removed, the **removal wins**, with a warning naming it
+- `TagPatchData.java` / `TagPatchLoader.java` — new: the `tag_patch` content type
+- `GearTagLoader.java` — new in `loader/`: derives vanilla and convention tags from registered gear
+- `ItemTagLoader.java` / `BlockTagLoader.java` — no longer write to the pack; they feed the shared builder
+- `RecipeLoader.java` — `buildStonecutting` and `buildPassthrough` added; `buildCooking` now resolves seconds to ticks; `warnUnusedFields` checks declared fields against the type
+- `RecipeData.java` — `json` and `requires` for passthrough; `experience` and `resultCount` boxed so an undeclared value is distinguishable from a declared default
+- `MobDropHandler.java` — Looting resolved once per death through the dynamic enchantment registry; player involvement now asks for recent damage rather than the killing blow
+- `GearModelGenerator.java` — `loadCustomWeapon`, `loadCustomCrossbowTextures` and `customFrame` added; individual weapons routed correctly in `custom` mode
+- `ClientSetup.java` — bow `pull` divides by a fixed 20 ticks, crossbow `pull` by `getChargeDuration`
+- `DynamicResourcePack.java` — `addRootFile` and a working `getRootResource`, which previously returned `null` unconditionally
+- `TextureLoader.java` — `loadPackIcon`
+
+### ⚙️ Known Limitations
+- **`charge_speed` does not change the real charge time.** `BowItem.getPowerForTime` and `CrossbowItem.getChargeDuration` are static and cannot be overridden, so a bow always draws in 1.0s and a crossbow in 1.25s. The field only stretches how long the click can be held, which is already minutes either way. The tooltip line was removed rather than keep promising something that never happened
+- **Smithing trims cannot be removed from other mods' armor**, only from this mod's. Vanilla's `trimmable_armor` is the union of the four slot tags, so armor inherits it just by being armor
+- Tag changes need `/reload` after `/customgear reload`
+
+### 📦 Dependencies
+
+No new dependencies added.
+
+---
+
 ## [1.5.0] - 2026-07-19
 
 ### ⚠️ Important Notes
 - Resistances are fully hot-reloadable — tune every value live with `/customgear reload`
 - Adding or removing the `armor_3d` block requires a game restart (the item class is chosen at registration)
-- GeckoLib is an **optional** dependency: without it the mod starts normally and 3D armor falls back to `armor_layers` (or to the vanilla iron layers if none were declared)
+- GeckoLib is an **optional** dependency: without it the mod starts normally, and 3D armor falls back to `armor_layers` (or to the vanilla iron layers if none were declared)
 
 ### ✨ New Features
 
 #### Mob Drops
-- `mob_drops.min` now accepts `0`, matching vanilla drops that can roll empty (rotten flesh is 0-2). It compounds with `chance`: a 25% chance of 0-2 drops something roughly 17% of the time
+- `mob_drops.min` now accepts `0`, matching vanilla drops that can roll empty (rotten flesh is 0–2). It compounds with `chance`: a 25% chance of 0–2 drops something roughly 17% of the time
 
 #### Damage Resistances (three layers)
 - Three new fields on armor — `damage_resistances` (by damage type), `attacker_resistances` (by attacker) and `conditional_resistances` (attacker + damage type combined).
-- Available at set level and per piece. Piece entries **merge** with the set ones, winning only on the keys they declare — the rest of the set still applies to that piece. `inherit_set_resistances: false` opts a piece out of the set entirely
+- Available at a set level and per piece. Piece entries **merge** with the set ones, winning only on the keys they declare — the rest of the set still applies to that piece. `inherit_set_resistances: false` opts a piece out of the set entirely
 - Each equipped piece resolves its own specificity and the pieces then add up, so a rule on one piece never silences the others
 - Values are **per equipped piece**: `0.125` on a four-piece set is 50% with the full set worn
 - **Specificity model, not accumulation:** `conditional` > `attacker` > `damage`. The first layer with any match *replaces* the more general ones **for that piece**, even when its value is lower. Within a layer, matching entries add up; the pieces then add up
@@ -24,7 +113,7 @@ All important changelog notes for the UltimateCustomGear project.
 - `attacker_resistances` accepts exact entities, entity tags (`"#minecraft:undead"`), mod wildcards (`"mekanism:*"`) and specific players (`"player:Name"`)
 - Projectiles inherit their owner: an arrow is attributed to the skeleton that fired it, not to the arrow
 - Clamped to 1.0, with **no balance ceiling** — total immunity is a legitimate design choice
-- `player:` entries are hidden from the tooltip by default so surprise armor stays a surprise; the new `show_player_resistances` field (default `false`) makes them visible
+- `player:` entries are hidden from the tooltip by default, so surprise armor stays a surprise; the new `show_player_resistances` field (default `false`) makes them visible
 - New tooltip sections for each layer, capped at 4 entries with "…and N more"
 
 #### 3D Armor with GeckoLib
@@ -33,7 +122,7 @@ All important changelog notes for the UltimateCustomGear project.
 - Falls back cleanly to 2D layers when GeckoLib is absent
 
 ### 🐛 Bug Fixes
-- Food `on_eat_effects` were baked into `FoodProperties` at construction: the tooltip updated on reload but eating still applied the old effects. Effects (and `getUseDuration`) now read the live item map, so reload works end to end
+- Food `on_eat_effects` were baked into `FoodProperties` at construction: the tooltip updated on reload, but eating still applied the old effects. Effects (and `getUseDuration`) now read the live item map, so reload works end to end
 - Armor with no `armor_layers` declared produced broken (magenta) inventory icons — an early return skipped item model generation. Layers are now genuinely optional
 - The "…and N more" counter in the **Dropped by** tooltip section counted blank entries, reporting more sources than existed
 
@@ -63,20 +152,20 @@ All important changelog notes for the UltimateCustomGear project.
 ### ✨ New Features
 
 #### Mob Drops (item economy)
-- New `mob_drops` field on items and food — mobs drop your item on death, with configurable `chance` (0-1), `min`/`max` count and entity filter
+- New `mob_drops` field on items and food — mobs drop your item on death, with configurable `chance` (0–1), `min`/`max` count and entity filter
 - `entities` is explicit: `["all"]` for every mob (vanilla and modded), exact IDs (`"minecraft:zombie"`), entity tags (`"#minecraft:undead"`) or mod wildcards (`"mekanism:*"`). Omitting it disables the drop with a log warning
 - `requires_player_kill` (default `true`) — mobs killed by the environment drop nothing, so automated farms can't print currency
-- Boats, minecarts and armor stands never drop items; players are always excluded
+- Boats, minecarts, and armor stands never drop items; players are always excluded
 - Fully hot-reloadable — balance your server economy live
 - Items with mob drops show a **"Dropped by"** tooltip section with the source mobs and drop chance (localized entity names, long lists truncated; updates with reload)
 
 #### Fire-Resistant Items
-- New `fire_resistant` field on items, food, gear (applies to every piece of a set), blocks and fluids — the dropped item survives fire and lava, like netherite
+- New `fire_resistant` field on items, food, gear (applies to every piece of a set), blocks, and fluids — the dropped item survives fire and lava, like netherite
 - On fluids, it protects the filled bucket (yes, vanilla lava buckets burn in lava — yours don't have to)
 - Does NOT make the wearer fire-immune (use fire resistance effects for that)
 
 #### Transparent Armor
-- New `"transparent"` value for `armor_layers` — the armor keeps all stats, effects and set bonuses but draws nothing on the body. Ideal for stat "accessories" that don't cover the skin
+- New `"transparent"` value for `armor_layers` — the armor keeps all stats, effects, and set bonuses but draws nothing on the body. Ideal for stat "accessories" that don't cover the skin
 - Works in both texture modes. In reference mode it applies to the whole armor (set both layers); per-layer mixing is only available in custom mode
 
 ### 🐛 Bug Fixes
@@ -99,7 +188,7 @@ No new dependencies added.
 ### ✨ New Features
 
 #### Item / Block / Fluid Tags
-- New `tags` field on items, food, blocks and fluids — declare which tags your content belongs to (no `#` prefix), e.g. `"tags": ["c:ingots", "c:ingots/ruby"]`
+- New `tags` field on items, food, blocks, and fluids — declare which tags your content belongs to (no `#` prefix), e.g. `"tags": ["c:ingots", "c:ingots/ruby"]`
 - Makes your content usable in other mods' recipes (and your own) that accept those tags: a block tagged `minecraft:planks` works anywhere planks are accepted; an item tagged `c:ingots` is recognized by any mod using that tag
 - Blocks are added to both the block and item tag registries (so the block and its item form both count); fluids tag the fluid and their bucket item
 - Tags merge with vanilla/other-mod tags of the same name (`"replace": false`); you can also invent your own tags (`customgear:magic_gems`)
@@ -122,7 +211,7 @@ No new dependencies added.
 - `BlockModelGenerator.java` — unified texture key resolution: `allRef()` (accepts `all`/`block`) and `resolveFaces()` (reads face keys from `refs` or the `faces` object); custom textures now resolve through `TextureLoader.resolveUserResource` (content roots), fixing the hardcoded `./ultimatecustomgear` path that ignored pack zips
 - `LangGenerator.java` — emits `block.customgear.<id>` for fluids (Jade/WAILA/F3 name)
 - `CustomFluid.java` — fluid block properties now include `.replaceable()` and `.liquid()`
-- `CustomGearCommandHandler.java` — reload now also regenerates block tags, block loot tables and item tags (all pack-injected loaders must run on reload)
+- `CustomGearCommandHandler.java` — reload now also regenerates block tags, block loot tables, and item tags (all pack-injected loaders must run on reload)
 
 ### 📦 Dependencies
 No new dependencies added.
@@ -164,11 +253,11 @@ No new dependencies added.
 - Any ingredient slot accepts a **tag** with the `#` prefix, e.g. `"#minecraft:planks"` (any plank) or `"#c:ingots/iron"` (iron ingots from any mod) — works in shaped, shapeless, smelting, blasting, and smithing
 
 #### Full Recipe Validation
-- Shaped recipes are now fully validated with clear log messages: row length (1-3), uneven rows, pattern symbols missing from `key`, unused `key` entries, and malformed item/tag IDs
+- Shaped recipes are now fully validated with clear log messages: row length (1–3), uneven rows, pattern symbols missing from `key`, unused `key` entries, and malformed item/tag IDs
 - Shapeless recipes with more than 9 ingredients are rejected with a message
 
 ### 🐛 Bug Fixes
-- Fixed **startup crashes from ID collisions across content types** (e.g. an item and a block sharing an id, an item colliding with a set-derived name like `myset_sword`, or with a fluid's `_bucket` item). Colliding entries are now skipped with a log naming both owners
+- Fixed **startup crashes from ID collisions across content types** (e.g., an item and a block sharing an id, an item colliding with a set-derived name like `myset_sword`, or with a fluid's `_bucket` item). Colliding entries are now skipped with a log naming both owners
 - Fixed **all mod recipes disappearing after `/reload`** — the reload command wasn't regenerating recipes into the dynamic pack
 - Fixed **damage-over-time contact effects (poison, wither) never dealing damage while inside a fluid** — reapplication was resetting the effect before its damage tick
 - Fixed real potions being wiped when swapping away from an item granting the same effect
@@ -224,7 +313,7 @@ No new dependencies added.
 - `destroy_time` — time in seconds to break the block with the correct tool (default: 3.0)
 - `explosion_resistance` — resistance to explosions (default: 3.0, obsidian: 1200.0)
 - `sound` — block sound type when placing, breaking or walking on it (default: `stone`)
-- Over 100 vanilla sound types supported: `wood`, `gravel`, `sand`, `deepslate`, `amethyst`, `copper`, `sculk`, `netherite`, etc.
+- Over 100 vanilla sound types are supported: `wood`, `gravel`, `sand`, `deepslate`, `amethyst`, `copper`, `sculk`, `netherite`, etc.
 - `map_color` — block map color (default: `stone`); supports basic colors, dyes, and special colors like `gold`, `diamond`, `lapis`, `emerald`, `podzol`, and `nether`
 
 #### Blocks — Fix light_level
@@ -372,7 +461,7 @@ No new dependencies added.
 - Custom bows now correctly animate through all three pull frames when drawing
 - Custom crossbows now correctly animate through loading and charged states
 - Animation timing scales correctly with custom `charge_speed` values
-- Fixed: overrides were not inherited from parent model — now declared explicitly in generated JSON
+- Fixed: overrides were not inherited from the parent model — now declared explicitly in generated JSON
 
 #### Shield 3D Rendering
 - Custom shields now render their full 3D model in hand and inventory
@@ -400,8 +489,8 @@ No new dependencies added.
 
 - Fixed `SetBonusHandler`: ghost effects no longer persist after `/customgear reload` changes a set ID
 - Fixed `GearParser`: missing lower-bound validation for weapon damage fields (`attackDamage`, `arrowDamage`, `damageMultiplier`, `arrowDamageMultiplier`, `chargeSpeed`, `tillRadius`)
-- Fixed `EffectUtils`: added try-catch around `ResourceLocation.parse()` to prevent server crash on malformed effect IDs from stale cache
-- Fixed `ClientSetup`: shield `blocking` property was registered outside `enqueueWork`, causing potential race condition
+- Fixed `EffectUtils`: added try-catch around `ResourceLocation.parse()` to prevent a server crash on malformed effect IDs from stale cache
+- Fixed `ClientSetup`: shield `blocking` property was registered outside `enqueueWork`, causing a potential race condition
 - Fixed dead state in `SetBonusHandler`: removed unused `activeSetBonuses` and `activePieceEffects` maps
 
 ### 📦 Dependencies
@@ -432,7 +521,7 @@ No new dependencies added.
 ### ✨ Improvements
 
 #### `/customgear reload` Command — Now Fully Functional
-- **Before:** The command only reloaded textures, but didn't update names, durability, effects, or attributes
+- **Before:** The command only reloaded textures but didn't update names, durability, effects, or attributes
 - **Now:** The command reloads all item data dynamically at runtime
 
 ### 🔄 Technical Changes

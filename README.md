@@ -13,7 +13,7 @@
 - **Armor sets** with per-piece stats (durability, defense, toughness, knockback resistance)
 - **Weapons** — swords, bows, crossbows, and shields with custom damage, durability, and charge speed
 - **Tools** — pickaxes, axes, shovels, and hoes with mining speed, harvest tiers, and area-tilling
-- **Food items** with nutrition, saturation, eating speed, and on-eat effects
+- **Food items** with nutrition, saturation, eating speed, and on-eating effects
 - **Blocks** — including directional and gravity-affected, with per-face textures, light, sounds, and mining requirements
 - **Fluids** with custom colors, contact effects, and burning behavior
 
@@ -127,7 +127,7 @@ Content can also be packaged as `.zip` files inside `packs/` — see the **Conte
 ```
 
 This item survives fire and lava when dropped, and zombies and other undead have
-a 15% chance to drop 1-2 of it on death.
+a 15% chance to drop 1–2 of it upon death.
 
 Instant food (`eat_duration: 0`) and slow food (`eat_duration: 10` = 10 seconds) are also supported.
 
@@ -258,18 +258,18 @@ What this example shows:
 
 - **`armor_3d`** turns the four pieces into a GeckoLib model. `refs` still points
   at flat PNGs — those are the inventory icons, which are always 2D.
-- **`armor_layers: "transparent"`** is the deliberate fallback here: on an
+- **`armor_layers: "transparent"`** is the deliberate fallback here: in an
   instance without GeckoLib the armor draws nothing instead of falling back to
   the vanilla iron layers, which would look wrong for this set.
 - **Set-level resistances** are per piece: `0.125` fire on four pieces is 50%
-  with the full set, and `0.0625` projectiles is 25%.
+  with the full set, and `0.0625` projectiles are 25%.
 - **The boots add** their own `damage_resistances`. Piece entries merge with the
   set-level ones: the boots still get the fire and projectile reductions, plus
   their own fall entry. A piece only overrides the specific keys it declares.
 - **The conditional rule** beats the more general fire entry: a blaze's fire
   attack is reduced by 20% per piece (80% with the full set) instead of 12.5%,
   because `conditional` outranks `damage`.
-- Set bonus and resistances stack independently: the Fire Resistance effect
+- Set bonus and resistance stack independently: the Fire Resistance effect
   applies first, and whatever damage survives it is then reduced by the armor.
 
 > Everything except the base stats is hot-reloadable. Adding or removing the
@@ -656,13 +656,17 @@ UltimateCustomGear supports native crafting recipes defined directly in JSON. No
 
 ### Recipe types
 
-| Type                 | Description                                 |
-|----------------------|---------------------------------------------|
-| `shaped`             | Crafting table with a specific pattern      |
-| `shapeless`          | Crafting table, ingredients in any order    |
-| `smelting`           | Furnace                                     |
-| `blasting`           | Blast furnace                               |
-| `smithing_transform` | Smithing table (template + base + addition) |
+| Type                 | Description                                        |
+|----------------------|----------------------------------------------------|
+| `shaped`             | Crafting table with a specific pattern             |
+| `shapeless`          | Crafting table, ingredients in any order           |
+| `smelting`           | Furnace                                            |
+| `blasting`           | Blast furnace                                      |
+| `smoking`            | Smoker                                             |
+| `campfire_cooking`   | Campfire                                           |
+| `stonecutting`       | Stonecutter                                        |
+| `smithing_transform` | Smithing table (template + base + addition)        |
+| `passthrough`        | Another mod's recipe type, copied verbatim         |
 
 ### Tags as ingredients
 
@@ -679,7 +683,7 @@ accept any item in that tag:
 }
 ```
 
-Works in shaped, shapeless, smelting, blasting, and smithing recipes. Recipes with structural errors (uneven pattern rows, undefined pattern symbols, unused keys, malformed IDs) are skipped with a detailed message in the log naming the item and the exact problem.
+Works in every recipe type this mod builds itself. Inside `passthrough` you write tags the way the target mod expects them (usually `{"tag": "c:ingots/gold"}`), not with the `#` shorthand — that body is copied verbatim and never translated. Recipes with structural errors (uneven pattern rows, undefined pattern symbols, unused keys, malformed IDs) are skipped with a detailed message in the log naming the item and the exact problem.
 
 ### Individual item recipe
 
@@ -713,7 +717,7 @@ For multiple recipes, use an array:
       "type": "smelting",
       "ingredient": "mymod:my_ore",
       "experience": 1.0,
-      "cooking_time": 200
+      "cooking_time": 10
     }
   ]
 }
@@ -787,6 +791,63 @@ For multiple recipes, use an array:
 
 > Ingredients support any item from any installed mod via resource location (e.g. `"othermod:special_ingot"`).
 
+### Passthrough recipes (other mods)
+
+`passthrough` hands a raw recipe body to the game without this mod
+interpreting it, so another mod's recipe type can produce your content:
+
+```json
+{
+  "recipe": {
+    "type": "passthrough",
+    "json": {
+      "type": "create:mixing",
+      "heat_requirement": "heated",
+      "ingredients": [
+        { "item": "minecraft:amethyst_shard" },
+        { "tag": "c:ingots/gold" }
+      ],
+      "results": [
+        { "count": 1, "id": "customgear:my_gem" }
+      ]
+    }
+  }
+}
+```
+
+Everything inside `json` is copied exactly as written, including how tags are
+expressed — `{"tag": "c:ingots/gold"}` in Create's case, not this mod's `#`
+shorthand. Write it the way that mod documents it; this mod does not translate
+or validate the schema, because doing so would mean knowing it.
+
+Whether a given field accepts tags at all is up to that mod, not this one.
+Most use vanilla's `Ingredient` system and take tags anywhere an item goes,
+but a field expecting a literal ID will reject one — and the error will come
+from their deserializer, not from here.
+
+A `neoforge:mod_loaded` condition is derived from the namespace of the inner
+`type`, so the recipe is skipped when that mod is absent instead of breaking
+the datapack. For recipes spanning several mods, list the extras:
+
+```json
+{
+  "type": "passthrough",
+  "requires": ["create", "createaddition"],
+  "json": { "type": "create:mixing", "...": "..." }
+}
+```
+
+**The result is not this mod's to control.** Every other type builds the
+result from the item that owns the recipe; here the result lives inside your
+`json`, in whatever shape that mod uses. A passthrough recipe attached to
+`ruby_gem` can produce something else entirely.
+
+> ⚠️ `mod_loaded` protects against the mod being **missing**, not against it
+> being a different **version**. Mods change their recipe schemas between
+> versions, and a deserializer that throws can take down datapack loading
+> entirely — not just that one recipe. Re-check your passthrough recipes when
+> you update the target mod.
+
 ---
 
 ## Tags
@@ -805,7 +866,100 @@ Two sides of the same system:
 
 A tag is just the sum of everything that declares it — you can use vanilla tags, convention (`c:`) tags shared across mods, or invent your own (`customgear:magic_gems`). Your tags merge with existing ones of the same name.
 
-**Blocks** are added to both the block and item tag registries (so recipes, which consume the item form, accept your block). **Fluids** tag the fluid and their bucket item. **Armor/tool/weapon sets are not supported yet** (their IDs are derived per piece).
+**Blocks** are added to both the block and item tag registries (so recipes, which consume the item form, accept your block). **Fluids** tag the fluid and their bucket item. **Gear** (armor, tools, and weapons) does not use the `tags` field, but receives the vanilla and convention tags it needs automatically — see [Automatic gear tags](#automatic-gear-tags).
+
+### Automatic gear tags
+
+Armor, tools, and weapons receive the tags that make them behave like real gear.
+You never declare them:
+
+| Content                | Tags received                                                                                    |
+|------------------------|--------------------------------------------------------------------------------------------------|
+| Armor piece            | Its slot tag (`#minecraft:chest_armor`…), plus `c:armors`                                        |
+| Sword                  | `#minecraft:swords`, `breaks_decorated_pots`, `c:tools`, `c:tools/melee_weapon`                  |
+| Pickaxe/axe/shovel/hoe | Its type tag (`#minecraft:pickaxes`…), `breaks_decorated_pots`, `c:tools`, `c:tools/mining_tool` |
+| Bow / crossbow         | `c:tools`, `c:tools/ranged_weapon`, `c:tools/bow` or `c:tools/crossbow`                          |
+| Shield                 | `c:tools`, `c:tools/shield`                                                                      |
+
+When `enchantable` is `true`, the matching `#minecraft:enchantable/*` tags are
+added too. That is what the enchanting table reads in 1.21 to decide what to
+offer — with `enchantable: false` they are left out, so the item stays
+genuinely unenchantable.
+
+**Smithing trims** are opt-in with `"trimmable": true` on an `armor_set`. Off
+by default because trims draw over the armor layers: with
+`armor_layers: transparent` or a GeckoLib 3D model the trim applies but never
+shows.
+
+### Tag patches
+
+The `tags` field says "my content belongs to tag X" — the value written is
+always yours. A `tag_patch` flips it, so **foreign** content can be put into a
+tag. That matters for anything you cannot register yourself: another mod's
+damage types could not be referenced at all before.
+
+```json
+{
+  "type": "tag_patch",
+  "registry": "damage_type",
+  "tag": "customgear:dragon_breath",
+  "values": [
+    "iceandfire:dragon_fire",
+    "iceandfire:dragon_ice"
+  ]
+}
+```
+
+Which lets armor reference one tag instead of listing every ID:
+
+```json
+{
+  "damage_resistances": { "#customgear:dragon_breath": 0.30 }
+}
+```
+
+| Field      | Type     | Description                                                                             |
+|------------|----------|-----------------------------------------------------------------------------------------|
+| `registry` | String   | **Required.** `item`, `block`, `fluid`, `entity_type`, `damage_type`, `enchantment`…    |
+| `tag`      | String   | **Required.** Full tag ID, no `#`                                                       |
+| `values`   | String[] | Content IDs to add                                                                      |
+| `remove`   | String[] | Content IDs to take out, even when another pack put them there                          |
+| `comment`  | String   | Never parsed. A patch has no name, so without this the file gives no clue why it exists |
+
+`values` and `remove` are both optional, but a patch with neither is rejected.
+There is no `id`: a patch registers nothing and is identified by
+`registry` + `tag`, so two patches naming the same pair merge.
+
+Entries are always written as optional, so an uninstalled mod is ignored
+instead of dropping the whole tag. The cost is that a typo fails exactly like
+an absent mod — so a warning is logged when the namespace belongs to a mod
+that *is* loaded. Datapack registries like `damage_type` cannot be checked
+that way, which is unfortunately the most common case.
+
+**Removals** exist because some tags are filled by inheritance rather than by
+entries. Vanilla's `trimmable_armor` is the union of the four slot tags, so
+armor lands in it just by being armor — not adding it changes nothing; it has
+to be removed:
+
+```json
+{
+  "type": "tag_patch",
+  "registry": "item",
+  "tag": "minecraft:trimmable_armor",
+  "remove": ["othermod:some_chestplate"]
+}
+```
+
+> ⚠️ Removing from a `minecraft:` or `c:` tag affects **every mod that reads
+> it**. Taking an item out of `#minecraft:planks` breaks recipes across the
+> pack, and whoever sees the breakage has no reason to connect it to a patch
+> file. A warning is logged; heed it.
+
+When the same ID is both added and removed, **the removal wins** — adding can
+come from a broad rule, removing is always deliberate. A warning names the ID.
+
+> Tag changes need `/reload` after `/customgear reload`. The tag manager only
+> rebinds on a datapack reload.
 
 ### Common tags
 
@@ -907,6 +1061,16 @@ JSONs and textures inside the zip load exactly like loose files — subfolders i
 
 > A distributable pack should be **self-contained**: every texture a JSON references must live inside the same zip. Referencing a loose texture from a zipped JSON works locally, but players who only receive the zip won't have the loose file. (Loose files still override zip contents of the same path — handy for local tweaks.)
 
+### Pack icon
+
+The dynamic pack shows the mod's logo in the resource pack screen. To use your
+own, drop a `dynamic_pack_icon.png` in the `ultimatecustomgear/` folder —
+square and a power of two (64×64 or 128×128). It is picked up on
+`/customgear reload`, no restart needed.
+
+The icon is deliberately excluded from the content hash, so branding your pack
+never desyncs clients.
+
 ---
 
 ## Field Reference
@@ -940,26 +1104,27 @@ JSONs and textures inside the zip load exactly like loose files — subfolders i
 
 ### Armor Fields
 
-| Field                            | Type   | Description                                                                                 |
-|----------------------------------|--------|---------------------------------------------------------------------------------------------|
-| `pieces`                         | Map    | Defines each armor piece. Keys: `helmet`, `chestplate`, `leggings`, `boots`                 |
-| `pieces.durability`              | Int    | Durability of this piece                                                                    |
-| `pieces.defense`                 | Int    | Armor points this piece provides                                                            |
-| `pieces.toughness`               | Float  | Armor toughness per piece. Netherite = 3.0                                                  |
-| `pieces.knockback_resistance`    | Float  | Knockback resistance. Max is 1.0. Values above 1.0 cause physics glitches                   |
-| `piece_names`                    | Map    | Full name for each piece per language. Each language defines all four pieces independently. |
-| `piece_effects`                  | Map    | Effects applied when a specific piece is worn individually                                  |
-| `set_bonus`                      | Object | Effects applied when the required number of pieces are worn                                 |
-| `set_bonus.required_pieces`      | Int    | Number of pieces needed to activate the bonus                                               |
-| `set_bonus.effects`              | List   | List of effects to apply when set is complete                                               |
-| `damage_resistances`             | Map    | Damage reduction by damage type. See [Damage Resistances](#damage-resistances)              |
-| `attacker_resistances`           | Map    | Damage reduction by attacker. See [Damage Resistances](#damage-resistances)                 |
-| `conditional_resistances`        | List   | Damage reduction for an attacker + damage type combination                                  |
-| `show_player_resistances`        | Bool   | Show `player:` entries in the tooltip. Default `false` (they stay hidden)                   |
-| `pieces.damage_resistances`      | Map    | Per-piece entries — merge with the set-level map, winning only on declared keys             |
-| `pieces.attacker_resistances`    | Map    | Per-piece entries — merge with the set-level map                                            |
-| `pieces.conditional_resistances` | List   | Per-piece rules — merge by `attacker` + `damage` pair                                       |
-| `pieces.inherit_set_resistances` | Bool   | `false` makes the piece ignore all set-level resistances. Default `true`                    |
+| Field                            | Type    | Description                                                                                                  |
+|----------------------------------|---------|--------------------------------------------------------------------------------------------------------------|
+| `pieces`                         | Map     | Defines each armor piece. Keys: `helmet`, `chestplate`, `leggings`, `boots`                                  |
+| `pieces.durability`              | Int     | Durability of this piece                                                                                     |
+| `pieces.defense`                 | Int     | Armor points this piece provides                                                                             |
+| `pieces.toughness`               | Float   | Armor toughness per piece. Netherite = 3.0                                                                   |
+| `pieces.knockback_resistance`    | Float   | Knockback resistance. Max is 1.0. Values above 1.0 cause physics glitches                                    |
+| `piece_names`                    | Map     | Full name for each piece per language. Each language defines all four pieces independently.                  |
+| `piece_effects`                  | Map     | Effects applied when a specific piece is worn individually                                                   |
+| `set_bonus`                      | Object  | Effects applied when the required number of pieces are worn                                                  |
+| `set_bonus.required_pieces`      | Int     | Number of pieces needed to activate the bonus                                                                |
+| `set_bonus.effects`              | List    | List of effects to apply when set is complete                                                                |
+| `damage_resistances`             | Map     | Damage reduction by damage type. See [Damage Resistances](#damage-resistances)                               |
+| `attacker_resistances`           | Map     | Damage reduction by attacker. See [Damage Resistances](#damage-resistances)                                  |
+| `conditional_resistances`        | List    | Damage reduction for an attacker + damage type combination                                                   |
+| `show_player_resistances`        | Bool    | Show `player:` entries in the tooltip. Default `false` (they stay hidden)                                    |
+| `pieces.damage_resistances`      | Map     | Per-piece entries — merge with the set-level map, winning only on declared keys                              |
+| `pieces.attacker_resistances`    | Map     | Per-piece entries — merge with the set-level map                                                             |
+| `pieces.conditional_resistances` | List    | Per-piece rules — merge by `attacker` + `damage` pair                                                        |
+| `pieces.inherit_set_resistances` | Bool    | `false` makes the piece ignore all set-level resistances. Default `true`                                     |
+| `trimmable`                      | Boolean | Whether this armor accepts smithing trims. Default: `false`. See [Automatic gear tags](#automatic-gear-tags) |
 
 ### Tool Fields
 
@@ -978,20 +1143,26 @@ JSONs and textures inside the zip load exactly like loose files — subfolders i
 
 ### Weapon Fields
 
-| Field                             | Type  | Description                                                                 |
-|-----------------------------------|-------|-----------------------------------------------------------------------------|
-| `weapons`                         | Map   | Defines each weapon. Keys: `sword`, `bow`, `crossbow`, `shield`             |
-| `weapons.durability`              | Int   | Durability of this weapon                                                   |
-| `weapons.attack_damage`           | Float | Base attack damage (sword only)                                             |
-| `weapons.attack_damage_bonus`     | Float | Additional damage (sword only)                                              |
-| `weapons.attack_speed`            | Float | Attack speed (sword only)                                                   |
-| `weapons.damage_multiplier`       | Float | Final attack damage multiplier. Default: 1.0                                |
-| `weapons.arrow_damage`            | Float | Base arrow damage (bow/crossbow). If 0, uses vanilla calculation            |
-| `weapons.arrow_damage_bonus`      | Float | Flat bonus added to arrow damage (bow/crossbow)                             |
-| `weapons.arrow_damage_multiplier` | Float | Arrow damage multiplier (bow/crossbow). Default: 1.0                        |
-| `weapons.charge_speed`            | Float | Charge speed multiplier (bow/crossbow). Values < 1.0 = slower. Default: 1.0 |
-| `weapons.held_effects`            | List  | Effects applied when this weapon is held in hand                            |
-| `weapon_names`                    | Map   | Full name for each weapon per language.                                     |
+| Field                             | Type  | Description                                                      |
+|-----------------------------------|-------|------------------------------------------------------------------|
+| `weapons`                         | Map   | Defines each weapon. Keys: `sword`, `bow`, `crossbow`, `shield`  |
+| `weapons.durability`              | Int   | Durability of this weapon                                        |
+| `weapons.attack_damage`           | Float | Base attack damage (sword only)                                  |
+| `weapons.attack_damage_bonus`     | Float | Additional damage (sword only)                                   |
+| `weapons.attack_speed`            | Float | Attack speed (sword only)                                        |
+| `weapons.damage_multiplier`       | Float | Final attack damage multiplier. Default: 1.0                     |
+| `weapons.arrow_damage`            | Float | Base arrow damage (bow/crossbow). If 0, uses vanilla calculation |
+| `weapons.arrow_damage_bonus`      | Float | Flat bonus added to arrow damage (bow/crossbow)                  |
+| `weapons.arrow_damage_multiplier` | Float | Arrow damage multiplier (bow/crossbow). Default: 1.0             |
+| `weapons.charge_speed`            | Float | Reserved (bow/crossbow) — see the note below. Default: 1.0       |
+| `weapons.held_effects`            | List  | Effects applied when this weapon is held in hand                 |
+| `weapon_names`                    | Map   | Full name for each weapon per language.                          |
+
+> ⚠️ **`charge_speed` does not change the real charge time.** The vanilla
+> methods that decide it are static and cannot be overridden, so a bow always
+> draws in 1.0s and a crossbow in 1.25s regardless. The field only stretches
+> how long the click can be held — already minutes either way. It is kept for
+> a future version that implements the real timing.
 
 ### Individual Weapon/Tool Fields
 
@@ -1096,21 +1267,31 @@ requires a restart.
 
 ### Recipe Fields
 
-| Field          | Type         | Description                                                                          |
-|----------------|--------------|--------------------------------------------------------------------------------------|
-| `recipe`       | Object/Array | Recipe for individual items. Can be a single object or an array for multiple recipes |
-| `recipes`      | Map          | Recipes for sets. One entry per piece/tool/weapon key                                |
-| `type`         | String       | `shaped`, `shapeless`, `smelting`, `blasting`, or `smithing_transform`               |
-| `pattern`      | String[]     | (shaped) 1–3 rows of up to 3 characters each                                         |
-| `key`          | Map          | (shaped) Maps each pattern character to an item ID                                   |
-| `ingredients`  | String[]     | (shapeless) List of item IDs                                                         |
-| `ingredient`   | String       | (smelting/blasting) Single input item ID                                             |
-| `experience`   | Float        | (smelting/blasting) XP granted on completion. Default: 0.1                           |
-| `cooking_time` | Int          | (smelting/blasting) Ticks to cook. Default: 200 (smelting), 100 (blasting)           |
-| `template`     | String       | (smithing_transform) Template item ID                                                |
-| `base`         | String       | (smithing_transform) Base item ID to upgrade                                         |
-| `addition`     | String       | (smithing_transform) Upgrade material item ID                                        |
-| `result_count` | Int          | Number of items produced. Default: 1. Only applies to shaped/shapeless               |
+| Field          | Type         | Description                                                                                                   |
+|----------------|--------------|---------------------------------------------------------------------------------------------------------------|
+| `recipe`       | Object/Array | Recipe for individual items. Can be a single object or an array for multiple recipes                          |
+| `recipes`      | Map          | Recipes for sets. One entry per piece/tool/weapon key                                                         |
+| `type`         | String       | See the [recipe types](#recipe-types) table                                                                   |
+| `pattern`      | String[]     | (shaped) 1–3 rows of up to 3 characters each                                                                  |
+| `key`          | Map          | (shaped) Maps each pattern character to an item ID                                                            |
+| `ingredients`  | String[]     | (shapeless) List of item IDs                                                                                  |
+| `ingredient`   | String       | (cooking/stonecutting) Single input item ID                                                                   |
+| `experience`   | Float        | (cooking) XP granted on completion. Default: 0.1                                                              |
+| `cooking_time` | Float        | (cooking) **SECONDS** to cook. Decimals allowed. Default: 10s smelting, 5s blasting, 5s smoking, 30s campfire |
+| `template`     | String       | (smithing_transform) Template item ID                                                                         |
+| `base`         | String       | (smithing_transform) Base item ID to upgrade                                                                  |
+| `addition`     | String       | (smithing_transform) Upgrade material item ID                                                                 |
+| `json`         | Object       | (passthrough) Raw recipe body, copied verbatim                                                                |
+| `requires`     | String[]     | (passthrough) Extra mod IDs beyond the one deduced from the inner type                                        |
+| `result_count` | Int          | Number of items produced. Default: 1. Applies to shaped, shapeless and stonecutting                           |
+
+> 💥 **`cooking_time` changed in 1.6.0.** It used to be in ticks. Divide your
+> existing values by 20 — a recipe written as `200` meant 10 seconds and now
+> means 200 seconds. Nothing errors, the recipe is just 20x slower.
+
+Declaring a field the type ignores (like `experience` on a stonecutting
+recipe) logs a warning naming it. The recipe still works; the value just does
+nothing.
 
 ### Fluid Fields
 
@@ -1158,24 +1339,47 @@ Items and food can drop from mobs on death via the `mob_drops` object:
 ```json
 {
   "mob_drops": {
-    "chance": 0.10, 
-    "min": 1, 
-    "max": 3, 
-    "requires_player_kill": true, 
+    "chance": 0.10,
+    "min": 1,
+    "max": 3,
+    "requires_player_kill": true,
+    "looting_mode": "count",
     "entities": ["all"]
-}
+  }
 }
 ```
 
-| Field                  | Type    | Default | Description                                                                                                                                                                                                   |
-|------------------------|---------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `chance`               | Double  | 0.05    | Drop probability per kill (0.0 representing 0% chance and 1.0 representing 100% chance)                                                                                                                       |
-| `min` / `max`          | Int     | 1 / 1   | Dropped count range                                                                                                                                                                                           |
-| `requires_player_kill` | Boolean | `true`  | Only drops when a player made the kill — prevents automated farms from printing currency                                                                                                                      |
-| `entities`             | List    | —       | **Required.** `["all"]` = every mob (vanilla and modded); exact IDs (`"minecraft:zombie"`); entity tags (`"#minecraft:undead"`); mod wildcards (`"mekanism:*"`). Omitted = drop disabled (with a log warning) |
+| Field                  | Type    | Default   | Description                                                                                                                                                                                                   |
+|------------------------|---------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `chance`               | Double  | 0.05      | Drop probability per kill (0.0 representing 0% chance and 1.0 representing 100% chance)                                                                                                                       |
+| `min` / `max`          | Int     | 1 / 1     | Dropped count range                                                                                                                                                                                           |
+| `requires_player_kill` | Boolean | `false`   | Requires recent player damage — not the killing blow. Set to `true` for an economy, or a fall damage farm can print currency                                                                                  |
+| `looting_mode`         | String  | `"count"` | How Looting affects this drop: `"count"`, `"chance"` or `"none"`. See below                                                                                                                                   |
+| `looting_chance_bonus` | Double  | 0.01      | Probability added per Looting level, in `"chance"` mode only                                                                                                                                                  |
+| `entities`             | List    | —         | **Required.** `["all"]` = every mob (vanilla and modded); exact IDs (`"minecraft:zombie"`); entity tags (`"#minecraft:undead"`); mod wildcards (`"mekanism:*"`). Omitted = drop disabled (with a log warning) |
 
-`min` may be `0`, matching vanilla drops like rotten flesh (0-2). Remember it
-compounds with `chance`: a 25% chance of 0-2 drops something roughly 17% of the
+> 💥 **`requires_player_kill` changed in 1.6.0.** It used to default to `true`.
+> Declare it explicitly if you run an item economy — the parser warns on every
+> item that leaves it undeclared.
+
+**Looting modes.** Vanilla uses two separate mechanisms and never both at
+once, so you pick one:
+
+| Mode       | Effect                                                                                           | Vanilla equivalent              |
+|------------|--------------------------------------------------------------------------------------------------|---------------------------------|
+| `"count"`  | Adds 0..level to the rolled amount. Applied before the empty check, and **not** clamped to `max` | Rotten flesh, string, gunpowder |
+| `"chance"` | Raises the drop probability, leaving the amount alone                                            | Wither skeleton skulls          |
+| `"none"`   | Looting does nothing                                                                             | —                               |
+
+Looting is read from the killer's main hand, so a mob you damaged but did not
+finish gets no bonus.
+
+> With `"chance"` mode and `max: 0` nothing can ever drop: raising the
+> probability still leads to a roll of zero. Use `"count"` if you want Looting
+> to create items from a zero base.
+
+`min` may be `0`, matching vanilla drops like rotten flesh (0–2). Remember it
+compounds with `chance`: a 25% chance of 0–2 drops something roughly 17% of the
 time.
 
 Players, armor stands, boats, and minecarts never drop items. Changes apply live with `/customgear reload` — you can tune your server's economy without restarting.
@@ -1184,7 +1388,7 @@ Items with `mob_drops` show a **"Dropped by"** section in their tooltip, with th
 
 ### Damage Resistances
 
-Armor can reduce incoming damage through three layers, available at set level
+Armor can reduce incoming damage through three layers, available at a set level 
 and inside `pieces.<piece>`:
 
 ```json
@@ -1229,7 +1433,7 @@ full set worn, 25% with two pieces. Design around the full set, then divide.
 
 **Set level and per piece.** Entries declared inside `pieces.<piece>` **merge**
 with the set-level ones, winning only on the keys they declare. Scope merges;
-layers replace. The two rules are independent.
+layers are replaced. The two rules are independent.
 
 ```json
 {
@@ -1330,7 +1534,7 @@ Everything here applies live with `/customgear reload`.
 - Durability display
 - Textures and models — **after pressing F3+T** (the game only reloads client resources on demand)
 - Mob drop settings (`chance`, `min`/`max`, `entities`)
-- Damage, attacker, and conditional resistances (including `show_player_resistances`)
+- Damage, attacker, and conditional resistance (including `show_player_resistances`)
 
 ### What requires a full game restart
 - Attack damage and attack speed

@@ -36,6 +36,7 @@ public class UniversalParser {
         public final List<FluidData>       fluids       = new ArrayList<>();
         public final List<ItemData>        items        = new ArrayList<>();
         public final List<AdvancementData> advancements = new ArrayList<>();
+        public final List<TagPatchData>    tagPatches   = new ArrayList<>();
     }
 
     /**
@@ -175,6 +176,14 @@ public class UniversalParser {
                                             LOGGER.debug("[CustomGear] Advancement parsed (not yet active): {}", data.id);
                                         }
                                     }
+                                    case "tag_patch" -> {
+                                        TagPatchData data = GSON.fromJson(json, TagPatchData.class);
+                                        if (validateTagPatch(data, path)) {
+                                            result.tagPatches.add(data);
+                                            LOGGER.info("[CustomGear] Tag patch loaded: {} -> {}",
+                                                    data.registry, data.tag);
+                                        }
+                                    }
                                     default -> LOGGER.warn("[CustomGear] Unknown type '{}' in: {}", type, path.getFileName());
                                 }
 
@@ -274,6 +283,30 @@ public class UniversalParser {
                 LOGGER.warn("[CustomGear] Item '{}': mob_drops min and max are both 0 — the drop "
                         + "will never produce anything", data.id);
             }
+            if (data.mobDrops.requiresPlayerKill == null) {
+                LOGGER.warn("[CustomGear] Item '{}': mob_drops.requires_player_kill is not "
+                                + "declared. The default CHANGED to false in 1.6.0 for vanilla parity — "
+                                + "mobs killed by the environment now drop this item, so automated farms "
+                                + "can produce it. Declare it explicitly to silence this warning.",
+                        data.id);
+            }
+            String mode = data.mobDrops.lootingMode;
+            if (mode != null && !mode.equals("count") && !mode.equals("chance")
+                    && !mode.equals("none")) {
+                LOGGER.warn("[CustomGear] Item '{}': unknown looting_mode '{}' — expected "
+                                + "'count', 'chance' or 'none'. Falling back to 'count'.",
+                        data.id, mode);
+            }
+            if (!data.mobDrops.isLootingChance() && data.mobDrops.lootingChanceBonus != 0.01) {
+                LOGGER.warn("[CustomGear] Item '{}': looting_chance_bonus only applies with "
+                        + "looting_mode 'chance' — ignored.", data.id);
+            }
+            if (data.mobDrops.isLootingChance() && data.mobDrops.max <= 0) {
+                LOGGER.warn("[CustomGear] Item '{}': looting_mode 'chance' with max 0 can never "
+                        + "drop anything — 'chance' mode raises the probability but leaves the "
+                        + "amount alone, so the roll still comes up empty. Use 'count' if you "
+                        + "want Looting to create items from a 0 base.", data.id);
+            }
         }
         return true;
     }
@@ -289,5 +322,26 @@ public class UniversalParser {
         }
         return true;
     }
+
+    private static boolean validateTagPatch(TagPatchData data, Path path) {
+        if (data.tag == null || data.tag.isBlank()) {
+            LOGGER.warn("[CustomGear] tag_patch missing 'tag': {}", path.getFileName());
+            return false;
+        }
+        if (data.normalizedRegistry() == null) {
+            LOGGER.warn("[CustomGear] tag_patch '{}' missing or invalid 'registry': {}",
+                    data.tag, path.getFileName());
+            return false;
+        }
+        boolean hasValues = data.values != null && !data.values.isEmpty();
+        boolean hasRemove = data.remove != null && !data.remove.isEmpty();
+        if (!hasValues && !hasRemove) {
+            LOGGER.warn("[CustomGear] tag_patch '{}' has neither 'values' nor 'remove' — "
+                    + "nothing to do: {}", data.tag, path.getFileName());
+            return false;
+        }
+        return true;
+    }
+
 
 }

@@ -32,6 +32,8 @@
   "tooltip.ultimatecustomgear.harvest_netherite": "Netherita",
 
   "tooltip.ultimatecustomgear.dropped_by": "Soltado por:",
+  "tooltip.ultimatecustomgear.dropped_by.looting_count": "Cantidad aumentada por Saqueo",
+  "tooltip.ultimatecustomgear.dropped_by.looting_chance": "Probabilidad aumentada por Saqueo",
   "tooltip.ultimatecustomgear.dropped_by.any_mob": "Cualquier mob",
   "tooltip.ultimatecustomgear.dropped_by.mod_mobs": "Todos los mobs de %s",
   "tooltip.ultimatecustomgear.dropped_by.more": "…y %s más",

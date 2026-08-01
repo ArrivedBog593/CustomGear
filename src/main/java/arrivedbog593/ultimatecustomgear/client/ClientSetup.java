@@ -82,12 +82,18 @@ public class ClientSetup {
                 (stack, level, entity, seed) -> {
                     if (entity == null || entity.getUseItem() != stack) return 0.0F;
                     int duration = stack.getUseDuration(entity);
-                    int remaining = entity.getUseItemRemainingTicks();
-                    int elapsed = duration - remaining;
-                    // Vanilla bow considers 20 ticks = full draw at chargeSpeed 1.0.
-                    // Scale by chargeSpeed: fullDrawTicks = 20 / (duration / 72000).
-                    float fullDrawTicks = 20.0f / (duration / 72000.0f);
-                    return Math.min(elapsed / fullDrawTicks, 1.0f);
+                    int elapsed = stack.getUseDuration(entity) - entity.getUseItemRemainingTicks();
+                    // CustomBowItem.getUseDuration returns 72000 / chargeSpeed, so a
+                    // SLOWER bow has a LONGER duration. The draw window has to scale
+                    // the same way, hence multiply.
+                    //
+                    // This was a division. At chargeSpeed 1.0 both forms give 20, so
+                    // the bug was invisible at the default and only showed up at any
+                    // other value — chargeSpeed 0.25 drew 16x too fast instead of 4x
+                    // too slow, skipping bow_pulling_0 entirely.
+                    float fullDrawTicks = 20.0f * (duration / 72000.0f);
+                    if (fullDrawTicks <= 0.0f) return 1.0F;
+                    return Math.min(elapsed / 20.0f, 1.0f);
                 });
 
         ItemProperties.register(item,
@@ -109,11 +115,18 @@ public class ClientSetup {
         ItemProperties.register(item,
                 ResourceLocation.withDefaultNamespace("pull"),
                 (stack, level, entity, seed) -> {
-                    if (entity == null || CrossbowItem.isCharged(stack)) return 0.0F;
-                    int duration = stack.getUseDuration(entity);
-                    int remaining = entity.getUseItemRemainingTicks();
-                    float elapsed = (float)(duration - remaining);
-                    return Math.min(elapsed / (float) duration, 1.0f);
+                    if (entity == null || entity.getUseItem() != stack) return 0.0F;
+                    if (CrossbowItem.isCharged(stack)) return 0.0F;
+                    int elapsed = stack.getUseDuration(entity) - entity.getUseItemRemainingTicks();
+                    // Divide by the CHARGE duration, not the USE duration. Vanilla
+                    // decides "is it loaded" via getPowerForTime, which divides by
+                    // getChargeDuration (25 ticks). getUseDuration is 25/chargeSpeed+3,
+                    // which at chargeSpeed 0.25 is 103 — so the animation ran ~4x
+                    // behind the real charge and the crossbow could be fired before
+                    // crossbow_pulling_1 had ever appeared.
+                    int chargeTicks = CrossbowItem.getChargeDuration(stack, entity);
+                    if (chargeTicks <= 0) return 1.0F;
+                    return Math.min((float) elapsed / (float) chargeTicks, 1.0f);
                 });
 
         ItemProperties.register(item,

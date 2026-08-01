@@ -200,7 +200,7 @@ También se soporta comida instantánea (`eat_duration: 0`) y comida lenta (`eat
   "type": "armor_set",
   "piece_names": {
     "es_mx": {
-      "helmet":     "Yelmo Mataдragones",
+      "helmet":     "Yelmo Matadragones",
       "chestplate": "Coraza Matadragones",
       "leggings":   "Grebas Matadragones",
       "boots":      "Escarpes Matadragones"
@@ -659,13 +659,17 @@ UltimateCustomGear soporta recetas de crafteo nativas definidas directamente en 
 
 ### Tipos de receta
 
-| Tipo                 | Descripción                                      |
-|----------------------|--------------------------------------------------|
-| `shaped`             | Mesa de crafteo con patrón específico            |
-| `shapeless`          | Mesa de crafteo, ingredientes en cualquier orden |
-| `smelting`           | Horno                                            |
-| `blasting`           | Alto horno                                       |
-| `smithing_transform` | Mesa de herrería (template + base + adición)     |
+| Tipo                 | Descripción                                        |
+|----------------------|----------------------------------------------------|
+| `shaped`             | Mesa de crafteo con un patrón específico           |
+| `shapeless`          | Mesa de crafteo, ingredientes en cualquier orden   |
+| `smelting`           | Horno                                              |
+| `blasting`           | Alto horno                                         |
+| `smoking`            | Ahumador                                           |
+| `campfire_cooking`   | Fogata                                             |
+| `stonecutting`       | Cortapiedras                                       |
+| `smithing_transform` | Mesa de herrería (plantilla + base + adición)      |
+| `passthrough`        | Tipo de receta de otro mod, copiado tal cual       |
 
 ### Tags como ingredientes
 
@@ -682,7 +686,7 @@ receta aceptará cualquier ítem de ese tag:
 }
 ```
 
-Funciona en recetas shaped, shapeless, smelting, blasting y smithing. Las recetas con errores estructurales (filas desiguales, símbolos sin definir, keys sin usar, ID malformados) se descartan con un mensaje detallado en el log que nombra el ítem y el problema exacto.
+Funciona en todos los tipos de receta que este mod construye. Dentro de `passthrough` los tags se escriben como los espera el mod objetivo (normalmente `{"tag": "c:ingots/gold"}`), no con el atajo `#` — ese cuerpo se copia tal cual y nunca se traduce. Las recetas con errores estructurales (filas de patrones desiguales, símbolos sin definir, claves sin usar, ID mal formados) se omiten con un mensaje detallado en el log que nombra el ítem y el problema exacto.
 
 ### Receta de ítem individual
 
@@ -716,7 +720,7 @@ Para múltiples recetas, usa un array:
       "type": "smelting",
       "ingredient": "mimod:mi_mineral",
       "experience": 1.0,
-      "cooking_time": 200
+      "cooking_time": 10
     }
   ]
 }
@@ -790,6 +794,63 @@ Para múltiples recetas, usa un array:
 
 > Los ingredientes soportan cualquier ítem de cualquier mod instalado mediante resource location (ej. `"otromod:lingote_especial"`).
 
+### Recetas passthrough (otros mods)
+
+`passthrough` entrega un cuerpo de receta crudo al juego sin que este mod lo
+interprete, para que el tipo de receta de otro mod pueda producir tu contenido:
+
+```json
+{
+  "recipe": {
+    "type": "passthrough",
+    "json": {
+      "type": "create:mixing",
+      "heat_requirement": "heated",
+      "ingredients": [
+        { "item": "minecraft:amethyst_shard" },
+        { "tag": "c:ingots/gold" }
+      ],
+      "results": [
+        { "count": 1, "id": "customgear:mi_gema" }
+      ]
+    }
+  }
+}
+```
+
+Todo lo que hay dentro de `json` se copia exactamente como está escrito,
+incluida la forma de expresar los tags — `{"tag": "c:ingots/gold"}` en el caso
+de Create, no el atajo `#` de este mod. Escríbelo como lo documente ese mod;
+este mod no traduce ni valida el esquema, porque hacerlo significaría
+conocerlo.
+
+Que un campo concreto acepte tags o no lo decide ese mod, no este. La mayoría
+usa el sistema `Ingredient` de vanilla y acepta tags en cualquier sitio donde
+vaya un ítem, pero un campo que espere un ID literal lo rechazará — y el error
+vendrá de su deserializador, no de aquí.
+
+La condición `neoforge:mod_loaded` se deduce del namespace del `type` interno,
+así que la receta se omite cuando ese mod no está en vez de romper el
+datapack. Para recetas que abarquen varios mods, lista los extras:
+
+```json
+{
+  "type": "passthrough",
+  "requires": ["create", "createaddition"],
+  "json": { "type": "create:mixing", "...": "..." }
+}
+```
+
+**El resultado no es de este mod.** Todos los demás tipos construyen el
+resultado a partir del ítem dueño de la receta; aquí el resultado vive dentro
+de tu `json`, con la forma que use ese mod. Una receta passthrough colgada de
+`ruby_gem` puede producir cualquier otra cosa.
+
+> ⚠️ `mod_loaded` protege contra que el mod **falte**, no contra que sea otra
+> **versión**. Los mods cambian sus esquemas de receta entre versiones, y un
+> deserializador que falle puede tumbar la carga del datapack entera — no solo
+> esa receta. Revisa tus recetas passthrough cuando actualices el mod objetivo.
+
 ---
 
 ## Tags
@@ -808,7 +869,100 @@ Dos caras del mismo sistema:
 
 Un tag es simplemente la suma de todo lo que lo declara — puedes usar tags de vanilla, tags de convención (`c:`) compartidos entre mods, o inventar los tuyos (`customgear:magic_gems`). Tus tags se fusionan con los existentes del mismo nombre.
 
-Los **bloques** se agregan a los registries de tags de bloque y de ítem (para qué las recetas, que consumen la forma de ítem, acepten tu bloque). Los **fluidos** etiquetan el fluido y su cubeta. **Los sets de armadura/ herramientas/armas aún no están soportados** (sus ID se derivan por pieza).
+Los **bloques** se agregan a los registries de tags de bloque y de ítem (para que las recetas, que consumen la forma de ítem, acepten tu bloque). Los **fluidos** etiquetan el fluido y su cubeta. El **equipamiento** (armaduras, herramientas y armas) no usa el campo `tags`, pero recibe automáticamente los tags de vanilla y de convención que necesita — ver [Tags automáticos del equipamiento](#tags-automáticos-del-equipamiento).
+
+### Tags automáticos del equipamiento
+
+Las armaduras, herramientas y armas reciben los tags que las hacen comportarse
+como equipamiento de verdad. Nunca los declaras tú:
+
+| Contenido             | Tags que recibe                                                                                    |
+|-----------------------|----------------------------------------------------------------------------------------------------|
+| Pieza de armadura     | Su tag de slot (`#minecraft:chest_armor`…), más `c:armors`                                         |
+| Espada                | `#minecraft:swords`, `breaks_decorated_pots`, `c:tools`, `c:tools/melee_weapon`                    |
+| Pico/hacha/pala/azada | Su tag de tipo (`#minecraft:pickaxes`…), `breaks_decorated_pots`, `c:tools`, `c:tools/mining_tool` |
+| Arco / ballesta       | `c:tools`, `c:tools/ranged_weapon`, `c:tools/bow` o `c:tools/crossbow`                             |
+| Escudo                | `c:tools`, `c:tools/shield`                                                                        |
+
+Cuando `enchantable` es `true`, también se añaden los `#minecraft:enchantable/*`
+correspondientes. Eso es lo que lee la mesa de encantamientos en 1.21 para
+decidir qué ofrecer — con `enchantable: false` se omiten, así que el ítem
+queda realmente no encantable.
+
+Los **adornos de herrería** son opcionales con `"trimmable": true` en un
+`armor_set`. Apagados por defecto porque los adornos se dibujan sobre las capas
+de armadura: con `armor_layers: transparent` o un modelo 3D de GeckoLib el
+adorno se aplica, pero nunca se ve.
+
+### Parches de tags
+
+El campo `tags` dice "mi contenido pertenece al tag X" — el valor escrito
+siempre es tuyo. Un `tag_patch` lo invierte, para poder meter contenido
+**ajeno** en un tag. Eso importa para todo lo que no puedes registrar tú: los
+tipos de daño de otro mod no se podían referenciar en absoluto.
+
+```json
+{
+  "type": "tag_patch",
+  "registry": "damage_type",
+  "tag": "customgear:dragon_breath",
+  "values": [
+    "iceandfire:dragon_fire",
+    "iceandfire:dragon_ice"
+  ]
+}
+```
+
+Lo que permite que una armadura referencie un tag en vez de listar cada ID:
+
+```json
+{
+  "damage_resistances": { "#customgear:dragon_breath": 0.30 }
+}
+```
+
+| Campo      | Tipo     | Descripción                                                                                                   |
+|------------|----------|---------------------------------------------------------------------------------------------------------------|
+| `registry` | String   | **Obligatorio.** `item`, `block`, `fluid`, `entity_type`, `damage_type`, `enchantment`…                       |
+| `tag`      | String   | **Obligatorio.** ID completo del tag, sin `#`                                                                 |
+| `values`   | String[] | IDs de contenido a añadir                                                                                     |
+| `remove`   | String[] | IDs de contenido a sacar, incluso si otro pack los metió ahí                                                  |
+| `comment`  | String   | Nunca se parsea. Un parche no tiene nombre, así que sin esto el archivo no da ninguna pista de por qué existe |
+
+`values` y `remove` son ambos opcionales, pero un parche sin ninguno de los dos
+se rechaza. No hay `id`: un parche no registra nada y se identifica por
+`registry` + `tag`, así que dos parches que nombren el mismo par se fusionan.
+
+Las entradas se escriben siempre como opcionales, así que un mod no instalado
+se ignora en vez de tirar el tag completo. El coste es que un typo falla
+exactamente igual que un mod ausente — por eso se avisa cuando el namespace
+pertenece a un mod que *sí* está cargado. Los registries de datapack como
+`damage_type` no se pueden comprobar así, que es justamente el caso más común.
+
+Las **eliminaciones** existen porque algunos tags se llenan por herencia y no
+por entradas. El `trimmable_armor` de vanilla es la unión de los cuatro tags de
+slot, así que una armadura entra ahí por el mero hecho de ser armadura — no
+añadirlo no cambia nada, hay que quitarlo:
+
+```json
+{
+  "type": "tag_patch",
+  "registry": "item",
+  "tag": "minecraft:trimmable_armor",
+  "remove": ["othermod:some_chestplate"]
+}
+```
+
+> ⚠️ Quitar de un tag de `minecraft:` o `c:` afecta a **todos los mods que lo
+> lean**. Sacar un ítem de `#minecraft:planks` rompe recetas por todo el pack, y
+> quien vea el fallo no tiene motivo para relacionarlo con un archivo de parche.
+> Se avisa en el log; hazle caso.
+
+Cuando el mismo ID se añade y se quita, **gana la eliminación** — añadir puede
+venir de una regla general, quitar siempre es deliberado. Un aviso nombra el ID.
+
+> Los cambios de tags necesitan `/reload` después de `/customgear reload`. El
+> gestor de tags solo revincula en una recarga de datapacks.
 
 ### Tags comunes
 
@@ -911,6 +1065,16 @@ Los JSON y texturas dentro del zip cargan exactamente igual que los archivos sue
 
 > Un pack distribuible debe ser **autocontenido**: cada textura que un JSON referencie debe estar dentro del mismo zip. Referenciar una textura suelta desde un JSON dentro de un zip funciona localmente, pero los jugadores que solo reciban el zip no tendrán el archivo suelto. (Los archivos sueltos siguen teniendo prioridad sobre el contenido del zip con la misma ruta — útil para ajustes locales.)
 
+### Icono del pack
+
+El pack dinámico muestra el logo del mod en la pantalla de paquetes de
+recursos. Para usar el tuyo, pon un `dynamic_pack_icon.png` en la carpeta
+`ultimatecustomgear/` — cuadrado y potencia de dos (64×64 o 128×128). Se
+recoge con `/customgear reload`, sin reiniciar.
+
+El icono queda deliberadamente fuera del hash de contenido, así que
+personalizar tu pack nunca desincroniza a los clientes.
+
 ---
 
 ## Referencia de campos
@@ -944,26 +1108,27 @@ Los JSON y texturas dentro del zip cargan exactamente igual que los archivos sue
 
 ### Campos de armadura
 
-| Campo                            | Tipo   | Descripción                                                                                            |
-|----------------------------------|--------|--------------------------------------------------------------------------------------------------------|
-| `pieces`                         | Map    | Define cada pieza. Claves: `helmet`, `chestplate`, `leggings`, `boots`                                 |
-| `pieces.durability`              | Int    | Durabilidad de esta pieza                                                                              |
-| `pieces.defense`                 | Int    | Puntos de armadura que provee esta pieza                                                               |
-| `pieces.toughness`               | Float  | Resistencia de armadura por pieza. Netherite = 3.0                                                     |
-| `pieces.knockback_resistance`    | Float  | Resistencia al retroceso. Máximo 1.0. Valores mayores causan glitches de física                        |
-| `piece_names`                    | Map    | Nombre completo de cada pieza por idioma. Cada idioma define las cuatro piezas de forma independiente. |
-| `piece_effects`                  | Map    | Efectos aplicados al portar una pieza específica individualmente                                       |
-| `set_bonus`                      | Object | Efectos aplicados al tener el número requerido de piezas equipadas                                     |
-| `set_bonus.required_pieces`      | Int    | Número de piezas necesarias para activar el bonus                                                      |
-| `set_bonus.effects`              | List   | Lista de efectos a aplicar cuando el set está completo                                                 |
-| `damage_resistances`             | Map    | Reducción de daño por tipo de daño. Ver [Resistencias de Daño](#resistencias-de-daño)                  |
-| `attacker_resistances`           | Map    | Reducción de daño por atacante. Ver [Resistencias de Daño](#resistencias-de-daño)                      |
-| `conditional_resistances`        | List   | Reducción para una combinación de atacante + tipo de daño                                              |
-| `show_player_resistances`        | Bool   | Mostrar las entradas `player:` en el tooltip. Por defecto `false` (quedan ocultas)                     |
-| `pieces.damage_resistances`      | Map    | Entradas por pieza — se fusionan con el mapa del conjunto y ganan solo en las claves declaradas        |
-| `pieces.attacker_resistances`    | Map    | Entradas por pieza — se fusionan con el mapa del conjunto                                              |
-| `pieces.conditional_resistances` | List   | Reglas por pieza — se fusionan por el par `attacker` + `damage`                                        |
-| `pieces.inherit_set_resistances` | Bool   | `false` hace que la pieza ignore todas las resistencias del conjunto. Por defecto `true`               |
+| Campo                            | Tipo    | Descripción                                                                                                                                    |
+|----------------------------------|---------|------------------------------------------------------------------------------------------------------------------------------------------------|
+| `pieces`                         | Map     | Define cada pieza. Claves: `helmet`, `chestplate`, `leggings`, `boots`                                                                         |
+| `pieces.durability`              | Int     | Durabilidad de esta pieza                                                                                                                      |
+| `pieces.defense`                 | Int     | Puntos de armadura que provee esta pieza                                                                                                       |
+| `pieces.toughness`               | Float   | Resistencia de armadura por pieza. Netherite = 3.0                                                                                             |
+| `pieces.knockback_resistance`    | Float   | Resistencia al retroceso. Máximo 1.0. Valores mayores causan glitches de física                                                                |
+| `piece_names`                    | Map     | Nombre completo de cada pieza por idioma. Cada idioma define las cuatro piezas de forma independiente.                                         |
+| `piece_effects`                  | Map     | Efectos aplicados al portar una pieza específica individualmente                                                                               |
+| `set_bonus`                      | Object  | Efectos aplicados al tener el número requerido de piezas equipadas                                                                             |
+| `set_bonus.required_pieces`      | Int     | Número de piezas necesarias para activar el bonus                                                                                              |
+| `set_bonus.effects`              | List    | Lista de efectos a aplicar cuando el set está completo                                                                                         |
+| `damage_resistances`             | Map     | Reducción de daño por tipo de daño. Ver [Resistencias de Daño](#resistencias-de-daño)                                                          |
+| `attacker_resistances`           | Map     | Reducción de daño por atacante. Ver [Resistencias de Daño](#resistencias-de-daño)                                                              |
+| `conditional_resistances`        | List    | Reducción para una combinación de atacante + tipo de daño                                                                                      |
+| `show_player_resistances`        | Bool    | Mostrar las entradas `player:` en el tooltip. Por defecto `false` (quedan ocultas)                                                             |
+| `pieces.damage_resistances`      | Map     | Entradas por pieza — se fusionan con el mapa del conjunto y ganan solo en las claves declaradas                                                |
+| `pieces.attacker_resistances`    | Map     | Entradas por pieza — se fusionan con el mapa del conjunto                                                                                      |
+| `pieces.conditional_resistances` | List    | Reglas por pieza — se fusionan por el par `attacker` + `damage`                                                                                |
+| `pieces.inherit_set_resistances` | Bool    | `false` hace que la pieza ignore todas las resistencias del conjunto. Por defecto `true`                                                       |
+| `trimmable`                      | Boolean | Si esta armadura acepta adornos de herrería. Por defecto: `false`. Ver [Tags automáticos del equipamiento](#tags-automáticos-del-equipamiento) |
 
 ### Campos de herramientas
 
@@ -982,20 +1147,26 @@ Los JSON y texturas dentro del zip cargan exactamente igual que los archivos sue
 
 ### Campos de armas
 
-| Campo                             | Tipo  | Descripción                                                                                      |
-|-----------------------------------|-------|--------------------------------------------------------------------------------------------------|
-| `weapons`                         | Map   | Define cada arma. Claves: `sword`, `bow`, `crossbow`, `shield`                                   |
-| `weapons.durability`              | Int   | Durabilidad de esta arma                                                                         |
-| `weapons.attack_damage`           | Float | Daño de ataque base (solo espada)                                                                |
-| `weapons.attack_damage_bonus`     | Float | Daño adicional (solo espada)                                                                     |
-| `weapons.attack_speed`            | Float | Velocidad de ataque (solo espada)                                                                |
-| `weapons.damage_multiplier`       | Float | Multiplicador del daño de ataque final. Por defecto: 1.0                                         |
-| `weapons.arrow_damage`            | Float | Daño base de flecha (arco/ballesta). Si es 0, usa el cálculo vanilla                             |
-| `weapons.arrow_damage_bonus`      | Float | Bonus plano sumado al daño de flecha (arco/ballesta)                                             |
-| `weapons.arrow_damage_multiplier` | Float | Multiplicador del daño de flecha (arco/ballesta). Por defecto: 1.0                               |
-| `weapons.charge_speed`            | Float | Multiplicador de velocidad de carga (arco/ballesta). Valores < 1.0 = más lento. Por defecto: 1.0 |
-| `weapons.held_effects`            | List  | Efectos aplicados al sostener esta arma en la mano                                               |
-| `weapon_names`                    | Map   | Nombre completo de cada arma por idioma.                                                         |
+| Campo                             | Tipo  | Descripción                                                          |
+|-----------------------------------|-------|----------------------------------------------------------------------|
+| `weapons`                         | Map   | Define cada arma. Claves: `sword`, `bow`, `crossbow`, `shield`       |
+| `weapons.durability`              | Int   | Durabilidad de esta arma                                             |
+| `weapons.attack_damage`           | Float | Daño de ataque base (solo espada)                                    |
+| `weapons.attack_damage_bonus`     | Float | Daño adicional (solo espada)                                         |
+| `weapons.attack_speed`            | Float | Velocidad de ataque (solo espada)                                    |
+| `weapons.damage_multiplier`       | Float | Multiplicador del daño de ataque final. Por defecto: 1.0             |
+| `weapons.arrow_damage`            | Float | Daño base de flecha (arco/ballesta). Si es 0, usa el cálculo vanilla |
+| `weapons.arrow_damage_bonus`      | Float | Bonus plano sumado al daño de flecha (arco/ballesta)                 |
+| `weapons.arrow_damage_multiplier` | Float | Multiplicador del daño de flecha (arco/ballesta). Por defecto: 1.0   |
+| `weapons.charge_speed`            | Float | Reservado (arco/ballesta) — ver la nota de abajo. Por defecto: 1.0   |
+| `weapons.held_effects`            | List  | Efectos aplicados al sostener esta arma en la mano                   |
+| `weapon_names`                    | Map   | Nombre completo de cada arma por idioma.                             |
+
+> ⚠️ **`charge_speed` no cambia el tiempo de carga real.** Los métodos de
+> vanilla que lo deciden son estáticos y no se pueden sobrescribir, así que un
+> arco siempre se tensa en 1.0s y una ballesta en 1.25s. El campo solo alarga
+> cuánto tiempo se puede mantener el clic — que ya son minutos de todos modos.
+> Se conserva para una versión futura que implemente el tiempo real.
 
 ### Campos para ítems individuales
 
@@ -1100,21 +1271,32 @@ reiniciar.
 
 ### Campos de receta
 
-| Campo          | Tipo         | Descripción                                                                           |
-|----------------|--------------|---------------------------------------------------------------------------------------|
-| `recipe`       | Objeto/Array | Receta para ítems individuales. Puede ser un objeto o un array para múltiples recetas |
-| `recipes`      | Map          | Recetas para sets. Una entrada por pieza/herramienta/arma                             |
-| `type`         | String       | `shaped`, `shapeless`, `smelting`, `blasting`, o `smithing_transform`                 |
-| `pattern`      | String[]     | (shaped) 1–3 filas de hasta 3 caracteres cada una                                     |
-| `key`          | Map          | (shaped) Mapea cada carácter del patrón a un ID de ítem                               |
-| `ingredients`  | String[]     | (shapeless) Lista de IDs de ítems                                                     |
-| `ingredient`   | String       | (smelting/blasting) ID del ítem de entrada                                            |
-| `experience`   | Float        | (smelting/blasting) XP otorgado al completar. Por defecto: 0.1                        |
-| `cooking_time` | Int          | (smelting/blasting) Ticks de cocción. Por defecto: 200 (smelting), 100 (blasting)     |
-| `template`     | String       | (smithing_transform) ID del ítem template                                             |
-| `base`         | String       | (smithing_transform) ID del ítem base a mejorar                                       |
-| `addition`     | String       | (smithing_transform) ID del material de mejora                                        |
-| `result_count` | Int          | Cantidad de ítems producidos. Por defecto: 1. Solo aplica a shaped/shapeless          |
+| Campo          | Tipo         | Descripción                                                                                                         |
+|----------------|--------------|---------------------------------------------------------------------------------------------------------------------|
+| `recipe`       | Objeto/Array | Receta para ítems individuales. Puede ser un objeto o un array para varias recetas                                  |
+| `recipes`      | Mapa         | Recetas para sets. Una entrada por pieza/herramienta/arma                                                           |
+| `type`         | String       | Ver la tabla de [tipos de receta](#tipos-de-receta)                                                                 |
+| `pattern`      | String[]     | (shaped) 1–3 filas de hasta 3 caracteres cada una                                                                   |
+| `key`          | Mapa         | (shaped) Asocia cada carácter del patrón a un ID de ítem                                                            |
+| `ingredients`  | String[]     | (shapeless) Lista de IDs de ítem                                                                                    |
+| `ingredient`   | String       | (cocción/stonecutting) ID del ítem de entrada                                                                       |
+| `experience`   | Float        | (cocción) XP otorgada al completarse. Por defecto: 0.1                                                              |
+| `cooking_time` | Float        | (cocción) **SEGUNDOS** de cocción. Admite decimales. Por defecto: 10s horno, 5s alto horno, 5s ahumador, 30s fogata |
+| `template`     | String       | (smithing_transform) ID de la plantilla                                                                             |
+| `base`         | String       | (smithing_transform) ID del ítem base a mejorar                                                                     |
+| `addition`     | String       | (smithing_transform) ID del material de mejora                                                                      |
+| `json`         | Objeto       | (passthrough) Cuerpo de receta crudo, copiado tal cual                                                              |
+| `requires`     | String[]     | (passthrough) IDs de mods extra además del deducido del tipo interno                                                |
+| `result_count` | Int          | Cantidad de ítems producidos. Por defecto: 1. Aplica a shaped, shapeless y stonecutting                             |
+
+> 💥 **`cooking_time` cambió en la 1.6.0.** Antes estaba en ticks. Divide tus
+> valores actuales entre 20 — una receta escrita como `200` significaba 10
+> segundos y ahora significa 200 segundos. No falla nada, la receta simplemente
+> va 20 veces más lenta.
+
+Declarar un campo que el tipo ignora (como `experience` en una receta de
+stonecutting) genera un aviso en el log nombrándolo. La receta sigue
+funcionando; el valor simplemente no hace nada.
 
 ### Campos de fluidos
 
@@ -1166,23 +1348,44 @@ Los ítems y la comida pueden caer de los mobs al morir mediante el objeto `mob_
     "min": 1,
     "max": 3,
     "requires_player_kill": true,
-    "entities": [
-      "all"
-    ]
+    "looting_mode": "count",
+    "entities": ["all"]
   }
 }
 ```
 
 | Campo                  | Tipo    | Por defecto | Descripción                                                                                                                                                                                                                       |
 |------------------------|---------|-------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `chance`               | Double  | 0.05        | Probabilidad de drop por muerte (0.0 representando el 0% y 1.0 representando el 100%)                                                                                                                                             |
+| `chance`               | Double  | 0.05        | Probabilidad de drop por muerte (0.0 = 0%, 1.0 = 100%)                                                                                                                                                                            |
 | `min` / `max`          | Int     | 1 / 1       | Rango de cantidad soltada                                                                                                                                                                                                         |
-| `requires_player_kill` | Boolean | `true`      | Solo suelta cuando un jugador hizo la kill — evita que las granjas automáticas impriman dinero                                                                                                                                    |
-| `entities`             | List    | —           | **Obligatorio.** `["all"]` = todos los mobs (vanilla y de mods); IDs exactos (`"minecraft:zombie"`); tags de entidad (`"#minecraft:undead"`); comodines de mod (`"mekanism:*"`). Omitido = drop desactivado (con aviso en el log) |
+| `requires_player_kill` | Boolean | `false`     | Requiere daño reciente de un jugador — no el golpe final. Ponlo en `true` para una economía, o una granja de daño por caída puede imprimir moneda                                                                                 |
+| `looting_mode`         | String  | `"count"`   | Cómo afecta el Saqueo a este drop: `"count"`, `"chance"` o `"none"`. Ver abajo                                                                                                                                                    |
+| `looting_chance_bonus` | Double  | 0.01        | Probabilidad que suma cada nivel de Saqueo, solo en modo `"chance"`                                                                                                                                                               |
+| `entities`             | Lista   | —           | **Obligatorio.** `["all"]` = todos los mobs (vanilla y de mods); IDs exactos (`"minecraft:zombie"`); tags de entidad (`"#minecraft:undead"`); comodines de mod (`"mekanism:*"`). Omitido = drop desactivado (con aviso en el log) |
 
-`min` puede ser `0`, igual que las caídas normales como la carne podrida (0-2). 
-Recuerda que se combina con `chance`: una probabilidad del 25% de obtener 0-2 
-drops ocurre aproximadamente un 17% del tiempo.
+> 💥 **`requires_player_kill` cambió en la 1.6.0.** Antes valía `true` por
+> defecto. Decláralo explícitamente si llevas una economía de ítems — el parser
+> avisa por cada ítem que lo deje sin declarar.
+
+**Modos de saqueo.** Vanilla usa dos mecanismos separados y nunca ambos a la
+vez, así que eliges uno:
+
+| Modo       | Efecto                                                                                                     | Equivalente en vanilla         |
+|------------|------------------------------------------------------------------------------------------------------------|--------------------------------|
+| `"count"`  | Suma 0..nivel a la cantidad tirada. Se aplica antes del descarte por cero y **no** se recorta contra `max` | Carne podrida, cuerda, pólvora |
+| `"chance"` | Sube la probabilidad de drop, dejando la cantidad intacta                                                  | Cabezas de esqueleto wither    |
+| `"none"`   | El Saqueo no hace nada                                                                                     | —                              |
+
+El Saqueo se lee de la mano principal del matador, así que un mob al que
+dañaste, pero no remataste no da bonus.
+
+> Con el modo `"chance"` y `max: 0` nunca puede caer nada: subir la
+> probabilidad sigue llevando a una tirada de cero. Usa `"count"` si quieres
+> que el Saqueo cree ítems desde una base de cero.
+
+`min` puede ser `0`, igual que los drops de vanilla como la carne podrida
+(0-2). Recuerda que se compone con `chance`: un 25% de probabilidad de 0-2
+suelta algo aproximadamente el 17% de las veces.
 
 Los jugadores, armor stands, barcos y vagonetas nunca sueltan ítems. Los cambios aplican en vivo con `/customgear reload` — puedes ajustar la economía de tu servidor sin reiniciar.
 
