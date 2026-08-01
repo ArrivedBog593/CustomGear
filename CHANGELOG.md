@@ -109,7 +109,7 @@ No new dependencies added.
 - Each equipped piece resolves its own specificity and the pieces then add up, so a rule on one piece never silences the others
 - Values are **per equipped piece**: `0.125` on a four-piece set is 50% with the full set worn
 - **Specificity model, not accumulation:** `conditional` > `attacker` > `damage`. The first layer with any match *replaces* the more general ones **for that piece**, even when its value is lower. Within a layer, matching entries add up; the pieces then add up
-- Accepts exact damage types (`"minecraft:arrow"`), damage type tags (`"#minecraft:is_projectile"`) and modded types (`"iceandfire:dragon_fire"`) — see [DAMAGE_TYPES.md](DAMAGE_TYPES.md) for the full list
+- Accepts exact damage types (`"minecraft:arrow"`), damage type tags (`"#minecraft:is_projectile"`) and modded types (`"iceandfire:dragon_fire"`) — see [damage-types.md](docs/en/damage-types.md) for the full list
 - `attacker_resistances` accepts exact entities, entity tags (`"#minecraft:undead"`), mod wildcards (`"mekanism:*"`) and specific players (`"player:Name"`)
 - Projectiles inherit their owner: an arrow is attributed to the skeleton that fired it, not to the arrow
 - Clamped to 1.0, with **no balance ceiling** — total immunity is a legitimate design choice

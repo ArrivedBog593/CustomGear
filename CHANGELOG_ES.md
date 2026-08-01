@@ -108,7 +108,7 @@ No se agregaron dependencias nuevas.
 - Cada pieza equipada resuelve su propia especificidad y luego se suman las piezas, así que una regla en una pieza nunca silencia a las demás
 - Los valores son **por pieza equipada**: `0.125` en un set de cuatro piezas es 50% con el conjunto completo puesto
 - **Modelo de especificidad, no de acumulación:** `conditional` > `attacker` > `damage`. La primera capa con alguna coincidencia *reemplaza* a las más generales **para esa pieza**, aunque su valor sea menor. Dentro de una capa, las entradas que coinciden se suman; después se suman las piezas
-- Acepta tipos de daño exactos (`"minecraft:arrow"`), tags de tipo de daño (`"#minecraft:is_projectile"`) y tipos de mods (`"iceandfire:dragon_fire"`) — la lista completa está en [DAMAGE_TYPES.md](DAMAGE_TYPES.md)
+- Acepta tipos de daño exactos (`"minecraft:arrow"`), tags de tipo de daño (`"#minecraft:is_projectile"`) y tipos de mods (`"iceandfire:dragon_fire"`) — la lista completa está en [damage-types.md](docs/es/damage-types.md)
 - `attacker_resistances` acepta entidades exactas, tags de entidad (`"#minecraft:undead"`), comodines de mod (`"mekanism:*"`) y jugadores específicos (`"player:Nombre"`)
 - Los proyectiles heredan a su dueño: una flecha se atribuye al esqueleto que la disparó, no a la flecha
 - Se limita a 1.0, **sin techo de balance** — la inmunidad total es una decisión de diseño legítima

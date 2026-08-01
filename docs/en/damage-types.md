@@ -1,6 +1,6 @@
 # Damage Types Reference
 
-All damage type IDs and damage type tags available in Minecraft 1.21.1, for use
+All damage type IDs and damage type tags are available in Minecraft 1.21.1, for use
 in the `damage_resistances` field and in the `damage` key of
 `conditional_resistances`.
 
@@ -18,8 +18,8 @@ in the `damage_resistances` field and in the `damage` key of
 ```
 
 Values are **per equipped piece**: `0.125` on a four-piece set is 50% when the
-full set is worn. See the **Damage Resistances** section of the README for how
-the three resistance layers interact.
+full set is worn. See [Damage Resistances](damage-resistances.md) for how the three
+resistance layers interact.
 
 ---
 
@@ -127,7 +127,7 @@ usually too narrow or too situational to build a set around.
 
 ---
 
-## Vanilla behaviour tags
+## Vanilla behavior tags
 
 These tags exist for vanilla's own mechanics, not for balance grouping. They
 work in `damage_resistances`, but they cut across categories in ways that are
@@ -157,7 +157,7 @@ starving and the void all at once). Listed for completeness:
 ## Modded damage types
 
 Any mod can register its own damage types, and they work here exactly like
-vanilla ones — just use the mod's namespace:
+vanilla ones — use the mod's namespace:
 
 ```json
 {
