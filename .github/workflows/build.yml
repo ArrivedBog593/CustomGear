@@ -1,35 +1,33 @@
-name: Build and Release
+name: Build
 
 on:
   push:
     branches:
       - "Neo/1.21.1"
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+      - "LICENSE"
+  pull_request:
+    branches:
+      - "Neo/1.21.1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: write
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: "21"
           distribution: "temurin"
-
-      - name: Read Version
-        id: gradle_props
-        run: |
-          VERSION=$(grep '^mod_version=' gradle.properties | cut -d'=' -f2)
-          echo "mod_version=$VERSION" >> $GITHUB_OUTPUT
-          echo "release_version=${VERSION}-build.${{ github.run_number }}" >> $GITHUB_OUTPUT
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -40,18 +38,9 @@ jobs:
       - name: Build
         run: ./gradlew build
 
-      - name: Create Tag
-        run: |
-          git tag v${{ steps.gradle_props.outputs.release_version }}
-          git push origin v${{ steps.gradle_props.outputs.release_version }}
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: v${{ steps.gradle_props.outputs.release_version }}
-          name: UltimateCustomGear_${{ steps.gradle_props.outputs.release_version }}
-          generate_release_notes: true
-          files: |
-            build/libs/*.jar
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: ultimatecustomgear-dev
+          path: build/libs/*.jar
+          retention-days: 14

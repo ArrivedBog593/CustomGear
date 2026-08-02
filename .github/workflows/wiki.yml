@@ -1,0 +1,92 @@
+name: Mirror docs to wiki
+
+on:
+  push:
+    branches:
+      - "Neo/1.21.1"
+    paths:
+      - "docs/**"
+      - ".github/workflows/wiki.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      # El wiki es un repositorio git aparte. El GITHUB_TOKEN integrado NO puede
+      # escribir en el: devuelve 403 "denied to github-actions[bot]". Hace falta
+      # un PAT clasico con scope `repo`, guardado como secreto WIKI_TOKEN.
+      - name: Checkout wiki
+        run: |
+          git clone \
+            "https://x-access-token:${{ secrets.WIKI_TOKEN }}@github.com/${{ github.repository }}.wiki.git" \
+            wiki
+
+      - name: Build wiki pages from docs/
+        env:
+          REPO: ${{ github.repository }}
+          BRANCH: Neo/1.21.1
+        run: |
+          set -euo pipefail
+
+          # Limpiar las paginas anteriores, conservando el historial del wiki.
+          find wiki -maxdepth 1 -name '*.md' -delete
+
+          SLUGS=$(ls docs/en/*.md | xargs -n1 basename | sed 's/\.md$//')
+
+          # --- Ingles: docs/en/x.md -> x.md, index.md -> Home.md ---
+          for f in docs/en/*.md; do
+            name=$(basename "$f" .md)
+            [ "$name" = "index" ] && out="Home.md" || out="$name.md"
+            cp "$f" "wiki/$out"
+          done
+
+          # --- Espanol: docs/es/x.md -> es-x.md, index.md -> es-Home.md ---
+          for f in docs/es/*.md; do
+            name=$(basename "$f" .md)
+            [ "$name" = "index" ] && out="es-Home.md" || out="es-$name.md"
+            cp "$f" "wiki/$out"
+          done
+
+          cp docs/_Sidebar.md wiki/_Sidebar.md
+
+          # --- Reescritura de enlaces ---
+          # El wiki referencia paginas por nombre, sin extension.
+          for f in wiki/*.md; do
+            # x.md -> x  |  x.md#ancla -> x#ancla
+            sed -i -E 's/\]\(([A-Za-z0-9_-]+)\.md([)#])/](\1\2/g' "$f"
+
+            # Los .md de la raiz del repo no existen en el wiki: enlace absoluto.
+            sed -i -E "s#\]\(\.\./\.\./([A-Za-z0-9_.-]+)\)#](https://github.com/${REPO}/blob/${BRANCH}/\1)#g" "$f"
+
+            # index -> Home
+            sed -i -E 's/\]\(index([)#])/](Home\1/g' "$f"
+          done
+
+          # En las paginas es-, los enlaces internos apuntan a hermanas es-.
+          for f in wiki/es-*.md; do
+            for s in $SLUGS; do
+              [ "$s" = "index" ] && continue
+              sed -i -E "s/\]\($s([)#])/](es-$s\1/g" "$f"
+            done
+            sed -i -E 's/\]\(Home([)#])/](es-Home\1/g' "$f"
+          done
+
+      - name: Push
+        run: |
+          cd wiki
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then
+            echo "El wiki ya esta al dia."
+            exit 0
+          fi
+          git commit -m "docs: sync from ${GITHUB_SHA::7}"
+          git push

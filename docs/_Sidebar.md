@@ -1,6 +1,6 @@
 **English**
 
-- [Home](index)
+- [Home](Home)
 - [Getting Started](getting-started)
 - [Common Fields](common-fields)
 
@@ -34,7 +34,7 @@
 
 **Español**
 
-- [Inicio](es-index)
+- [Inicio](es-Home)
 - [Primeros pasos](es-getting-started)
 - [Campos comunes](es-common-fields)
 
