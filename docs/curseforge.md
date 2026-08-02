@@ -1,29 +1,11 @@
 # UltimateCustomGear — CurseForge description
 
-> **Source of truth.** This file lives in the repo and is pasted into the
-> CurseForge description field on each release. Nothing version-specific goes
-> here: no field tables, no defaults, no exhaustive lists. Those belong in the
-> wiki, which is versioned alongside the code. If a sentence here needs
-> editing because a default changed, it does not belong in this file.
->
-> Fill the **Wiki**, **Issues** and **Source** URL fields in the CurseForge
-> project settings instead of linking them from the body.
-
----
-
 ## Add custom gear to Minecraft without writing a line of Java
 
 UltimateCustomGear is a data-driven NeoForge mod for Minecraft 1.21.1. Drop a
 JSON file into a folder, restart, and your item exists — registered, textured,
 craftable, and visible in JEI. It is built for server owners and modpack
 creators who need custom content but do not want to maintain a mod for it.
-
-<!-- SCREENSHOTS GO HERE — 3 or 4, in this order:
-     1. Custom armor set worn in-world, ideally a 3D GeckoLib one
-     2. A JSON file opens in an editor next to the resulting item's tooltip
-     3. The JEI recipe screen showing a custom recipe
-     4. A tooltip with set bonus + damage resistances visible
-     CurseForge pages without images get skipped. This matters more than the text. -->
 
 ## What you can make
 
