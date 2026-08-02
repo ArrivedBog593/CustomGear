@@ -23,15 +23,15 @@ jobs:
           java-version: "21"
           distribution: "temurin"
 
-      # El tag manda, pero gradle.properties es lo que acaba dentro del jar.
-      # Si no coinciden, publicarias un v1.6.1 conteniendo un 1.6.0.
+      # The tag rules, but gradle.properties is what ends up inside the jar.
+      # If they don't match, you'd publish a v1.6.1 containing a 1.6.0.
       - name: Verify tag matches mod_version
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
           MOD_VERSION=$(grep '^mod_version=' gradle.properties | cut -d'=' -f2 | tr -d '[:space:]')
           echo "tag: $TAG_VERSION | gradle.properties: $MOD_VERSION"
           if [ "$TAG_VERSION" != "$MOD_VERSION" ]; then
-            echo "::error::El tag ($TAG_VERSION) no coincide con mod_version ($MOD_VERSION). Corrige gradle.properties o borra y rehaz el tag."
+            echo "::error::The tag ($TAG_VERSION) does not match mod_version ($MOD_VERSION). Fix gradle.properties or delete and recreate the tag."
             exit 1
           fi
 

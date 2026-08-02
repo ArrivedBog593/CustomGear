@@ -1,0 +1,32 @@
+name: Check docs
+
+on:
+  push:
+    branches:
+      - "Neo/1.21.1"
+    paths:
+      - "docs/**"
+      - "tools/CheckDocsParity.java"
+  pull_request:
+    paths:
+      - "docs/**"
+      - "tools/CheckDocsParity.java"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+
+      # A single source file, uncompiled (JEP 330).
+      - name: Check docs parity
+        run: java tools/CheckDocsParity.java

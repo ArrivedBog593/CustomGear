@@ -19,9 +19,9 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # El wiki es un repositorio git aparte. El GITHUB_TOKEN integrado NO puede
-      # escribir en el: devuelve 403 "denied to github-actions[bot]". Hace falta
-      # un PAT clasico con scope `repo`, guardado como secreto WIKI_TOKEN.
+      # The wiki is a separate git repository. The built-in GITHUB_TOKEN can NOT
+      # write to it: returns 403 "denied to github-actions[bot]". A classic PAT
+      # with scope 'repo' is required, saved as a WIKI_TOKEN secret.
       - name: Checkout wiki
         run: |
           git clone \
@@ -35,19 +35,19 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Limpiar las paginas anteriores, conservando el historial del wiki.
+          # Clean previous pages, keeping the wiki history.
           find wiki -maxdepth 1 -name '*.md' -delete
 
           SLUGS=$(ls docs/en/*.md | xargs -n1 basename | sed 's/\.md$//')
 
-          # --- Ingles: docs/en/x.md -> x.md, index.md -> Home.md ---
+          # --- English: docs/en/x.md -> x.md, index.md -> Home.md ---
           for f in docs/en/*.md; do
             name=$(basename "$f" .md)
             [ "$name" = "index" ] && out="Home.md" || out="$name.md"
             cp "$f" "wiki/$out"
           done
 
-          # --- Espanol: docs/es/x.md -> es-x.md, index.md -> es-Home.md ---
+          # --- Spanish: docs/es/x.md -> es-x.md, index.md -> es-Home.md ---
           for f in docs/es/*.md; do
             name=$(basename "$f" .md)
             [ "$name" = "index" ] && out="es-Home.md" || out="es-$name.md"
@@ -56,20 +56,20 @@ jobs:
 
           cp docs/_Sidebar.md wiki/_Sidebar.md
 
-          # --- Reescritura de enlaces ---
-          # El wiki referencia paginas por nombre, sin extension.
+          # --- Link rewriting ---
+          # The wiki references pages by name, without extension.
           for f in wiki/*.md; do
             # x.md -> x  |  x.md#ancla -> x#ancla
             sed -i -E 's/\]\(([A-Za-z0-9_-]+)\.md([)#])/](\1\2/g' "$f"
 
-            # Los .md de la raiz del repo no existen en el wiki: enlace absoluto.
+            # The .md files in the root of the repo don't exist in the wiki: absolute link.
             sed -i -E "s#\]\(\.\./\.\./([A-Za-z0-9_.-]+)\)#](https://github.com/${REPO}/blob/${BRANCH}/\1)#g" "$f"
 
             # index -> Home
             sed -i -E 's/\]\(index([)#])/](Home\1/g' "$f"
           done
 
-          # En las paginas es-, los enlaces internos apuntan a hermanas es-.
+          # In the es- pages, internal links point to their es- sisters.
           for f in wiki/es-*.md; do
             for s in $SLUGS; do
               [ "$s" = "index" ] && continue
