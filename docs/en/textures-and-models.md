@@ -33,11 +33,12 @@ For bows and crossbows, you can optionally include custom pulling/loading frame 
 ```json
 {
   "texture": {
-    "mode": "reference", 
+    "mode": "reference",
     "refs": {
-      "bow":           "othermod:item/epic_bow", 
-      "bow_pulling_0": "othermod:item/epic_bow_pulling_0", 
-      "bow_pulling_1": "othermod:item/epic_bow_pulling_1", "bow_pulling_2": "othermod:item/epic_bow_pulling_2"
+      "bow":           "othermod:item/epic_bow",
+      "bow_pulling_0": "othermod:item/epic_bow_pulling_0",
+      "bow_pulling_1": "othermod:item/epic_bow_pulling_1",
+      "bow_pulling_2": "othermod:item/epic_bow_pulling_2"
     }
   }
 }
@@ -71,17 +72,17 @@ files in `texture.armor_3d`:
 ```json
 {
   "texture": {
-    "mode": "custom", 
+    "mode": "custom",
     "refs": {
-      "helmet": "textures/my_helmet_icon.png", 
-      "chestplate": "textures/my_chestplate_icon.png", 
-      "leggings": "textures/my_leggings_icon.png", 
+      "helmet": "textures/my_helmet_icon.png",
+      "chestplate": "textures/my_chestplate_icon.png",
+      "leggings": "textures/my_leggings_icon.png",
       "boots": "textures/my_boots_icon.png"
-    }, 
+    },
     "armor_layers": {
       "layer_1": "textures/my_armor_layer_1.png",
       "layer_2": "textures/my_armor_layer_2.png"
-    }, 
+    },
     "armor_3d": {
       "model": "models/my_armor.geo.json",
       "texture": "textures/my_armor_3d.png",
@@ -106,12 +107,11 @@ files in `texture.armor_3d`:
 | `armor_3d` only                            | **3D model**  | Vanilla iron layers    |
 | `armor_layers: "transparent"` + `armor_3d` | **3D model**  | Invisible armor        |
 
-> Always declare `armor_layers` alongside `armor_3d` — it is your safety net
-> for instances without GeckoLib. Declaring only `armor_3d` will not break
-> anything, but the armor falls back to the vanilla iron layers, which is
-> almost never what you want. `refs` still controls the inventory icon, which
-> is always 2D. The 3D model replaces the layers when active; they are never
-> drawn together.
+> Always declare `armor_layers` alongside `armor_3d` — it is your safety net for
+> instances without GeckoLib. Declaring only `armor_3d` will not break anything,
+> but the armor falls back to the vanilla iron layers, which is almost never what
+> you want. `refs` still controls the inventory icon, which is always 2D. The 3D
+> model replaces the layers when active; they are never drawn together.
 
 **Modes:** in `custom` mode the three values are paths to your own files
 (config folder or pack zips, like every other custom texture). In `reference`

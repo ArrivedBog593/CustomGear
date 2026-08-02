@@ -35,7 +35,7 @@ Para arcos y ballestas, opcionalmente puedes incluir modelos de frames de tensad
   "texture": {
     "mode": "reference",
     "refs": {
-      "bow": "otromod:item/arco_epico",
+      "bow":           "othermod:item/arco_epico",
       "bow_pulling_0": "otromod:item/arco_epico_pulling_0",
       "bow_pulling_1": "otromod:item/arco_epico_pulling_1",
       "bow_pulling_2": "otromod:item/arco_epico_pulling_2"
@@ -59,10 +59,9 @@ Para arcos y ballestas, opcionalmente puedes incluir modelos de frames de tensad
 
 ## Modelos de Armadura 3D (GeckoLib)
 
-Con [GeckoLib](https://www.curseforge.com/minecraft/mc-mods/geckolib) instalado,
-las armaduras pueden renderizarse como un modelo 3D completo al vestirlas
-—cuernos, hombreras, capas, incluso animaciones— en vez de las capas planas
-de vanilla.
+Con [GeckoLib](https://www.curseforge.com/minecraft/mc-mods/geckolib) instalado, las
+armaduras pueden renderizarse como un modelo 3D completo al vestirlas — cuernos,
+hombreras, capas, incluso animaciones — en vez de las capas planas de vanilla.
 
 Modela tu armadura en [Blockbench](https://www.blockbench.net/) con el formato
 **GeckoLib Animated Model**, usando los nombres de hueso estándar de armadura

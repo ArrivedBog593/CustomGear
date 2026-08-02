@@ -40,14 +40,12 @@ nivel de conjunto y dentro de `pieces.<pieza>`:
 | `show_player_resistances` | Bool | `false` por defecto: las entradas `player:` nunca aparecen en el tooltip                                                    |
 | `inherit_set_resistances` | Bool | Dentro de una pieza: `false` hace que ignore todas las resistencias del conjunto. Por defecto `true`                        |
 
-**Los valores son por pieza equipada.** `0.125` en las cuatro piezas es 50% con
-el conjunto completo puesto, y 25% con dos piezas. Diseña pensando en el set
-completo y luego divide.
+**Los valores son por pieza equipada.** `0.125` en las cuatro piezas es 50% con el set 
+completo puesto, y 25% con dos piezas. Diseña pensando en el set completo y luego divide.
 
-**Nivel de conjunto y por pieza.** Las entradas declaradas dentro de
-`pieces.<pieza>` **se fusionan** con las del conjunto, ganando solo en las
-claves que declaran. El alcance fusiona; las capas reemplazan. Son dos reglas
-independientes.
+**Nivel de conjunto y por pieza.** Las entradas declaradas dentro de `pieces.<pieza>` 
+**se fusionan** con las del conjunto, ganando solo en las claves que declaran. El alcance
+fusiona; las capas reemplazan. Son dos reglas independientes.
 
 ```json
 {
@@ -67,9 +65,8 @@ independientes.
 }
 ```
 
-Las botas resisten caída al `0.15` **y siguen resistiendo fuego al `0.10`**; las
-otras tres piezas conservan `0.10` en ambas. Reducción total de caída con el
-conjunto completo: 45%.
+Las botas resisten caída al `0.15` **y siguen resistiendo fuego al `0.10`**; las otras tres
+piezas conservan `0.10` en ambas. Reducción total de caída con el conjunto completo: 45%.
 
 Para sacar una pieza por completo de las resistencias del conjunto, pon
 `inherit_set_resistances` en `false` dentro de ella. Esa pieza usará solo lo que
@@ -117,10 +114,9 @@ Con un conjunto completo usando los valores de arriba:
 | Flecha de pillager o jugador | damage (0.125)     | 50%       |
 | Melee de zombi               | ninguna            | 0%        |
 
-Fíjate en la primera y la tercera fila: la flecha de un **esqueleto** se reduce
-*menos* (40%) que la flecha de cualquier otro (50%), porque la regla específica
-reemplazó a la general. Si quieres que el caso específico sea más fuerte, dale
-un valor mayor.
+Fíjate en la primera y la tercera fila: la flecha de un **esqueleto** se reduce *menos* (40%)
+que la flecha de cualquier otro (50%), porque la regla específica reemplazó a la general.
+Si quieres que el caso específico sea más fuerte, dale un valor mayor.
 
 Las reducciones se limitan a 1.0 (100%). **No hay techo de balance** — la
 inmunidad total es una decisión de diseño válida y el mod no la va a cuestionar.

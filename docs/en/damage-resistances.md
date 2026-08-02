@@ -76,12 +76,16 @@ it declares — and one that declares nothing contributes no resistance at all:
 {
   "pieces": {
     "chestplate": {
-      "durability": 592, "defense": 8, 
-      "inherit_set_resistances": false, 
-      "damage_resistances": { "#minecraft:is_projectile": 0.15 }
-    }, 
+      "durability": 592,
+      "defense": 8,
+      "inherit_set_resistances": false,
+      "damage_resistances": {
+        "#minecraft:is_projectile": 0.15
+      }
+    },
     "helmet": {
-      "durability": 407, "defense": 3, 
+      "durability": 407,
+      "defense": 3,
       "inherit_set_resistances": false
     }
   }
