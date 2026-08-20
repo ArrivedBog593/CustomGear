@@ -37,7 +37,6 @@
     { "effect": "minecraft:regeneration", "amplifier": 1, "duration": 10 }
   ],
   "texture": {
-    "mode": "reference",
     "refs": { "item": "minecraft:item/golden_apple" }
   },
   "recipe": {
