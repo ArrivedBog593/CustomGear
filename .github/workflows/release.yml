@@ -1,5 +1,10 @@
 name: Release
 
+# Fires only when a version tag is pushed:
+#   git tag -a v1.7.0 -m "Release 1.7.0"
+#   git push origin v1.7.0
+#
+# Pushing to a branch does NOT trigger this.
 on:
   push:
     tags:
@@ -11,6 +16,7 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -20,35 +26,50 @@ jobs:
       - name: Set up JDK 21
         uses: actions/setup-java@v5.7.0
         with:
+          distribution: temurin
           java-version: "21"
-          distribution: "temurin"
+          cache: gradle
 
-      # The tag rules, but gradle.properties is what ends up inside the jar.
-      # If they don't match, you'd publish a v1.6.1 containing a 1.6.0.
+      # Make sure the version in gradle.properties matches the tag.
+      # Example:
+      #   Tag:              v1.7.0
+      #   gradle.properties: mod_version=1.7.0
+      #
+      # This prevents accidentally publishing a v1.7.0 release
+      # containing a JAR built as version 1.6.0.
       - name: Verify tag matches mod_version
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
           MOD_VERSION=$(grep '^mod_version=' gradle.properties | cut -d'=' -f2 | tr -d '[:space:]')
+
           echo "tag: $TAG_VERSION | gradle.properties: $MOD_VERSION"
+
           if [ "$TAG_VERSION" != "$MOD_VERSION" ]; then
             echo "::error::The tag ($TAG_VERSION) does not match mod_version ($MOD_VERSION). Fix gradle.properties or delete and recreate the tag."
             exit 1
           fi
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6
-
       - name: Make gradlew executable
-        run: chmod +x gradlew
+        run: chmod +x ./gradlew
 
       - name: Build
-        run: ./gradlew build
+        run: ./gradlew build --stacktrace
+
+      # Use the commit message as the release notes.
+      # The tag points to the exact commit that gets built.
+      - name: Extract release notes
+        id: notes
+        run: |
+          {
+            echo "body<<RELEASE_NOTES_EOF"
+            git log -1 --pretty=%B "${GITHUB_SHA}"
+            echo "RELEASE_NOTES_EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           name: UltimateCustomGear ${{ github.ref_name }}
-          generate_release_notes: true
+          body: ${{ steps.notes.outputs.body }}
+          files: build/libs/*.jar
           draft: true
-          files: |
-            build/libs/*.jar
