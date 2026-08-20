@@ -1,7 +1,7 @@
 package arrivedbog593.ultimatecustomgear.items.items;
 
 import arrivedbog593.ultimatecustomgear.data.ItemData;
-import arrivedbog593.ultimatecustomgear.loader.ItemRegistry;
+import arrivedbog593.ultimatecustomgear.registry.ItemRegistry;
 import arrivedbog593.ultimatecustomgear.util.TooltipHelper;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -122,6 +122,9 @@ public class CustomFoodItem extends Item {
         ItemData data = live != null ? live : itemData;
         TooltipHelper.addFoodEffectsTooltip(tooltipComponents, data);
         TooltipHelper.appendMobDrops(data, tooltipComponents);
+        if (!TooltipHelper.detailsShown() && TooltipHelper.hasDetails(itemData)) {
+            TooltipHelper.addDetailsHint(tooltipComponents);
+        }
     }
 
     @Override

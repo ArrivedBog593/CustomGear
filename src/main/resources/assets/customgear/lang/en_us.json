@@ -1,11 +1,61 @@
 {
   "itemGroup.customgear": "Custom Gear",
+  "item.customgear.tab_icon": "Custom Gear",
+
+  "key.categories.customgear": "Ultimate Custom Gear",
+  "key.customgear.open_backpack": "Open backpack",
+  "key.customgear.sort": "Sort container",
+  "key.customgear.transfer_in": "Transfer to container",
+  "key.customgear.transfer_out": "Transfer to inventory",
 
   "customgear.network.hash_mismatch": "Your Ultimate Custom Gear files don't match this server's.\nServer: %s — Yours: %s\nAsk the server owner for their ultimatecustomgear folder (or zip) and replace yours in .minecraft/ultimatecustomgear/",
   "customgear.network.hash_mismatch_warn": "⚠ Your UltimateCustomGear files differ from the server's. Names, tooltips, and displayed damage may not match the actual values (combat always uses the server's). Ask the owner for the updated zip.",
 
   "customgear.command.reload.success": "✓ Items reloaded. Press F3+T if you changed textures",
   "customgear.command.reload.error": "✗ Error reloading",
+  "customgear.command.dump.success": "[CustomGear] Dumped %s files to %s",
+  "customgear.command.dump.error": "[CustomGear] Dump failed — see the server log for details",
+
+  "customgear.container.search": "Click to search",
+  "customgear.container.search.mod": "@ searches by mod",
+  "customgear.container.search.tag": "# searches by tag",
+  "customgear.container.search.tooltip": "$ searches in tooltips",
+  "customgear.container.search.id": "* searches by id",
+  "customgear.container.no_results": "No results found",
+
+  "tooltip.ultimatecustomgear.key.shift": "Left Shift",
+  "tooltip.ultimatecustomgear.hold_shift": "Hold %s for details",
+  "tooltip.ultimatecustomgear.container.press_for_contents": "Press %s to see the contents",
+  "tooltip.ultimatecustomgear.container.contents": "Contents:",
+  "tooltip.ultimatecustomgear.container.empty": "Empty",
+  "tooltip.ultimatecustomgear.container.more": "…and %s more types",
+
+  "customgear.container.sort": "Sort items",
+  "customgear.container.sort.reverse": "Right-click to reverse sort order",
+  "customgear.container.sort.name": "Sort by name",
+  "customgear.container.sort.name.letter": "A",
+  "customgear.container.sort.mod": "Sort by mod",
+  "customgear.container.sort.mod.letter": "M",
+  "customgear.container.sort.count": "Sort by quantity",
+  "customgear.container.sort.count.letter": "1",
+  "customgear.container.sort.tag": "Sort by tag",
+  "customgear.container.sort.tag.letter": "T",
+
+  "customgear.container.transfer.shift": "Shift to transfer all",
+  "customgear.container.transfer_in": "Transfer matches to container",
+  "customgear.container.transfer_in.all": "Transfer all to container",
+  "customgear.container.transfer_out": "Transfer matches to inventory",
+  "customgear.container.transfer_out.all": "Transfer all to inventory",
+
+  "ultimatecustomgear.configuration.containers": "Containers",
+  "ultimatecustomgear.configuration.containers.title": "Container Settings",
+  "ultimatecustomgear.configuration.keep_search_phrase": "Keep search phrase",
+  "ultimatecustomgear.configuration.keep_search_phrase.tooltip": "Keep the search phrase when a container is closed and reopened.\nThe phrase is shared across every container, so a search typed in one chest still filters the next one you open.",
+
+  "ultimatecustomgear.configuration.network": "Network",
+  "ultimatecustomgear.configuration.network.title": "Network Settings",
+  "ultimatecustomgear.configuration.content_handshake_mode": "Content verification",
+  "ultimatecustomgear.configuration.content_handshake_mode.tooltip": "What to do when a joining client's JSON files don't match this server's.\nENFORCE - disconnect them with an explanatory message\nWARN - let them in, log it and warn them in chat\nOFF - skip the check entirely\nOnly the SERVER's value matters.",
 
   "tooltip.customgear.piece_effects": "When worn:",
   "tooltip.customgear.held_effects": "When held:",

@@ -39,6 +39,8 @@ public final class ModelConstants {
     public static final String DEFAULT_BOW        = "minecraft:item/bow";
     public static final String DEFAULT_CROSSBOW   = "minecraft:item/crossbow";
     public static final String DEFAULT_SHIELD     = "minecraft:item/shield";
+    /** Default texture for a backpack: vanilla's bundle, the closest thing it ships. */
+    public static final String DEFAULT_BACKPACK = "minecraft:item/bundle";
 
     // ── Default pulling/charged model constants ───────────────────────────────
     public static final String DEFAULT_BOW_PULLING_0      = "minecraft:item/bow_pulling_0";
@@ -49,10 +51,6 @@ public final class ModelConstants {
     public static final String DEFAULT_CROSSBOW_PULLING_2 = "minecraft:item/crossbow_pulling_2";
     public static final String DEFAULT_CROSSBOW_ARROW     = "minecraft:item/crossbow_arrow";
     public static final String DEFAULT_CROSSBOW_FIREWORK  = "minecraft:item/crossbow_firework";
-
-    // ── Shield texture ────────────────────────────────────────────────────────
-    public static final ResourceLocation SHIELD_TEXTURE_LOC =
-            ResourceLocation.fromNamespaceAndPath(NAMESPACE, "textures/item/shield_base_nopattern.png");
 
     // ── Array constants ───────────────────────────────────────────────────────
     public static final String[] ARMOR_PIECES = {"helmet", "chestplate", "leggings", "boots"};
@@ -96,4 +94,10 @@ public final class ModelConstants {
         return ResourceLocation.fromNamespaceAndPath(
                 NAMESPACE, LANG_PATH + lang + ".json");
     }
+
+    // ── Default texture locs ───────────────────────────────────────────────────
+
+    /** Vanilla's single chest unwrap, used when a chest declares no texture. */
+    public static final String DEFAULT_CHEST_TEXTURE =
+            "minecraft:textures/entity/chest/normal.png";
 }

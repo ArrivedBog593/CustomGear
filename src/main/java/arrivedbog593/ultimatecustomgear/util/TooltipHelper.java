@@ -3,6 +3,7 @@ package arrivedbog593.ultimatecustomgear.util;
 import arrivedbog593.ultimatecustomgear.data.GearData;
 import arrivedbog593.ultimatecustomgear.data.ItemData;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -24,6 +25,7 @@ public class TooltipHelper {
     // Tooltip for held effects (weapons and tools)
     public static void addHeldEffectsTooltip(List<Component> tooltipComponents,
                                              GearData data) {
+        if (!detailsShown()) return;
         if (data.heldEffects == null || data.heldEffects.isEmpty()) return;
 
         tooltipComponents.add(Component.literal(""));
@@ -41,6 +43,7 @@ public class TooltipHelper {
     // Tooltip for individual piece effects (armor)
     public static void addPieceEffectsTooltip(List<Component> tooltipComponents,
                                               GearData data, String piece) {
+        if (!detailsShown()) return;
         if (data.pieceEffects == null) return;
         List<GearData.EffectData> effects = data.pieceEffects.get(piece);
         if (effects == null || effects.isEmpty()) return;
@@ -60,6 +63,7 @@ public class TooltipHelper {
     // Tooltip for set bonus (armor)
     public static void addSetBonusTooltip(List<Component> tooltipComponents,
                                           GearData data) {
+        if (!detailsShown()) return;
         if (data.setBonus == null || data.setBonus.effects == null) return;
 
         tooltipComponents.add(Component.literal(""));
@@ -217,6 +221,7 @@ public class TooltipHelper {
 
     /** Appends the "Dropped by" section for items with mob_drops configured. */
     public static void appendMobDrops(ItemData data, List<Component> tooltip) {
+        if (!detailsShown()) return;
         if (data == null || data.mobDrops == null) return;
         ItemData.MobDropsData d = data.mobDrops;
         if (d.entities == null || d.entities.isEmpty()) return; // drop disabled
@@ -272,6 +277,7 @@ public class TooltipHelper {
 
     /** "Resistances:" section for armor with damage_resistances. */
     public static void addDamageResistancesTooltip(List<Component> tooltip, GearData data, String piece) {
+        if (!detailsShown()) return;
         Map<String, Double> res = ResistanceResolver.damageMap(data, piece);
         if (res == null || res.isEmpty()) return;
 
@@ -326,6 +332,7 @@ public class TooltipHelper {
     /** "Resists attackers:" section — player: entries are hidden on purpose. */
     public static void addAttackerResistancesTooltip(List<Component> tooltip,
                                                      GearData data, String piece) {
+        if (!detailsShown()) return;
         Map<String, Double> res = ResistanceResolver.attackerMap(data, piece);
         if (res == null || res.isEmpty()) return;
 
@@ -382,6 +389,7 @@ public class TooltipHelper {
     /** "Conditional resistances:" section — one line per rule, capped like the rest. */
     public static void addConditionalResistancesTooltip(List<Component> tooltip,
                                                         GearData data, String piece) {
+        if (!detailsShown()) return;
         List<GearData.ConditionalResistance> list = ResistanceResolver.conditionalList(data, piece);
         if (list == null || list.isEmpty()) return;
 
@@ -430,5 +438,121 @@ public class TooltipHelper {
     private static String formatChance(double chance) {
         double pct = chance * 100;
         return (pct == Math.floor(pct)) ? (int) pct + "%" : String.format("%.1f%%", pct);
+    }
+
+    /**
+     * Whether the long sections should be drawn right now.
+     * <p>
+     * Stats stay visible because comparing two tools at a glance is the whole
+     * point of a tooltip; effects, resistances and drops hide because they grow
+     * with whatever the JSON declares and can fill the screen.
+     * <p>
+     * Screen is a client class. appendHoverText is only ever called client side
+     * in practice, which is why every mod does this, but it is worth knowing.
+     */
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+    public static boolean detailsShown() {
+        return Screen.hasShiftDown();
+    }
+
+    /**
+     * The line that tells the player there is more.
+     * <p>
+     * The key name is a parameter rather than part of the sentence so a
+     * translator can put it wherever their language needs it — Sophisticated
+     * does the same, and it is the reason to bother with the placeholder even
+     * though the key is not configurable.
+     */
+    public static void addDetailsHint(List<Component> tooltip) {
+        tooltip.add(Component.translatable("tooltip.ultimatecustomgear.hold_shift",
+                        Component.translatable("tooltip.ultimatecustomgear.key.shift")
+                                .withStyle(ChatFormatting.AQUA))
+                .withStyle(ChatFormatting.GRAY));
+    }
+
+    /** Same shape, but naming what is hidden: a container shows its contents. */
+    public static void addContentsHint(List<Component> tooltip) {
+        tooltip.add(Component.translatable("tooltip.ultimatecustomgear.container.press_for_contents",
+                        Component.translatable("tooltip.ultimatecustomgear.key.shift")
+                                .withStyle(ChatFormatting.AQUA))
+                .withStyle(ChatFormatting.GRAY));
+    }
+
+    /**
+     * Whether this gear has any of the gated sections. Mirrors the early-return
+     * guards of the add* methods above — a bow with no held effects should not
+     * advertise a key that reveals nothing.
+     */
+    public static boolean hasDetails(GearData data, String piece) {
+        if (data.heldEffects != null && !data.heldEffects.isEmpty()) return true;
+        if (data.setBonus != null && data.setBonus.effects != null) return true;
+        if (piece != null && data.pieceEffects != null) {
+            List<GearData.EffectData> effects = data.pieceEffects.get(piece);
+            if (effects != null && !effects.isEmpty()) return true;
+        }
+        return hasAnyResistances(data, piece);
+    }
+
+    public static boolean hasDetails(GearData data) {
+        return hasDetails(data, null);
+    }
+
+    /**
+     * Whether any resistance section would draw something.
+     * <p>
+     * Mirrors the three add* methods' filters, showPlayerResistances included:
+     * announcing details that turn out to be hidden player-specific entries
+     * would leak exactly what that flag exists to keep secret.
+     */
+    private static boolean hasAnyResistances(GearData data, String piece) {
+        Map<String, Double> damage = ResistanceResolver.damageMap(data, piece);
+        if (damage != null) {
+            for (Map.Entry<String, Double> e : damage.entrySet()) {
+                if (e.getValue() != null && e.getValue() > 0) return true;
+            }
+        }
+
+        Map<String, Double> attacker = ResistanceResolver.attackerMap(data, piece);
+        if (attacker != null) {
+            for (Map.Entry<String, Double> e : attacker.entrySet()) {
+                if (e.getValue() == null || e.getValue() <= 0) continue;
+                if (!data.showPlayerResistances && e.getKey().startsWith("player:")) continue;
+                return true;
+            }
+        }
+
+        List<GearData.ConditionalResistance> conditional =
+                ResistanceResolver.conditionalList(data, piece);
+        if (conditional != null) {
+            for (GearData.ConditionalResistance c : conditional) {
+                if (c == null || c.amount <= 0) continue;
+                if (!data.showPlayerResistances
+                        && c.attacker != null && c.attacker.startsWith("player:")) continue;
+                boolean hasDamage   = c.damage   != null && !c.damage.isBlank();
+                boolean hasAttacker = c.attacker != null && !c.attacker.isBlank();
+                if (!hasDamage && !hasAttacker) continue;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Whether this item or food has any of the gated sections.
+     * <p>
+     * The eat-duration line does NOT count: it stays visible, so it is never
+     * what the hint is announcing.
+     */
+    public static boolean hasDetails(ItemData data) {
+        if (data == null) return false;
+
+        if (data.onEatEffects != null && !data.onEatEffects.isEmpty()) return true;
+
+        if (data.mobDrops != null && data.mobDrops.entities != null) {
+            for (String e : data.mobDrops.entities) {
+                if (e != null && !e.isBlank()) return true;
+            }
+        }
+        return false;
     }
 }

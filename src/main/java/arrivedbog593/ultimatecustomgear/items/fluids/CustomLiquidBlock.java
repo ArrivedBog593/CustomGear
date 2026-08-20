@@ -1,7 +1,7 @@
 package arrivedbog593.ultimatecustomgear.items.fluids;
 
 import arrivedbog593.ultimatecustomgear.data.FluidData;
-import arrivedbog593.ultimatecustomgear.loader.FluidRegistry;
+import arrivedbog593.ultimatecustomgear.registry.FluidRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;

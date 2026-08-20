@@ -18,7 +18,6 @@
   "harvest_level": 2,
   "sound": "stone",
   "texture": {
-    "mode": "reference",
     "refs": {
       "block": "minecraft:block/diamond_ore"
     }
@@ -37,7 +36,6 @@
     "es_mx": "Mineral Multi"
   },
   "texture": {
-    "mode": "reference",
     "faces": {
       "top":    "minecraft:block/coal_ore",
       "bottom": "minecraft:block/iron_ore",
@@ -64,7 +62,6 @@ Use `"side"` as a shortcut to apply the same texture to all 4 horizontal faces.
     "es_mx": "Mi Máquina"
   },
   "texture": {
-    "mode": "reference",
     "faces": {
       "top":    "minecraft:block/stone",
       "bottom": "minecraft:block/stone",
@@ -92,7 +89,6 @@ The `"north"` face is the front face — it points toward the player when the bl
   "destroy_time": 0.5,
   "explosion_resistance": 0.5,
   "texture": {
-    "mode": "reference",
     "refs": { "block": "minecraft:block/sand" }
   }
 }

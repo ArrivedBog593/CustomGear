@@ -1,10 +1,18 @@
 package arrivedbog593.ultimatecustomgear.commands;
 
 import arrivedbog593.ultimatecustomgear.CustomGearMod;
+import arrivedbog593.ultimatecustomgear.data.BlockData;
+import arrivedbog593.ultimatecustomgear.data.ContainerContentData;
 import arrivedbog593.ultimatecustomgear.data.GearData;
-import arrivedbog593.ultimatecustomgear.loader.*;
+import arrivedbog593.ultimatecustomgear.datapack.*;
+import arrivedbog593.ultimatecustomgear.parser.GearParser;
+import arrivedbog593.ultimatecustomgear.parser.UniversalParser;
+import arrivedbog593.ultimatecustomgear.registry.*;
+import arrivedbog593.ultimatecustomgear.resources.ContainerTextures;
+import arrivedbog593.ultimatecustomgear.resources.DiskPackSink;
 import arrivedbog593.ultimatecustomgear.resources.TextureLoader;
 import arrivedbog593.ultimatecustomgear.util.ContentHasher;
+import arrivedbog593.ultimatecustomgear.util.ContentRoots;
 import arrivedbog593.ultimatecustomgear.util.GlobalIdValidator;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.commands.CommandSourceStack;
@@ -18,6 +26,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,34 +76,50 @@ public class CustomGearCommandHandler {
 
                                     // 1.5. Same global validation as startup — keeps runtime maps consistent
                                     validated = GlobalIdValidator.validate(
-                                            gearList, universalResult.items, universalResult.blocks, universalResult.fluids);
+                                            gearList, universalResult.items, universalResult.blocks,
+                                            universalResult.fluids, universalResult.containers);
+
+                                    // A placeable container IS a block for every resource purpose:
+                                    // model, blockstate, lang, loot table, tags and recipe all come from
+                                    // the same loaders. A BACKPACK is not — it has no blockstate, no
+                                    // loot table, and its lang key is item.* — so feeding it to the
+                                    // block loaders produces a stone-textured model and an untranslated
+                                    // name, which is exactly what happened.
+                                    List<BlockData> allBlocks = new ArrayList<>(validated.blocks);
+                                    List<ContainerContentData> backpacks = new ArrayList<>();
+                                    for (ContainerContentData c : validated.containers) {
+                                        if (c.container != null && c.container.isBlock()) allBlocks.add(c);
+                                        else backpacks.add(c);
+                                    }
 
                                     // 2. Clear the previous dynamic pack
                                     DYNAMIC_PACK.clear();
 
                                     // 3. Reload textures and languages
                                     TextureLoader.loadAll(DYNAMIC_PACK, validated.gear,
-                                            validated.items, validated.blocks, validated.fluids);
+                                            validated.items, allBlocks, validated.fluids, backpacks);
                                     TextureLoader.generateLang(DYNAMIC_PACK, validated.gear,
-                                            validated.items, validated.blocks, validated.fluids);
+                                            validated.items, allBlocks, validated.fluids, backpacks);
 
                                     // 3.5. Regenerate recipes
                                     RecipeLoader.loadAll(DYNAMIC_PACK, validated.gear,
-                                            validated.items, validated.blocks);
+                                            validated.items, allBlocks);
 
                                     // 3.6. Tag files: one shared builder, emitted once at 5.9
                                     TagFileBuilder tagFiles = new TagFileBuilder();
-                                    BlockTagLoader.loadAll(tagFiles, validated.blocks);
+                                    BlockTagLoader.loadAll(tagFiles, allBlocks);
                                     GearTagLoader.loadAll(tagFiles, validated.gear);
+                                    CuriosTagLoader.loadAll(DYNAMIC_PACK, tagFiles, validated.containers);
 
                                     // 3.7. Generate loot tables (server data)
-                                    BlockLootLoader.loadAll(DYNAMIC_PACK, validated.blocks);
+                                    BlockLootLoader.loadAll(DYNAMIC_PACK, allBlocks);
 
                                     // 3.8. User-declared item/block/fluid tags — same builder
-                                    ItemTagLoader.loadAll(tagFiles, validated.items, validated.blocks, validated.fluids);
+                                    ItemTagLoader.loadAll(tagFiles, validated.items, allBlocks, validated.fluids);
 
                                     // 3.85. Foreign content declared into tags — same builder
                                     TagPatchLoader.loadAll(tagFiles, universalResult.tagPatches);
+
 
                                     // 3.9. Emit every tag file — must come after ALL tag sources
                                     tagFiles.emit(DYNAMIC_PACK);
@@ -101,6 +128,8 @@ public class CustomGearCommandHandler {
                                     FluidRegistry.updateFluidData(validated.fluids);
                                     ItemRegistry.updateItemData(validated.items);
                                     BlockRegistry.updateBlockData(validated.blocks);
+                                    ContainerRegistry.updateContainerData(validated.containers);
+                                    ContainerTextures.clearCache();
 
                                     // 5. Atomic swap of the GEAR_MAP
                                     updateGearRegistryAtomic(validated.gear);
@@ -111,7 +140,16 @@ public class CustomGearCommandHandler {
                                 }
 
                                 // 6. Trigger the vanilla data pack reload so the
-                                // regenerated recipes take effect immediately
+                                // regenerated recipes take effect immediately.
+                                //
+                                // Rescan first: reloadPacks works from the repository's
+                                // current view of the packs, and DYNAMIC_PACK was
+                                // repopulated after that view was built. Without this the
+                                // reload reads the previous contents, which is why a second
+                                // /customgear reload appeared to be needed for anything that
+                                // is read once at load — the Curios slot assignment being
+                                // the case that surfaced it.
+                                source.getServer().getPackRepository().reload();
                                 ReloadCommand.reloadPacks(
                                         source.getServer().getPackRepository().getSelectedIds(),
                                         source);
@@ -130,6 +168,78 @@ public class CustomGearCommandHandler {
                                         Component.translatable("customgear.command.reload.error"));
                                 // El detalle completo solo va al log del servidor
                                 LOGGER.error("[CustomGear] Reload failed", e);
+                                return 0;
+                            }
+                        })
+                )
+                .then(Commands.literal("dump")
+                        .requires(src -> src.hasPermission(2))
+                        .executes(context -> {
+                            CommandSourceStack source = context.getSource();
+                            try {
+                                // A timestamped folder: dumps are diagnostic, so never
+                                // delete anything the user might still be looking at.
+                                Path outDir = CustomGearMod.configFolder()
+                                        .resolve("dump")
+                                        .resolve(DateTimeFormatter
+                                                .ofPattern("yyyy-MM-dd_HH-mm-ss")
+                                                .format(LocalDateTime.now()));
+
+                                DiskPackSink sink = new DiskPackSink(outDir);
+
+                                try (ContentRoots roots = ContentRoots.open(CustomGearMod.configFolder())) {
+                                    List<GearData> gearList = GearParser.loadAll(roots);
+                                    UniversalParser.LoadResult universalResult = UniversalParser.loadAll(roots);
+
+                                    GlobalIdValidator.Result validated = GlobalIdValidator.validate(
+                                            gearList, universalResult.items,
+                                            universalResult.blocks, universalResult.fluids, universalResult.containers);
+
+                                    // A placeable container IS a block for every resource purpose:
+                                    // model, blockstate, lang, loot table, tags and recipe all come from
+                                    // the same loaders. A BACKPACK is not — it has no blockstate, no
+                                    // loot table, and its lang key is item.* — so feeding it to the
+                                    // block loaders produces a stone-textured model and an untranslated
+                                    // name, which is exactly what happened.
+                                    List<BlockData> allBlocks = new ArrayList<>(validated.blocks);
+                                    List<ContainerContentData> backpacks = new ArrayList<>();
+                                    for (ContainerContentData c : validated.containers) {
+                                        if (c.container != null && c.container.isBlock()) allBlocks.add(c);
+                                        else backpacks.add(c);
+                                    }
+                                    // Same generation sequence as reload, different destination.
+                                    // NOTE: no DYNAMIC_PACK.clear(), no registry swap, no
+                                    // ContentHasher.capture — a diagnostic dump must not move
+                                    // the hash the multiplayer handshake compares against.
+                                    TextureLoader.loadAll(sink, validated.gear,
+                                            validated.items, allBlocks, validated.fluids, backpacks);
+                                    TextureLoader.generateLang(sink, validated.gear,
+                                            validated.items, allBlocks, validated.fluids, backpacks);
+                                    RecipeLoader.loadAll(sink, validated.gear,
+                                            validated.items, allBlocks);
+                                    BlockLootLoader.loadAll(sink, allBlocks);
+
+                                    TagFileBuilder tagFiles = new TagFileBuilder();
+                                    BlockTagLoader.loadAll(tagFiles, allBlocks);
+                                    GearTagLoader.loadAll(tagFiles, validated.gear);
+                                    CuriosTagLoader.loadAll(sink, tagFiles, validated.containers);
+                                    ItemTagLoader.loadAll(tagFiles, validated.items,
+                                            allBlocks, validated.fluids);
+                                    TagPatchLoader.loadAll(tagFiles, universalResult.tagPatches);
+                                    tagFiles.emit(sink);
+                                }
+
+                                LOGGER.info("[CustomGear] Dumped {} files ({} failed) to {}",
+                                        sink.written(), sink.failed(), outDir);
+                                source.sendSuccess(() -> Component.translatable(
+                                        "customgear.command.dump.success",
+                                        sink.written(), outDir.toString()), true);
+                                return 1;
+
+                            } catch (Exception e) {
+                                source.sendFailure(Component.translatable(
+                                        "customgear.command.dump.error"));
+                                LOGGER.error("[CustomGear] Dump failed", e);
                                 return 0;
                             }
                         })

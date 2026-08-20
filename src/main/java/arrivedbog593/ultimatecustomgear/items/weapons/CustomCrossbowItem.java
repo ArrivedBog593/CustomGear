@@ -1,13 +1,17 @@
 package arrivedbog593.ultimatecustomgear.items.weapons;
 
 import arrivedbog593.ultimatecustomgear.data.GearData;
+import arrivedbog593.ultimatecustomgear.util.ArrowUtils;
 import arrivedbog593.ultimatecustomgear.util.GearLookup;
 import arrivedbog593.ultimatecustomgear.util.TooltipHelper;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -57,5 +61,32 @@ public class CustomCrossbowItem extends CrossbowItem {
         super.appendHoverText(stack, context, tooltipComponents, flag);
         TooltipHelper.addBowTooltip(tooltipComponents, getGearData());
         TooltipHelper.addHeldEffectsTooltip(tooltipComponents, getGearData());
+        if (!TooltipHelper.detailsShown() && TooltipHelper.hasDetails(getGearData())) {
+            TooltipHelper.addDetailsHint(tooltipComponents);
+        }
+    }
+
+    /**
+     * Applies this weapon's arrow damage at the moment it creates the
+     * projectile.
+     * <p>
+     * THE WEAPON IS KNOWN HERE, which is the whole point. The old approach
+     * guessed it from what the shooter was holding when the arrow appeared, so
+     * firing a vanilla bow with a custom one in the other hand handed the custom
+     * damage to the wrong arrow. 1.21.1 gives the spawned arrow no
+     * back-reference to its weapon, and this is the last place that still has
+     * both.
+     */
+    @Override
+    protected @NotNull Projectile createProjectile(@NotNull Level level, @NotNull LivingEntity shooter,
+                                                   @NotNull ItemStack weapon, @NotNull ItemStack ammo,
+                                                   boolean isCrit) {
+        Projectile projectile = super.createProjectile(level, shooter, weapon, ammo, isCrit);
+        if (projectile instanceof AbstractArrow arrow) {
+            ArrowUtils.applyArrowDamage(arrow, getGearData());
+            // Marked so the legacy handler never scales the same arrow twice.
+            arrow.getPersistentData().putBoolean("customgear_arrow_damage_applied", true);
+        }
+        return projectile;
     }
 }

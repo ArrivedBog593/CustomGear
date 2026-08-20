@@ -1,11 +1,17 @@
 package arrivedbog593.ultimatecustomgear.network;
 
+import arrivedbog593.ultimatecustomgear.compat.CuriosCompat;
 import arrivedbog593.ultimatecustomgear.config.CustomGearConfig;
 import arrivedbog593.ultimatecustomgear.config.CustomGearConfig.HandshakeMode;
+import arrivedbog593.ultimatecustomgear.items.containers.BackpackAnchor;
+import arrivedbog593.ultimatecustomgear.items.containers.CustomBackpackItem;
+import arrivedbog593.ultimatecustomgear.menu.CustomContainerMenu;
 import arrivedbog593.ultimatecustomgear.util.ContentHasher;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.network.ConfigurationTask;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.configuration.ICustomConfigurationTask;
 import net.neoforged.neoforge.network.event.RegisterConfigurationTasksEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
@@ -42,12 +48,12 @@ public final class CustomGearNetworking {
     private static final Logger LOGGER = LogManager.getLogger("CustomGear");
 
     /**
-     * Payload protocol version — bumped to "2" when the enforce flag was
+     * Payload protocol version — bumped to "3" when the enforce flag was
      * added to HashCheckPayload. Clients and servers on different protocol
      * versions are rejected by NeoForge's channel negotiation with a clear
      * version-mismatch message instead of a codec crash.
      */
-    private static final String PROTOCOL_VERSION = "2";
+    private static final String PROTOCOL_VERSION = "3";
 
     /**
      * Set on the CLIENT when it joins a WARN-mode server with mismatching
@@ -73,6 +79,18 @@ public final class CustomGearNetworking {
                 HashCheckAckPayload.TYPE,
                 HashCheckAckPayload.STREAM_CODEC,
                 CustomGearNetworking::handleAckOnServer);
+
+        registrar.playToServer(TransferItemsPayload.TYPE, TransferItemsPayload.STREAM_CODEC,
+                CustomGearNetworking::handleTransfer);
+
+        registrar.playToServer(SortContainerPayload.TYPE, SortContainerPayload.STREAM_CODEC,
+                CustomGearNetworking::handleSort);
+
+        registrar.playToServer(SortModePayload.TYPE, SortModePayload.STREAM_CODEC,
+                CustomGearNetworking::handleSortMode);
+
+        registrar.playToServer(OpenBackpackPayload.TYPE, OpenBackpackPayload.STREAM_CODEC,
+                CustomGearNetworking::handleOpenBackpack);
     }
 
     public static void registerConfigurationTasks(final RegisterConfigurationTasksEvent event) {
@@ -131,6 +149,75 @@ public final class CustomGearNetworking {
         }
 
         context.finishCurrentTask(HashCheckTask.TYPE);
+    }
+
+    /**
+     * The menu the player has open is the only authority on what they can touch.
+     * A client can ask to transfer, but never says what — so the worst a forged
+     * packet achieves is a transfer the player could have done by hand.
+     */
+    public static void handleTransfer(TransferItemsPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player().containerMenu instanceof CustomContainerMenu menu) {
+                menu.transfer(payload.toStorage(), payload.everything());
+            }
+        });
+    }
+
+    public static void handleSort(SortContainerPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player().containerMenu instanceof CustomContainerMenu menu) {
+                menu.sort(payload.order());
+            }
+        });
+    }
+
+    public static void handleSortMode(SortModePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player().containerMenu instanceof CustomContainerMenu menu) {
+                menu.setSortMode(payload.criterion(), payload.descending());
+            }
+        });
+    }
+
+    /**
+     * Opens the backpack the player is carrying, in this order: the selected
+     * hotbar slot, then the offhand, then the first one found walking the
+     * inventory — which puts the hotbar ahead of the rest, since it is numbered
+     * first.
+     * <p>
+     * The two hands come first because "whatever I am holding" is what a player
+     * means by the key, and it is the only way to choose between two backpacks
+     * without inventing a rule.
+     */
+    public static void handleOpenBackpack(OpenBackpackPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            Player player = context.player();
+
+            int selected = player.getInventory().selected;
+            if (tryOpen(player, new BackpackAnchor.InventorySlot(selected))) return;
+            if (tryOpen(player, new BackpackAnchor.Offhand())) return;
+
+            // Equipped beats loose: someone wearing a storage ring is wearing it
+            // to have it at hand, and a backpack lying in the inventory covering
+            // it would be the opposite of what they asked for. This is where we
+            // part from Sophisticated, which checks Curios last.
+            for (BackpackAnchor anchor : CuriosCompat.equippedBackpacks(player)) {
+                if (tryOpen(player, anchor)) return;
+            }
+
+            for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+                if (tryOpen(player, new BackpackAnchor.InventorySlot(i))) return;
+            }
+        });
+    }
+
+    /** Opens the stack this anchor points at, if it is a backpack at all. */
+    private static boolean tryOpen(Player player, BackpackAnchor anchor) {
+        ItemStack stack = anchor.resolve(player);
+        if (!(stack.getItem() instanceof CustomBackpackItem backpack)) return false;
+        backpack.open(player, anchor, stack);
+        return true;
     }
 
     // ── Configuration task ────────────────────────────────────────────────────

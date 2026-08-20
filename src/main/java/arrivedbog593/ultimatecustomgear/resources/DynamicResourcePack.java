@@ -25,7 +25,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class DynamicResourcePack extends AbstractPackResources {
+public class DynamicResourcePack extends AbstractPackResources implements PackSink {
 
     private static final Logger LOGGER = LogManager.getLogger("CustomGear");
 
@@ -61,8 +61,25 @@ public class DynamicResourcePack extends AbstractPackResources {
         );
     }
 
+    /**
+     * Maximum size for a user-referenced file. Armor layers are 64x32 and
+     * GeckoLib skins are typically 64x64 or 128x128, so this is orders of
+     * magnitude above anything legitimate — it exists to turn "the client
+     * froze" into a log line naming the file.
+     */
+    private static final long MAX_RESOURCE_BYTES = 8L * 1024 * 1024;
+
+    @Override
     public void addTexture(ResourceLocation location, Path texturePath) {
         try {
+            long size = Files.size(texturePath);
+            if (size > MAX_RESOURCE_BYTES) {
+                LOGGER.error("[CustomGear] Skipping '{}': {} MB exceeds the {} MB limit for a "
+                                + "single resource. Check that the path points at a texture and "
+                                + "not at another kind of file.",
+                        texturePath, size / (1024 * 1024), MAX_RESOURCE_BYTES / (1024 * 1024));
+                return;
+            }
             resources.put(location, Files.readAllBytes(texturePath));
             cachedHash = null;
         } catch (IOException e) {
@@ -70,6 +87,7 @@ public class DynamicResourcePack extends AbstractPackResources {
         }
     }
 
+    @Override
     public void addRaw(ResourceLocation location, byte[] data) {
         resources.put(location, data);
         cachedHash = null;
@@ -81,6 +99,7 @@ public class DynamicResourcePack extends AbstractPackResources {
      * Deliberately does NOT invalidate cachedHash: root files are cosmetic and
      * stay out of contentHash. See contentHash for why.
      */
+    @Override
     public void addRootFile(String name, byte[] data) {
         rootResources.put(name, data);
     }

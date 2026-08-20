@@ -4,9 +4,37 @@ Solo cambios incompatibles — cosas que hacen que un JSON que funcionaba en una
 versión se comporte distinto o deje de cargar en la siguiente. Todo lo aditivo
 está en el [CHANGELOG](../../CHANGELOG_ES.md).
 
-> Esta página está incompleta. Por ahora cubre 1.6.0 y el cambio de protocolo de
+> Esta página está incompleta. Por ahora cubre 1.7.0, 1.6.0, y el cambio de protocolo de
 > red de 1.3.0. Los cambios incompatibles anteriores hay que sacarlos del
 > CHANGELOG.
+
+## 1.7.0
+
+**No hay nada que cambiar.** Los packs escritos para 1.6.0 cargan sin
+modificaciones.
+
+### `texture.mode` ya no hace nada
+
+```diff
+  "texture": {
+-   "mode": "reference",
+    "refs": {
+      "sword": "minecraft:item/netherite_sword"
+    }
+  }
+```
+
+Lo que es un valor ahora sale del propio valor: un `:` lo convierte en el recurso
+de otro mod, una extensión lo convierte en un archivo de tu carpeta. Un pack que
+siga declarando `mode` funciona exactamente igual que antes — el campo se lee y
+se ignora — así que borrarlo es limpieza, no un arreglo.
+
+Lo único que cambió de verdad: un pack que declaraba `"mode": "default"` **y**
+valores en `refs` ignoraba esos valores y mostraba las texturas de reserva. Ahora
+esos valores sí se aplican. Nadie escribe ambas cosas a propósito, pero si lo
+hiciste, quita el bloque `refs` en lugar de la línea `mode`.
+
+Consulta [Texturas y Modelos](textures-and-models.md) para la regla completa.
 
 ## 1.6.0
 

@@ -1,7 +1,7 @@
 package arrivedbog593.ultimatecustomgear.events;
 
 import arrivedbog593.ultimatecustomgear.data.ItemData;
-import arrivedbog593.ultimatecustomgear.loader.ItemRegistry;
+import arrivedbog593.ultimatecustomgear.registry.ItemRegistry;
 import arrivedbog593.ultimatecustomgear.util.EntityMatcher;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;

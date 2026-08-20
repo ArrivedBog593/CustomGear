@@ -1,6 +1,7 @@
 package arrivedbog593.ultimatecustomgear.items.gear;
 
 import arrivedbog593.ultimatecustomgear.data.GearData;
+import arrivedbog593.ultimatecustomgear.resources.TextureRef;
 import arrivedbog593.ultimatecustomgear.util.GearLookup;
 import arrivedbog593.ultimatecustomgear.util.TooltipHelper;
 import net.minecraft.core.Holder;
@@ -86,18 +87,26 @@ public class CustomArmorItem extends ArmorItem {
             return List.of(new ArmorMaterial.Layer(ResourceLocation.withDefaultNamespace("iron")));
         }
 
-        // "transparent" layers: point at the customgear location, where
-        // GearModelGenerator injects a fully transparent PNG — works in
-        // BOTH modes (the mode only matters for how real refs are parsed)
-        if ("transparent".equals(data.texture.armorLayers.get("layer_1"))) {
+        String layer1 = data.texture.armorLayers.get("layer_1");
+        if (layer1 == null || layer1.isBlank()) {
+            return List.of(new ArmorMaterial.Layer(ResourceLocation.withDefaultNamespace("iron")));
+        }
+
+        // "transparent" points at the customgear location, where the generator
+        // injected a fully transparent PNG.
+        if ("transparent".equals(layer1)) {
             return List.of(new ArmorMaterial.Layer(
                     ResourceLocation.fromNamespaceAndPath("customgear", data.id)));
         }
 
-        if (data.texture.mode != null && data.texture.mode.equals("reference")) {
-            String layer1Ref = data.texture.armorLayers.get("layer_1");
-            if (layer1Ref != null) {
-                ResourceLocation rl = ResourceLocation.parse(layer1Ref);
+        return switch (TextureRef.kindOf(layer1)) {
+            // A reference names another mod's layer, and vanilla wants it in a
+            // shape neither of the two written forms uses: no 'models/armor/'
+            // prefix and no '_layer_1' suffix, because the renderer rebuilds
+            // both itself. Trimming them is what makes an author able to paste
+            // the path they see in the other mod's jar.
+            case REFERENCE -> {
+                ResourceLocation rl = ResourceLocation.parse(layer1);
                 String path = rl.getPath();
                 if (path.startsWith("models/armor/")) {
                     path = path.substring("models/armor/".length());
@@ -105,17 +114,16 @@ public class CustomArmorItem extends ArmorItem {
                 if (path.endsWith("_layer_1")) {
                     path = path.substring(0, path.length() - "_layer_1".length());
                 }
-                return List.of(new ArmorMaterial.Layer(
+                yield List.of(new ArmorMaterial.Layer(
                         ResourceLocation.fromNamespaceAndPath(rl.getNamespace(), path)));
             }
-        }
-
-        if (data.texture.mode != null && data.texture.mode.equals("custom")) {
-            return List.of(new ArmorMaterial.Layer(
+            // A file was copied into the pack under this gear's id, and the
+            // renderer appends the '_layer_N' itself.
+            case FILE -> List.of(new ArmorMaterial.Layer(
                     ResourceLocation.fromNamespaceAndPath("customgear", data.id)));
-        }
-
-        return List.of(new ArmorMaterial.Layer(ResourceLocation.withDefaultNamespace("iron")));
+            case INVALID -> List.of(new ArmorMaterial.Layer(
+                    ResourceLocation.withDefaultNamespace("iron")));
+        };
     }
 
     private static Type pieceToType(String piece) {
@@ -153,5 +161,8 @@ public class CustomArmorItem extends ArmorItem {
         TooltipHelper.addDamageResistancesTooltip(tooltipComponents, data, piece);
         TooltipHelper.addAttackerResistancesTooltip(tooltipComponents, data, piece);
         TooltipHelper.addConditionalResistancesTooltip(tooltipComponents, data, piece);
+        if (!TooltipHelper.detailsShown() && TooltipHelper.hasDetails(data, piece)) {
+            TooltipHelper.addDetailsHint(tooltipComponents);
+        }
     }
 }

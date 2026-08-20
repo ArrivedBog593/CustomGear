@@ -17,6 +17,9 @@ public class GearData {
     public boolean enchantable;
     public int enchantability;
 
+    /** Where this gear's textures come from. */
+    public GearTextureData texture;
+
     // Armor
     public Map<String, PieceData> pieces;
 
@@ -126,10 +129,35 @@ public class GearData {
     @SerializedName("conditional_resistances")
     public List<ConditionalResistance> conditionalResistances;
 
-    // Texture
-    public TextureData texture;
 
     // --- Internal classes ---
+
+    /**
+     * Gear textures, plus the two things only armor has.
+     * <p>
+     * Every value here takes the SHORT form: the model system adds 'textures/'
+     * and '.png' itself, so a full path would resolve to nothing. The exception
+     * is armor_3d, whose values go straight to GeckoLib and are written in full.
+     */
+    public static class GearTextureData extends TextureData {
+
+        /**
+         * The worn armor layers, "layer_1" and "layer_2".
+         * <p>
+         * Separate from refs because those are ICONS: a piece's inventory icon
+         * and the layer drawn on the body are different images with different
+         * layouts, and a set routinely has one without the other.
+         * <p>
+         * The value "transparent" is a keyword rather than a path — it makes the
+         * worn armor invisible, for sets that render through armor_3d instead.
+         */
+        @SerializedName("armor_layers")
+        public Map<String, String> armorLayers;
+
+        /** GeckoLib model, texture and optional animation. */
+        @SerializedName("armor_3d")
+        public Armor3DData armor3d;
+    }
 
     public static class PieceData {
         public int durability;
@@ -227,21 +255,6 @@ public class GearData {
         @SerializedName("required_pieces")
         public int requiredPieces;
         public List<EffectData> effects;
-    }
-
-    public static class TextureData {
-        public String mode;
-        public Map<String, String> refs;
-        @SerializedName("armor_layers")
-        public Map<String, String> armorLayers;
-        /**
-         * Optional 3D armor model (GeckoLib). Its presence — plus GeckoLib
-         * being installed — switches the worn armor from the flat
-         * armor_layers to a full 3D model. Values follow the texture "mode":
-         * file paths in custom mode, resource locations in reference mode.
-         */
-        @SerializedName("armor_3d")
-        public Armor3DData armor3d;
     }
 
     public static class Armor3DData {

@@ -61,5 +61,8 @@ public class CustomPickaxeItem extends PickaxeItem {
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
         TooltipHelper.addToolStatsTooltip(tooltipComponents, getGearData());
         TooltipHelper.addHeldEffectsTooltip(tooltipComponents, getGearData());
+        if (!TooltipHelper.detailsShown() && TooltipHelper.hasDetails(getGearData())) {
+            TooltipHelper.addDetailsHint(tooltipComponents);
+        }
     }
 }

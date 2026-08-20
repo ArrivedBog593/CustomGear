@@ -42,16 +42,21 @@ public class FluidData {
     @SerializedName("tags")
     public List<String> tags;
 
-    /**
-     * Texture configuration.
-     * - Default mode: no texture object needed
-     * - Custom mode: refs contain "still", "flowing", "bucket" paths
-     * - Reference mode: refs contain resource locations
-     */
-    public TextureConfig texture;
-
     /** Tint color in ARGB hex format, e.g. "0xFF3F76E4" for water blue. Default: 0xFFFFFFFF */
     public String color = "0xFFFFFFFF";
+
+    /**
+     * Fluid textures: "still", "flowing" and "bucket".
+     * <p>
+     * Declaring neither still nor flowing makes this a water reskin, which is
+     * also what gives it water's blue tint. Declaring one and not the other is
+     * rejected: the fluid would draw its own still texture and water's flowing
+     * one.
+     * <p>
+     * Values take the SHORT form — minecraft:block/lava_still — because a fluid
+     * sprite is addressed that way by the atlas.
+     */
+    public TextureData texture;
 
     // ── Fluid behavior ────────────────────────────────────────────────────────
 
@@ -117,8 +122,4 @@ public class FluidData {
         public int duration = 3;
     }
 
-    public static class TextureConfig {
-        public String mode; // "default", "custom", "reference"
-        public Map<String, String> refs; // still, flowing, bucket
-    }
 }

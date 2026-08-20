@@ -73,5 +73,8 @@ public class CustomShieldItem extends ShieldItem {
                                 @NotNull net.minecraft.world.item.TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltipComponents, flag);
         TooltipHelper.addHeldEffectsTooltip(tooltipComponents, getGearData());
+        if (!TooltipHelper.detailsShown() && TooltipHelper.hasDetails(getGearData())) {
+            TooltipHelper.addDetailsHint(tooltipComponents);
+        }
     }
 }

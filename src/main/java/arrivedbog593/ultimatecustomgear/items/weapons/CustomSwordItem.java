@@ -92,5 +92,8 @@ public class CustomSwordItem extends SwordItem {
                                 @NotNull net.minecraft.world.item.TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
         TooltipHelper.addHeldEffectsTooltip(tooltipComponents, getGearData());
+        if (!TooltipHelper.detailsShown() && TooltipHelper.hasDetails(getGearData())) {
+            TooltipHelper.addDetailsHint(tooltipComponents);
+        }
     }
 }

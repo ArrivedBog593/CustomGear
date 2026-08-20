@@ -2,7 +2,7 @@ package arrivedbog593.ultimatecustomgear.events;
 
 import arrivedbog593.ultimatecustomgear.data.GearData;
 import arrivedbog593.ultimatecustomgear.items.gear.CustomArmorItem;
-import arrivedbog593.ultimatecustomgear.loader.GearRegistry;
+import arrivedbog593.ultimatecustomgear.registry.GearRegistry;
 import arrivedbog593.ultimatecustomgear.util.EffectUtils;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;

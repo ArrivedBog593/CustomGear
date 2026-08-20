@@ -1,16 +1,26 @@
 package arrivedbog593.ultimatecustomgear;
 
 import arrivedbog593.ultimatecustomgear.client.ClientSetup;
+import arrivedbog593.ultimatecustomgear.client.CustomGearKeys;
 import arrivedbog593.ultimatecustomgear.commands.CustomGearCommandHandler;
 import arrivedbog593.ultimatecustomgear.config.CustomGearConfig;
+import arrivedbog593.ultimatecustomgear.data.BlockData;
+import arrivedbog593.ultimatecustomgear.data.ContainerContentData;
 import arrivedbog593.ultimatecustomgear.data.GearData;
 import arrivedbog593.ultimatecustomgear.events.*;
-import arrivedbog593.ultimatecustomgear.loader.*;
+import arrivedbog593.ultimatecustomgear.items.containers.CustomContainerBlock;
+import arrivedbog593.ultimatecustomgear.items.containers.CustomContainerBlockEntity;
+import arrivedbog593.ultimatecustomgear.datapack.*;
+import arrivedbog593.ultimatecustomgear.parser.GearParser;
+import arrivedbog593.ultimatecustomgear.parser.UniversalParser;
+import arrivedbog593.ultimatecustomgear.registry.*;
 import arrivedbog593.ultimatecustomgear.network.CustomGearNetworking;
 import arrivedbog593.ultimatecustomgear.resources.DynamicResourcePack;
 import arrivedbog593.ultimatecustomgear.resources.TextureLoader;
 import arrivedbog593.ultimatecustomgear.util.ContentHasher;
+import arrivedbog593.ultimatecustomgear.util.ContentRoots;
 import arrivedbog593.ultimatecustomgear.util.GlobalIdValidator;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.PackLocationInfo;
 import net.minecraft.server.packs.PackResources;
@@ -24,11 +34,17 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.loading.FMLPaths;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
+import net.neoforged.neoforge.client.gui.ConfigurationScreen;
+import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddPackFindersEvent;
+import net.neoforged.neoforge.items.wrapper.InvWrapper;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -51,6 +67,7 @@ public class CustomGearMod {
     public CustomGearMod(IEventBus modEventBus, ModContainer modContainer) {
         // Register the config FIRST, before anything might read it
         modContainer.registerConfig(ModConfig.Type.COMMON, CustomGearConfig.SPEC);
+        modContainer.registerConfig(ModConfig.Type.CLIENT, CustomGearConfig.CLIENT_SPEC);
 
         Path configFolder = configFolder();
 
@@ -70,14 +87,32 @@ public class CustomGearMod {
 
             // 1.5. Global final-ID validation — drops colliding entries instead of crashing
             validated = GlobalIdValidator.validate(
-                    gearList, universalResult.items, universalResult.blocks, universalResult.fluids);
+                    gearList, universalResult.items, universalResult.blocks,
+                    universalResult.fluids, universalResult.containers);
+
+            // A placeable container IS a block for every resource purpose:
+            // model, blockstate, lang, loot table, tags and recipe all come from
+            // the same loaders. A BACKPACK is not — it has no blockstate, no
+            // loot table, and its lang key is item.* — so feeding it to the
+            // block loaders produces a stone-textured model and an untranslated
+            // name, which is exactly what happened.
+            List<BlockData> allBlocks = new ArrayList<>(validated.blocks);
+            List<ContainerContentData> backpacks = new ArrayList<>();
+            for (ContainerContentData c : validated.containers) {
+                if (c.container != null && c.container.isBlock()) allBlocks.add(c);
+                else backpacks.add(c);
+            }
 
             // 2. Register all items, blocks and fluids (validated lists only)
             GearRegistry.register(modEventBus, validated.gear);
             ItemRegistry.register(modEventBus, validated.items);
             BlockRegistry.register(modEventBus, validated.blocks);
+            ContainerRegistry.register(modEventBus, validated.containers);
             CustomGearTab.register(modEventBus);
             FluidRegistry.register(modEventBus, validated.fluids);
+            MenuRegistry.register(modEventBus);
+            ComponentRegistry.register(modEventBus);
+            modEventBus.addListener(ClientSetup::onRegisterMenuScreens);
 
             // 3. Create the dynamic resource pack — igual que lo tienes
             DYNAMIC_PACK = new DynamicResourcePack(
@@ -91,27 +126,29 @@ public class CustomGearMod {
 
             // 4. Load textures and lang (client resources)
             TextureLoader.loadAll(DYNAMIC_PACK, validated.gear,
-                    validated.items, validated.blocks, validated.fluids);
+                    validated.items, allBlocks, validated.fluids, backpacks);
             TextureLoader.generateLang(DYNAMIC_PACK, validated.gear,
-                    validated.items, validated.blocks, validated.fluids);
+                    validated.items, allBlocks, validated.fluids, backpacks);
 
             // 5. Generate recipe JSONs (server data)
             RecipeLoader.loadAll(DYNAMIC_PACK, validated.gear,
-                    validated.items, validated.blocks);
+                    validated.items, allBlocks);
+
 
             // 5.6. Tag files: one shared builder, emitted once at 5.9
             TagFileBuilder tagFiles = new TagFileBuilder();
-            BlockTagLoader.loadAll(tagFiles, validated.blocks);
+            BlockTagLoader.loadAll(tagFiles, allBlocks);
             GearTagLoader.loadAll(tagFiles, validated.gear);
 
             // 5.7. Generate loot tables (server data)
-            BlockLootLoader.loadAll(DYNAMIC_PACK, validated.blocks);
+            BlockLootLoader.loadAll(DYNAMIC_PACK, allBlocks);
 
             // 5.8. User-declared item/block/fluid tags — same builder
-            ItemTagLoader.loadAll(tagFiles, validated.items, validated.blocks, validated.fluids);
+            ItemTagLoader.loadAll(tagFiles, validated.items, allBlocks, validated.fluids);
 
             // 5.85. Foreign content declared into tags — same builder
             TagPatchLoader.loadAll(tagFiles, universalResult.tagPatches);
+            CuriosTagLoader.loadAll(DYNAMIC_PACK, tagFiles, validated.containers);
 
             // 5.9. Emit every tag file — must come after ALL tag sources
             tagFiles.emit(DYNAMIC_PACK);
@@ -121,7 +158,13 @@ public class CustomGearMod {
         modEventBus.addListener(this::onAddPackFinders);
         modEventBus.addListener(CustomGearNetworking::registerPayloads);
         modEventBus.addListener(CustomGearNetworking::registerConfigurationTasks);
+        modEventBus.addListener(this::onRegisterCapabilities);
         if (FMLEnvironment.dist.isClient()) {
+            modContainer.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
+            modEventBus.addListener(CustomGearKeys::register);
+            modEventBus.addListener(ClientSetup::onRegisterLayerDefinitions);
+            modEventBus.addListener(ClientSetup::onRegisterRenderers);
+            modEventBus.addListener(ClientSetup::onRegisterTooltipComponents);
             modEventBus.addListener(ClientSetup::onClientSetup);
             NeoForge.EVENT_BUS.register(ClientSetup.class);
         }
@@ -131,6 +174,28 @@ public class CustomGearMod {
         NeoForge.EVENT_BUS.register(ArrowDamageHandler.class);
         NeoForge.EVENT_BUS.register(MobDropHandler.class);
         NeoForge.EVENT_BUS.register(DamageResistanceHandler.class);
+    }
+
+    /**
+     * Item handler for every container block.
+     * <p>
+     * REDIRECTED FOR DOUBLE CHESTS. The shell half holds no inventory, so
+     * without this a hopper feeding that side would push items into a container
+     * nobody reads and that gets discarded when the pair splits — silent item
+     * loss, not just a cosmetic gap. Jade and comparators go through the same
+     * path and were showing the shell as empty for the same reason.
+     */
+    private void onRegisterCapabilities(RegisterCapabilitiesEvent event) {
+        for (var holder : ContainerRegistry.BLOCKS.getEntries()) {
+            event.registerBlock(Capabilities.ItemHandler.BLOCK, (level, pos, state, be, side) -> {
+                BlockPos target = state.getBlock() instanceof CustomContainerBlock block
+                        ? block.inventoryPos(state, pos)
+                        : pos;
+                return level.getBlockEntity(target) instanceof CustomContainerBlockEntity c
+                        ? new InvWrapper(c)
+                        : null;
+            }, holder.get());
+        }
     }
 
     private void onAddPackFinders(AddPackFindersEvent event) {

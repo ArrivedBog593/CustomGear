@@ -15,7 +15,6 @@
     "es_mx": "Cubeta de {fluid_name}"
   },
   "light_level": 3,
-  "color": "0xFF4CAF50",
   "tick_rate": 10,
   "spread_distance": 6,
   "burns_entities": false,
@@ -25,7 +24,10 @@
     { "effect": "minecraft:slowness", "amplifier": 1, "duration": 3 }
   ],
   "texture": {
-    "mode": "default"
+    "refs": {
+      "still": "minecraft:block/water_still",
+      "flowing": "minecraft:block/water_flow"
+    }
   }
 }
 ```
@@ -45,7 +47,6 @@
     "es_mx": "Cubeta de {fluid_name}"
   },
   "light_level": 15,
-  "color": "0xFFFF6600",
   "tick_rate": 30,
   "spread_distance": 4,
   "burns_entities": true,
@@ -56,10 +57,24 @@
     { "effect": "minecraft:mining_fatigue", "amplifier": 0, "duration": 5 }
   ],
   "texture": {
-    "mode": "default"
+    "refs": {
+      "still": "minecraft:block/lava_still",
+      "flowing": "minecraft:block/lava_flow"
+    }
   }
 }
 ```
+
+> **Fluid textures take the short form** — `minecraft:block/lava_still`, not the
+> full path. A fluid sprite is stitched into the block atlas, and that is how the
+> atlas addresses it.
+>
+> Declaring neither `still` nor `flowing` makes the fluid a water reskin, which
+> is also what gives it water's blue tint. Declaring one and not the other is
+> rejected: the fluid would draw its own still texture and water's flowing one.
+>
+> Animated fluids need their `.mcmeta` beside the PNG — see
+> [Textures & Models](textures-and-models.md).
 
 ## Fluid Fields
 

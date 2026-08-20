@@ -1,39 +1,108 @@
 # Textures & Models
 
-Three texture modes are available:
+A texture value says where an image comes from, and the mod works out which kind
+it is from the value itself:
 
-| Mode        | Description                                                        |
-|-------------|--------------------------------------------------------------------|
-| `default`   | Uses vanilla iron/wood textures as placeholders                    |
-| `reference` | Reuses the model of another item (vanilla or modded)               |
-| `custom`    | Uses your own PNG files placed in the `ultimatecustomgear/` folder |
+| The value…               | Means                                           | Example                          |
+|--------------------------|-------------------------------------------------|----------------------------------|
+| contains `:`             | An asset from vanilla or another mod            | `minecraft:item/netherite_sword` |
+| ends in a file extension | A file inside your `ultimatecustomgear/` folder | `textures/my_sword.png`          |
+| neither                  | **Error** — nothing is guessed                  | `item/bundle`                    |
 
-> ⚠️ **`reference` creates a hard dependency.** The resource locations point at
-> files that belong to another mod, so that mod becomes **required** for your
-> content to look right. Without it the item shows the missing-texture
-> checkerboard, and a 3D armor model declared this way simply won't render.
-> Vanilla references (`minecraft:...`) are always safe. If you want your pack to
-> stand on its own, use `custom` and ship the PNGs inside it.
+The third row matters. `item/bundle` could be a resource location missing its
+namespace or a file missing its extension, so the mod refuses it and tells you
+both valid forms instead of picking one.
 
-## Reference mode example
+> ⚠️ **Pointing at another mod creates a hard dependency.** That mod becomes
+> **required** for your content to look right: without it the item shows the
+> missing-texture checkerboard, and a 3D armor model declared this way simply
+> won't render. Vanilla references (`minecraft:…`) are always safe. If you want
+> your pack to stand on its own, ship the PNGs inside it.
+
+## Mixing is allowed
+
+Each value decides for itself, so one object can take some images from vanilla
+and some from your own folder:
 
 ```json
 {
   "texture": {
-    "mode": "reference",
     "refs": {
-      "sword": "minecraft:item/netherite_sword"
+      "top":    "textures/block/my_barrel_top.png",
+      "bottom": "minecraft:block/barrel_bottom",
+      "side":   "minecraft:block/barrel_side"
     }
   }
 }
 ```
 
-For bows and crossbows, you can optionally include custom pulling/loading frame models:
+Leaving `texture` out entirely gives every slot its default placeholder.
+
+## What a key points at
+
+The same syntax means different things depending on what is being textured, and
+this is the part worth reading twice:
+
+| Content             | A reference names… | Written as                                  |
+|---------------------|--------------------|---------------------------------------------|
+| Block faces         | a texture          | `minecraft:block/stone`                     |
+| Armor pieces        | a texture          | `minecraft:item/diamond_helmet`             |
+| Armor layers        | a texture          | `othermod:models/armor/their_armor_layer_1` |
+| Items and food      | a texture          | `minecraft:item/apple`                      |
+| Fluids              | an atlas sprite    | `minecraft:block/lava_still`                |
+| **Tools & weapons** | **a model**        | `minecraft:item/diamond_pickaxe`            |
+| Chests & shulkers   | a texture          | `minecraft:entity/chest/christmas`          |
+| GeckoLib 3D armor   | a file, in full    | `othermod:geo/armor/their_armor.geo.json`   |
+
+Tools and weapons are the odd one out on purpose: inheriting a model brings that
+item's display transforms along, which is why a referenced pickaxe sits in the
+hand exactly like the one you pointed at. Writing a texture path there is
+rejected with a message saying so.
+
+Everything except GeckoLib takes the **short form** — no `textures/`, no `.png`.
+The model system adds both itself, so a full path resolves to nothing. Chests
+and shulkers accept either, since they are drawn without a model in the way.
+
+## Animated textures
+
+Put a `.mcmeta` next to your PNG and both travel into the pack, exactly as they
+would in an ordinary resource pack:
+
+```
+ultimatecustomgear/
+  textures/
+    my_fluid.png
+    my_fluid.png.mcmeta
+```
+
+Without the `.mcmeta` an animated strip is stitched into a single cell and comes
+out unrecognisable — which is what happens if you copy vanilla's lava texture
+and forget its metadata.
+
+## Texture Fields
+
+| Field                | Type   | Description                                                                                                                                                               |
+|----------------------|--------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `texture.refs`       | Map    | Texture values by key. Which keys are valid depends on the content type                                                                                                   |
+| `armor_layers`       | Map    | (Armor sets only) `layer_1` and `layer_2` for the in-world armor texture. The special value `"transparent"` makes the armor invisible when worn, stats and effects intact |
+| `texture.refs.all`   | String | (Simple blocks) One texture for all six faces                                                                                                                             |
+| `texture.faces`      | Object | (Blocks only) Per-face configuration. Keys: `top`, `bottom`, `north`, `south`, `east`, `west`, `side`, `top_open`                                                         |
+| `texture.faces.side` | String | Shortcut: applies to `north`, `south`, `east`, `west` when they are not declared individually                                                                             |
+
+> **`refs` vs `faces`:** `refs` handles everything — a single texture with the
+> `all` key, or per-face textures with the face keys. `faces` is a legacy alias
+> that only works for per-face textures. Use `refs`. (The `block` key is a legacy
+> alias of `all`.) Note: `all`/`block` only work inside `refs`, never inside
+> `faces`.
+
+## Bows and crossbows
+
+The pulling frames are optional, and each one falls back on its own — a missing
+frame uses vanilla's rather than freezing the animation:
 
 ```json
 {
   "texture": {
-    "mode": "reference",
     "refs": {
       "bow":           "othermod:item/epic_bow",
       "bow_pulling_0": "othermod:item/epic_bow_pulling_0",
@@ -44,18 +113,8 @@ For bows and crossbows, you can optionally include custom pulling/loading frame 
 }
 ```
 
-## Texture Fields
-
-| Field                | Type   | Description                                                                                                                                                                                                         |
-|----------------------|--------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `texture.mode`       | String | `default`, `custom`, or `reference`                                                                                                                                                                                 |
-| `texture.refs`       | Map    | For `custom`: relative path to a PNG inside `ultimatecustomgear/`. For `reference`: full resource location                                                                                                          |
-| `armor_layers`       | Map    | (Armor sets only) `layer_1` and `layer_2` paths for the in-world armor texture. The special value `"transparent"` makes the armor invisible when worn (stats and effects intact); in reference mode set both layers |
-| `texture.refs.block` | String | (Simple blocks) Resource location used for all 6 faces via `cube_all`                                                                                                                                               |
-| `texture.faces`      | Object | (Blocks only) Per-face texture configuration. Keys: `top`, `bottom`, `north`, `south`, `east`, `west`, `side`                                                                                                       |
-| `texture.faces.side` | String | Shortcut: applies to `north`, `south`, `east`, `west` if not individually defined                                                                                                                                   |
-
-> **`refs` vs `faces`:** `refs` handles everything — a single texture with the `all` key (`"refs": { "all": "..." }`), or per-face textures with the face keys (`top`, `bottom`, `north`, `south`, `east`, `west`, `side`). `faces` is a legacy alias that only works for per-face textures. Use `refs`. (The `block` key is a legacy alias of `all`.) Note: `all`/`block` only work inside `refs`, never inside `faces`.
+Crossbows use `crossbow`, `crossbow_pulling_0` through `_2`, plus
+`crossbow_arrow` and `crossbow_firework` for the loaded states.
 
 ## 3D Armor Models (GeckoLib)
 
@@ -72,20 +131,19 @@ files in `texture.armor_3d`:
 ```json
 {
   "texture": {
-    "mode": "custom",
     "refs": {
-      "helmet": "textures/my_helmet_icon.png",
+      "helmet":     "textures/my_helmet_icon.png",
       "chestplate": "textures/my_chestplate_icon.png",
-      "leggings": "textures/my_leggings_icon.png",
-      "boots": "textures/my_boots_icon.png"
+      "leggings":   "textures/my_leggings_icon.png",
+      "boots":      "textures/my_boots_icon.png"
     },
     "armor_layers": {
       "layer_1": "textures/my_armor_layer_1.png",
       "layer_2": "textures/my_armor_layer_2.png"
     },
     "armor_3d": {
-      "model": "models/my_armor.geo.json",
-      "texture": "textures/my_armor_3d.png",
+      "model":     "models/my_armor.geo.json",
+      "texture":   "textures/my_armor_3d.png",
       "animation": "models/my_armor.animation.json"
     }
   }
@@ -97,6 +155,15 @@ files in `texture.armor_3d`:
 | `model`     | Yes      | The `.geo.json` exported from Blockbench                                |
 | `texture`   | Yes      | PNG painted for that model's UV layout (not the item icon, not a layer) |
 | `animation` | No       | `.animation.json`; without it the model is static                       |
+
+These three take **full paths**, unlike everything else on this page. A file is
+written as it sits in your folder, and a reference to another mod's model is
+written out in full — `"othermod:geo/armor/their_armor.geo.json"`. GeckoLib
+loads them exactly as written, so nothing is added for you.
+
+Referencing another mod's model copies nothing, which is the point: it avoids
+redistributing assets that are not yours. The cost is that the mod becomes
+required for your armor to render.
 
 **How the three texture systems combine:**
 
@@ -113,12 +180,5 @@ files in `texture.armor_3d`:
 > you want. `refs` still controls the inventory icon, which is always 2D. The 3D
 > model replaces the layers when active; they are never drawn together.
 
-**Modes:** in `custom` mode the three values are paths to your own files
-(config folder or pack zips, like every other custom texture). In `reference`
-mode they are resource locations of assets shipped by another mod
-(e.g. `"othermod:geo/armor/their_armor.geo.json"`) — nothing is copied, but
-**that mod becomes required** for your armor to render.
-
-GeckoLib is an optional dependency: the mod runs fine without it.
-3D rendering is baked at registration — adding or removing `armor_3d`
-requires a restart.
+GeckoLib is an optional dependency: the mod runs fine without it. 3D rendering is
+baked at registration — adding or removing `armor_3d` requires a restart.

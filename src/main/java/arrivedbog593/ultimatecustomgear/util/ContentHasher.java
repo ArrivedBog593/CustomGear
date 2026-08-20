@@ -1,6 +1,5 @@
 package arrivedbog593.ultimatecustomgear.util;
 
-import arrivedbog593.ultimatecustomgear.loader.ContentRoots;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -11,6 +10,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -30,7 +30,7 @@ import java.util.Map;
  * actually LOADED INTO MEMORY, not what is currently on disk. Item attributes
  * (damage, defense, etc.) are baked at registration time; if a JSON is edited
  * after the game started, the disk no longer reflects the running state.
- * Therefore the hash is captured via {@link #capture(ContentRoots)} exactly
+ * Therefore, the hash is captured via {@link #capture(ContentRoots)} exactly
  * when content is (re)loaded — at startup and on /customgear reload — and the
  * handshake reads {@link #current()}. Never hash the disk at connection time.
  * <p>
@@ -38,7 +38,7 @@ import java.util.Map;
  * <ul>
  *   <li>Each file is parsed and re-serialized in canonical form: object keys
  *       sorted alphabetically (recursively), compact output. Whitespace,
- *       CRLF vs LF, indentation and key order do NOT affect the hash.</li>
+ *       CRLF vs LF, indentation, and key order do NOT affect the hash.</li>
  *   <li>File paths AND packaging are ignored: the same JSONs loose, inside
  *       one zip, split across several zips, or in different subfolders all
  *       produce the SAME hash. "Drop this zip in packs/" therefore always
@@ -50,6 +50,10 @@ import java.util.Map;
  *   <li>The .cache subfolder is excluded (matching the parsers' filter), and
  *       packs/ is excluded from the loose walk — its zips are hashed through
  *       their own mounted roots, not as opaque binary files.</li>
+ *   <li>Only .json files are hashed. Textures and models are deliberately
+ *       excluded: the handshake exists to catch STAT desync, and a client
+ *       with a different PNG sees a different picture, not different damage.
+ *       Enforcing texture equality would kick players over cosmetics.</li>
  * </ul>
  * NOTE: this hashes the SOURCE JSONs (item stats, effects, etc.), which is
  * different from DynamicResourcePack.contentHash() — that one hashes the
@@ -96,15 +100,33 @@ public final class ContentHasher {
      * Walks one root and adds the canonical form of every valid .json to
      * {@code out}. Excludes .cache (parser parity) and packs/ (zips are
      * hashed via their own mounted roots, not as binary files).
+     * <p>
+     * Symlinked files are skipped the same way the parsers skip them: a file
+     * GearParser and UniversalParser refuse to load must not influence the
+     * hash either, or the handshake would compare content that was never
+     * registered on either side.
      */
     private static void collectCanonicalJsons(Path root, List<String> out) {
         if (!Files.isDirectory(root)) return;
+
+        // Only meaningful on the real filesystem; zip roots cannot escape.
+        boolean realFs = root.getFileSystem() == FileSystems.getDefault();
+        Path canonicalRoot = realFs ? ParserUtils.resolveCanonical(root) : null;
+        if (realFs && canonicalRoot == null) {
+            out.add("scan-error:" + root);
+            return;
+        }
 
         try (var stream = Files.walk(root)) {
             stream.filter(p -> p.toString().endsWith(".json")
                             && !root.relativize(p).startsWith(".cache")
                             && !root.relativize(p).startsWith("packs"))
                     .forEach(path -> {
+                        if (realFs && !ParserUtils.isSafeChild(path, canonicalRoot)) {
+                            LOGGER.warn("[CustomGear] ContentHasher skipping file outside "
+                                    + "customgear/ dir: {}", path);
+                            return;
+                        }
                         try {
                             String raw = Files.readString(path, StandardCharsets.UTF_8);
                             JsonElement parsed = JsonParser.parseString(raw);

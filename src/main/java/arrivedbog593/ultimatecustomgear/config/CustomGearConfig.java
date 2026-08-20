@@ -3,10 +3,15 @@ package arrivedbog593.ultimatecustomgear.config;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 /**
- * Mod configuration (COMMON — lives in config/ultimatecustomgear-common.toml
- * on both sides, but the handshake behavior is decided by the SERVER's value:
- * the chosen mode travels inside the handshake payload and the client obeys
- * it. A client's local setting has no effect when joining a server.)
+ * Mod configuration, split across two files.
+ * <p>
+ * COMMON (config/ultimatecustomgear-common.toml) lives on both sides, but the
+ * handshake behavior is decided by the SERVER's value: the chosen mode travels
+ * inside the handshake payload and the client obeys it. A client's local
+ * setting has no effect when joining a server.
+ * <p>
+ * CLIENT (config/ultimatecustomgear-client.toml) is purely local preference —
+ * nothing in it reaches the server or affects gameplay.
  */
 public final class CustomGearConfig {
 
@@ -39,6 +44,25 @@ public final class CustomGearConfig {
 
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.EnumValue<HandshakeMode> HANDSHAKE_MODE;
+    public static final ModConfigSpec CLIENT_SPEC;
+    public static final ModConfigSpec.BooleanValue KEEP_SEARCH_PHRASE;
+
+    static {
+        ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
+
+        builder.comment("Container GUI settings").push("containers");
+
+        KEEP_SEARCH_PHRASE = builder
+                .comment(
+                        "Keep the search phrase when a container is closed and reopened.",
+                        "The phrase is shared across every container, so a search typed in one",
+                        "chest still filters the next one you open.",
+                        "false - every container opens unfiltered")
+                .define("keep_search_phrase", true);
+
+        builder.pop();
+        CLIENT_SPEC = builder.build();
+    }
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();

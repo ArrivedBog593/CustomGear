@@ -14,6 +14,7 @@
 | [Comida](food.md)                             | Nutrición, velocidad al comer, efectos al consumir                     |
 | [Bloques](blocks.md)                          | Texturas por cara, direccionales, gravedad, requisitos de minado       |
 | [Fluidos](fluids.md)                          | Color, propagación, efectos al contacto, quemado                       |
+| [Contenedores](containers.md)                 | Barriles, cofres, shulkers y mochilas                                  |
 | [Texturas y modelos](textures-and-models.md)  | Los tres modos, capas de armadura, modelos 3D con GeckoLib             |
 | [Recetas](recipes.md)                         | Todos los tipos de receta, tags como ingredientes, passthrough         |
 | [Tags](tags.md)                               | Pertenecer a tags, tags automáticos del equipamiento, parches          |

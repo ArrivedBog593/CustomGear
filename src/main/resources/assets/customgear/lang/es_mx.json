@@ -1,11 +1,61 @@
 {
   "itemGroup.customgear": "Custom Gear",
+  "item.customgear.tab_icon": "Custom Gear",
+
+  "key.categories.customgear": "Ultimate Custom Gear",
+  "key.customgear.open_backpack": "Abrir mochila",
+  "key.customgear.sort": "Ordenar contenedor",
+  "key.customgear.transfer_in": "Transferir al contenedor",
+  "key.customgear.transfer_out": "Transferir al inventario",
 
   "customgear.network.hash_mismatch": "Tus archivos de Ultimate Custom Gear no coinciden con los del servidor.\nServidor: %s — Tuyos: %s\nPídele al dueño del servidor su carpeta ultimatecustomgear (o el zip) y reemplaza la tuya en .minecraft/ultimatecustomgear/",
   "customgear.network.hash_mismatch_warn": "⚠ Tus archivos de UltimateCustomGear difieren de los del servidor. Nombres, tooltips y daño mostrado pueden no coincidir con los valores reales (el combate siempre usa los del servidor). Pídele al dueño el zip actualizado.",
 
   "customgear.command.reload.success": "✓ Items recargados. Presiona F3+T si cambiaste texturas",
   "customgear.command.reload.error": "✗ Error al recargar",
+  "customgear.command.dump.success": "[CustomGear] %s archivos volcados en %s",
+  "customgear.command.dump.error": "[CustomGear] El volcado falló — revisa el log del servidor para más detalles",
+
+  "customgear.container.search": "Buscar",
+  "customgear.container.search.mod": "@ busca por mod",
+  "customgear.container.search.tag": "# busca por etiqueta",
+  "customgear.container.search.tooltip": "$ busca en tooltips",
+  "customgear.container.search.id": "* busca por id",
+  "customgear.container.no_results": "Sin resultados",
+
+  "tooltip.ultimatecustomgear.key.shift": "Shift izquierdo",
+  "tooltip.ultimatecustomgear.hold_shift": "Mantén %s para ver detalles",
+  "tooltip.ultimatecustomgear.container.press_for_contents": "Presiona %s para ver los contenidos",
+  "tooltip.ultimatecustomgear.container.contents": "Contenidos:",
+  "tooltip.ultimatecustomgear.container.empty": "Vacío",
+  "tooltip.ultimatecustomgear.container.more": "…y %s más tipos",
+
+  "customgear.container.sort": "Ordenar objetos",
+  "customgear.container.sort.reverse": "Haz clic derecho para invertir el orden",
+  "customgear.container.sort.name": "Ordenar por nombre",
+  "customgear.container.sort.name.letter": "N",
+  "customgear.container.sort.mod": "Ordenar por mod",
+  "customgear.container.sort.mod.letter": "M",
+  "customgear.container.sort.count": "Ordenar por cantidad",
+  "customgear.container.sort.count.letter": "1",
+  "customgear.container.sort.tag": "Ordenar por etiqueta",
+  "customgear.container.sort.tag.letter": "E",
+
+  "customgear.container.transfer.shift": "Shift para transferir todo",
+  "customgear.container.transfer_in": "Transferir coincidencias al contenedor",
+  "customgear.container.transfer_in.all": "Transferir todo al contenedor",
+  "customgear.container.transfer_out": "Transferir coincidencias al inventario",
+  "customgear.container.transfer_out.all": "Transferir todo al inventario",
+
+  "ultimatecustomgear.configuration.containers": "Contenedores",
+  "ultimatecustomgear.configuration.containers.title": "Ajustes de contenedores",
+  "ultimatecustomgear.configuration.keep_search_phrase": "Recordar búsqueda",
+  "ultimatecustomgear.configuration.keep_search_phrase.tooltip": "Mantiene la frase de búsqueda al cerrar y volver a abrir un contenedor.\nLa frase se comparte entre todos los contenedores, así que una búsqueda escrita en un cofre sigue filtrando el siguiente que abras.",
+
+  "ultimatecustomgear.configuration.network": "Red",
+  "ultimatecustomgear.configuration.network.title": "Ajustes de red",
+  "ultimatecustomgear.configuration.content_handshake_mode": "Verificación de contenido",
+  "ultimatecustomgear.configuration.content_handshake_mode.tooltip": "Qué hacer cuando los archivos JSON de un cliente que se conecta no coinciden con los del servidor.\nENFORCE - desconectarlo con un mensaje explicativo\nWARN - dejarlo entrar, registrarlo y avisarle por chat\nOFF - omitir la comprobación\nSolo cuenta el valor del SERVIDOR.",
 
   "tooltip.customgear.piece_effects": "Cuando se usa:",
   "tooltip.customgear.held_effects": "Cuando se sostiene:",

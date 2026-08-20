@@ -45,7 +45,6 @@
   "enchantable": true,
   "enchantability": 15,
   "texture": {
-    "mode": "reference",
     "refs": {
       "sword":    "minecraft:item/netherite_sword",
       "bow":      "minecraft:item/bow",
@@ -77,7 +76,6 @@
   "enchantability": 15,
   "held_effects": [ { "effect": "minecraft:strength", "amplifier": 1 } ],
   "texture": {
-    "mode": "reference",
     "refs": { "sword": "minecraft:item/diamond_sword" }
   },
   "recipe": {
@@ -106,7 +104,6 @@
   "enchantable": true,
   "enchantability": 15,
   "texture": {
-    "mode": "reference",
     "refs": { "bow": "minecraft:item/bow" }
   },
   "recipe": {
@@ -134,7 +131,6 @@
   "enchantable": true,
   "enchantability": 15,
   "texture": {
-    "mode": "reference",
     "refs": { "crossbow": "minecraft:item/crossbow" }
   }
 }

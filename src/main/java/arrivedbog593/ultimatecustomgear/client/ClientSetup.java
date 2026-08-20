@@ -1,10 +1,16 @@
 package arrivedbog593.ultimatecustomgear.client;
 
+import arrivedbog593.ultimatecustomgear.client.render.ChestRenderer;
+import arrivedbog593.ultimatecustomgear.client.render.CustomModelLayers;
 import arrivedbog593.ultimatecustomgear.items.weapons.CustomBowItem;
 import arrivedbog593.ultimatecustomgear.items.weapons.CustomCrossbowItem;
 import arrivedbog593.ultimatecustomgear.items.weapons.CustomShieldItem;
-import arrivedbog593.ultimatecustomgear.loader.GearRegistry;
+import arrivedbog593.ultimatecustomgear.registry.ContainerRegistry;
+import arrivedbog593.ultimatecustomgear.registry.GearRegistry;
+import arrivedbog593.ultimatecustomgear.registry.MenuRegistry;
 import arrivedbog593.ultimatecustomgear.network.CustomGearNetworking;
+import arrivedbog593.ultimatecustomgear.network.OpenBackpackPayload;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
@@ -15,7 +21,8 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.ChargedProjectiles;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import net.neoforged.neoforge.client.event.*;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -82,7 +89,7 @@ public class ClientSetup {
                 (stack, level, entity, seed) -> {
                     if (entity == null || entity.getUseItem() != stack) return 0.0F;
                     int duration = stack.getUseDuration(entity);
-                    int elapsed = stack.getUseDuration(entity) - entity.getUseItemRemainingTicks();
+                    int elapsed  = duration - entity.getUseItemRemainingTicks();
                     // CustomBowItem.getUseDuration returns 72000 / chargeSpeed, so a
                     // SLOWER bow has a LONGER duration. The draw window has to scale
                     // the same way, hence multiply.
@@ -93,7 +100,7 @@ public class ClientSetup {
                     // too slow, skipping bow_pulling_0 entirely.
                     float fullDrawTicks = 20.0f * (duration / 72000.0f);
                     if (fullDrawTicks <= 0.0f) return 1.0F;
-                    return Math.min(elapsed / 20.0f, 1.0f);
+                    return Math.min(elapsed / fullDrawTicks, 1.0f);
                 });
 
         ItemProperties.register(item,
@@ -154,5 +161,51 @@ public class ClientSetup {
                 (stack, level, entity, seed) ->
                         entity != null && entity.isUsingItem() && entity.getUseItem() == stack
                                 ? 1.0F : 0.0F);
+    }
+
+    // ── Menu ────────────────────────────────────────────────────────────────
+
+    /**
+     * Without this the menu opens server-side and the client silently does
+     * nothing: it receives the open packet, finds no screen bound to the menu
+     * type, and drops it. No error, no window.
+     */
+    public static void onRegisterMenuScreens(RegisterMenuScreensEvent event) {
+        event.register(MenuRegistry.CONTAINER_MENU.get(), CustomContainerScreen::new);
+    }
+
+    // ── Chest ────────────────────────────────────────────────────────────────
+
+    /** Bakes the fixed chest mesh once, not once per container definition. */
+    public static void onRegisterLayerDefinitions(EntityRenderersEvent.RegisterLayerDefinitions event) {
+        event.registerLayerDefinition(CustomModelLayers.CHEST_SINGLE, ChestRenderer::createSingleBodyLayer);
+        event.registerLayerDefinition(CustomModelLayers.CHEST_LEFT,   ChestRenderer::createDoubleBodyLeftLayer);
+        event.registerLayerDefinition(CustomModelLayers.CHEST_RIGHT,  ChestRenderer::createDoubleBodyRightLayer);
+    }
+
+    /**
+     * ONE renderer for the shared block entity type. It decides what to draw by
+     * looking at the block, which is why a barrel passing through here draws
+     * nothing at all.
+     */
+    public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerBlockEntityRenderer(ContainerRegistry.CONTAINER_BE.get(), ChestRenderer::new);
+    }
+
+    public static void onRegisterTooltipComponents(RegisterClientTooltipComponentFactoriesEvent event) {
+        event.register(ContainerTooltip.class, ContainerTooltipRenderer::new);
+    }
+
+    /**
+     * Fires outside any screen. Inside one the container screen handles its own
+     * bindings, and opening a backpack over an open chest would be confusing.
+     */
+    @SubscribeEvent
+    public static void onKeyInput(InputEvent.Key event) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen != null || mc.player == null) return;
+        while (CustomGearKeys.OPEN_BACKPACK.consumeClick()) {
+            PacketDistributor.sendToServer(new OpenBackpackPayload());
+        }
     }
 }

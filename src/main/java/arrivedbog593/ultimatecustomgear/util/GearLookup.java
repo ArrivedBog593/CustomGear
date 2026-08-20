@@ -1,7 +1,7 @@
 package arrivedbog593.ultimatecustomgear.util;
 
 import arrivedbog593.ultimatecustomgear.data.GearData;
-import arrivedbog593.ultimatecustomgear.loader.GearRegistry;
+import arrivedbog593.ultimatecustomgear.registry.GearRegistry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;

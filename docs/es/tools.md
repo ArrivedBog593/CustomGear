@@ -57,7 +57,6 @@
   "enchantable": true,
   "enchantability": 22,
   "texture": {
-    "mode": "reference",
     "refs": {
       "pickaxe": "minecraft:item/netherite_pickaxe",
       "axe":     "minecraft:item/netherite_axe",

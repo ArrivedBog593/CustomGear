@@ -1,10 +1,7 @@
 package arrivedbog593.ultimatecustomgear.resources;
 
-import arrivedbog593.ultimatecustomgear.data.BlockData;
-import arrivedbog593.ultimatecustomgear.data.FluidData;
-import arrivedbog593.ultimatecustomgear.data.GearData;
-import arrivedbog593.ultimatecustomgear.data.ItemData;
-import arrivedbog593.ultimatecustomgear.loader.ContentRoots;
+import arrivedbog593.ultimatecustomgear.data.*;
+import arrivedbog593.ultimatecustomgear.util.ContentRoots;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -15,8 +12,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
-import static arrivedbog593.ultimatecustomgear.resources.ModelConstants.DEFAULT_ITEM;
-import static arrivedbog593.ultimatecustomgear.resources.ModelConstants.itemTextureLoc;
+import static arrivedbog593.ultimatecustomgear.resources.ModelConstants.*;
 
 /**
  * Public coordinator for all resource generation.
@@ -45,11 +41,9 @@ public final class TextureLoader {
      * Must be called while a ContentRoots session is open (see
      * CustomGearMod / the reload command).
      */
-    public static void loadAll(DynamicResourcePack pack, List<GearData> gearList,
+    public static void loadAll(PackSink pack, List<GearData> gearList,
                                List<ItemData> itemList, List<BlockData> blockList,
-                               List<FluidData> fluidList) {
-        // Load vanilla shield entity texture into the item atlas
-        GearModelGenerator.loadVanillaShieldTexture(pack);
+                               List<FluidData> fluidList, List<ContainerContentData> backpacks) {
 
         // Gear (armor, tools, weapons and individual items)
         for (GearData data : gearList) {
@@ -66,8 +60,42 @@ public final class TextureLoader {
             BlockModelGenerator.loadBlock(pack, data);
         }
 
+        for (ContainerContentData data : backpacks) {
+            String value = data.texture != null && data.texture.refs != null
+                    ? data.texture.refs.get("item") : null;
+
+            if (value == null) {
+                GearModelGenerator.generateItemModelWithRef(pack, data.id, DEFAULT_BACKPACK);
+                continue;
+            }
+
+            switch (TextureRef.kindOf(value)) {
+                case REFERENCE -> GearModelGenerator.generateItemModelWithRef(pack, data.id, value);
+                case FILE -> {
+                    Optional<Path> texPath = TextureLoader.resolveUserResource(value);
+                    if (texPath.isPresent()) {
+                        pack.addTextureWithMeta(itemTextureLoc(data.id), texPath.get());
+                        GearModelGenerator.generateGeneratedItemModel(pack, data.id);
+                    } else {
+                        LOGGER.error("[CustomGear] Container '{}': texture file not found in the "
+                                + "config folder or any pack zip: {}", data.id, value);
+                        GearModelGenerator.generateItemModelWithRef(pack, data.id, DEFAULT_BACKPACK);
+                    }
+                }
+                case INVALID -> {
+                    TextureRef.reportInvalid("Container '" + data.id + "'", "item", value);
+                    GearModelGenerator.generateItemModelWithRef(pack, data.id, DEFAULT_BACKPACK);
+                }
+            }
+        }
+
         // Fluid buckets
         for (FluidData data : fluidList) {
+            BlockModelGenerator.generateBucketModel(pack, data);
+        }
+
+        for (FluidData data : fluidList) {
+            BlockModelGenerator.loadFluidTextures(pack, data);
             BlockModelGenerator.generateBucketModel(pack, data);
         }
 
@@ -78,10 +106,10 @@ public final class TextureLoader {
     /**
      * Generates lang files for all registered types.
      */
-    public static void generateLang(DynamicResourcePack pack, List<GearData> gearList,
+    public static void generateLang(PackSink pack, List<GearData> gearList,
                                     List<ItemData> itemList, List<BlockData> blockList,
-                                    List<FluidData> fluidList) {
-        LangGenerator.generateLang(pack, gearList, itemList, blockList, fluidList);
+                                    List<FluidData> fluidList, List<ContainerContentData> backpacks) {
+        LangGenerator.generateLang(pack, gearList, itemList, blockList, fluidList, backpacks);
     }
 
     /**
@@ -105,39 +133,33 @@ public final class TextureLoader {
 
     // ── Item loading ──────────────────────────────────────────────────────────
 
-    private static void loadItem(DynamicResourcePack pack, ItemData data) {
+    private static void loadItem(PackSink pack, ItemData data) {
         LOGGER.info("[CustomGear] Loading item texture: {}", data.id);
-        if (data.texture == null || data.texture.mode == null) {
+
+        String value = data.texture != null && data.texture.refs != null
+                ? data.texture.refs.get("item") : null;
+        if (value == null) {
             GearModelGenerator.generateItemModelWithRef(pack, data.id, DEFAULT_ITEM);
             return;
         }
-        switch (data.texture.mode) {
-            case "reference" -> {
-                String ref = data.texture.refs != null ? data.texture.refs.get("item") : null;
-                if (ref != null) {
-                    GearModelGenerator.generateItemModelWithRef(pack, data.id, ref);
+
+        switch (TextureRef.kindOf(value)) {
+            case REFERENCE -> GearModelGenerator.generateItemModelWithRef(pack, data.id, value);
+            case FILE -> {
+                Optional<Path> texPath = resolveUserResource(value);
+                if (texPath.isPresent()) {
+                    pack.addTextureWithMeta(itemTextureLoc(data.id), texPath.get());
+                    GearModelGenerator.generateGeneratedItemModel(pack, data.id);
                 } else {
-                    LOGGER.error("[CustomGear] 'refs.item' missing in reference mode: {}", data.id);
+                    LOGGER.error("[CustomGear] Item '{}': texture file not found in the config "
+                            + "folder or any pack zip: {}", data.id, value);
                     GearModelGenerator.generateItemModelWithRef(pack, data.id, DEFAULT_ITEM);
                 }
             }
-            case "custom" -> {
-                String path = data.texture.refs != null ? data.texture.refs.get("item") : null;
-                if (path != null) {
-                    Optional<Path> texPath = resolveUserResource(path);
-                    if (texPath.isPresent()) {
-                        pack.addTexture(itemTextureLoc(data.id), texPath.get());
-                        GearModelGenerator.generateGeneratedItemModel(pack, data.id);
-                    } else {
-                        LOGGER.error("[CustomGear] Item texture not found in config folder or any pack zip: {}", path);
-                        GearModelGenerator.generateItemModelWithRef(pack, data.id, DEFAULT_ITEM);
-                    }
-                } else {
-                    LOGGER.error("[CustomGear] 'refs.item' missing in custom mode: {}", data.id);
-                    GearModelGenerator.generateItemModelWithRef(pack, data.id, DEFAULT_ITEM);
-                }
+            case INVALID -> {
+                TextureRef.reportInvalid("Item '" + data.id + "'", "item", value);
+                GearModelGenerator.generateItemModelWithRef(pack, data.id, DEFAULT_ITEM);
             }
-            default -> GearModelGenerator.generateItemModelWithRef(pack, data.id, DEFAULT_ITEM);
         }
     }
 
@@ -156,7 +178,7 @@ public final class TextureLoader {
      * to the whole dynamic pack, which merges every root, so picking one zip's
      * icon over another's would be arbitrary.
      */
-    public static void loadPackIcon(DynamicResourcePack pack) {
+    public static void loadPackIcon(PackSink pack) {
         // 1. User override
         ContentRoots session = ContentRoots.current();
         if (session != null) {

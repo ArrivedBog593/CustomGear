@@ -3,6 +3,7 @@ package arrivedbog593.ultimatecustomgear.items.gear.geo;
 import arrivedbog593.ultimatecustomgear.data.GearData;
 import arrivedbog593.ultimatecustomgear.items.gear.CustomArmorItem;
 import arrivedbog593.ultimatecustomgear.resources.ModelConstants;
+import arrivedbog593.ultimatecustomgear.resources.TextureRef;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -91,9 +92,16 @@ public class GeckoArmorItem extends CustomArmorItem implements GeoItem {
     }
 
     /**
-     * Resolves the three GeckoLib resources for this armor, honouring the
-     * texture mode: reference uses the declared resource locations directly,
-     * custom points at the copies injected into the dynamic pack.
+     * Resolves the three GeckoLib resources for this armor.
+     * <p>
+     * Each value decides for itself: a resource location points into another
+     * mod's jar, which the generator deliberately left uncopied, so pointing at
+     * the pack instead would find nothing. A file was copied under this gear's
+     * id, so its path is derived rather than read.
+     * <p>
+     * Note these take the FULL path — 'geo/...', 'textures/...', extension and
+     * all — because GeckoLib loads them as written, unlike the model system
+     * which completes short forms itself.
      */
     private static class GearArmorGeoModel extends GeoModel<GeckoArmorItem> {
 
@@ -103,30 +111,29 @@ public class GeckoArmorItem extends CustomArmorItem implements GeoItem {
 
         GearArmorGeoModel(GearData data) {
             GearData.Armor3DData armor3d = data.texture != null ? data.texture.armor3d : null;
-            boolean reference = data.texture != null && "reference".equals(data.texture.mode);
 
-            this.modelResource = reference && armor3d != null
-                    ? parseOrDefault(armor3d.model, "geo/armor/" + data.id + ".geo.json")
-                    : packLoc("geo/armor/" + data.id + ".geo.json");
-
-            this.textureResource = reference && armor3d != null
-                    ? parseOrDefault(armor3d.texture, "textures/armor/" + data.id + ".png")
-                    : packLoc("textures/armor/" + data.id + ".png");
-
-            this.animationResource = reference && armor3d != null
-                    ? parseOrDefault(armor3d.animation, "animations/armor/" + data.id + ".animation.json")
-                    : packLoc("animations/armor/" + data.id + ".animation.json");
+            this.modelResource = resolve(armor3d == null ? null : armor3d.model,
+                    "geo/armor/" + data.id + ".geo.json");
+            this.textureResource = resolve(armor3d == null ? null : armor3d.texture,
+                    "textures/armor/" + data.id + ".png");
+            this.animationResource = resolve(armor3d == null ? null : armor3d.animation,
+                    "animations/armor/" + data.id + ".animation.json");
         }
 
         private static ResourceLocation packLoc(String path) {
             return ResourceLocation.fromNamespaceAndPath(ModelConstants.NAMESPACE, path);
         }
 
-        /** Reference mode: parse the declared RL, falling back to the pack path. */
-        private static ResourceLocation parseOrDefault(String ref, String fallbackPath) {
-            if (ref == null || ref.isBlank()) return packLoc(fallbackPath);
-            ResourceLocation rl = ResourceLocation.tryParse(ref);
-            return rl != null ? rl : packLoc(fallbackPath);
+        /**
+         * A reference is used as written; anything else was copied into the
+         * pack under the derived path.
+         */
+        private static ResourceLocation resolve(String value, String packPath) {
+            if (value != null && TextureRef.kindOf(value) == TextureRef.Kind.REFERENCE) {
+                ResourceLocation rl = ResourceLocation.tryParse(value);
+                if (rl != null) return rl;
+            }
+            return packLoc(packPath);
         }
 
         @Override

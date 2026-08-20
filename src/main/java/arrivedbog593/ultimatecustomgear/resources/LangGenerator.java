@@ -1,9 +1,6 @@
 package arrivedbog593.ultimatecustomgear.resources;
 
-import arrivedbog593.ultimatecustomgear.data.BlockData;
-import arrivedbog593.ultimatecustomgear.data.FluidData;
-import arrivedbog593.ultimatecustomgear.data.GearData;
-import arrivedbog593.ultimatecustomgear.data.ItemData;
+import arrivedbog593.ultimatecustomgear.data.*;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.logging.log4j.LogManager;
@@ -30,9 +27,9 @@ public final class LangGenerator {
 
     // ── Public entry point ────────────────────────────────────────────────────
 
-    public static void generateLang(DynamicResourcePack pack, List<GearData> gearList,
+    public static void generateLang(PackSink pack, List<GearData> gearList,
                                     List<ItemData> itemList, List<BlockData> blockList,
-                                    List<FluidData> fluidList) {
+                                    List<FluidData> fluidList, List<ContainerContentData> backpacks) {
         for (String lang : LANGS) {
             Map<String, String> entries = new LinkedHashMap<>();
 
@@ -48,6 +45,16 @@ public final class LangGenerator {
 
             // Simple items (includes food)
             for (ItemData data : itemList) {
+                String key   = "item.customgear." + data.id;
+                String value = data.names != null
+                        ? data.names.getOrDefault(lang, data.names.getOrDefault("en_us", data.id))
+                        : data.id;
+                entries.put(key, value);
+            }
+
+            // item.*, not block.*: a backpack registers only an Item, so the
+            // block key would never be looked up and the name shows raw.
+            for (ContainerContentData data : backpacks) {
                 String key   = "item.customgear." + data.id;
                 String value = data.names != null
                         ? data.names.getOrDefault(lang, data.names.getOrDefault("en_us", data.id))

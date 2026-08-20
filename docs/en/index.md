@@ -14,6 +14,7 @@
 | [Food](food.md)                             | Nutrition, eating speed, on-eat effects                        |
 | [Blocks](blocks.md)                         | Per-face textures, directional, gravity, mining requirements   |
 | [Fluids](fluids.md)                         | Color, spread, contact effects, burning                        |
+| [Containers](containers.md)                 | Barrels, chests, shulkers and backpacks                        |
 | [Textures & Models](textures-and-models.md) | The three texture modes, armor layers, 3D models with GeckoLib |
 | [Recipes](recipes.md)                       | Every recipe type, tags as ingredients, passthrough            |
 | [Tags](tags.md)                             | Belonging to tags, automatic gear tags, tag patches            |

@@ -15,7 +15,6 @@
     "es_mx": "Cubeta de {fluid_name}"
   },
   "light_level": 3,
-  "color": "0xFF4CAF50",
   "tick_rate": 10,
   "spread_distance": 6,
   "burns_entities": false,
@@ -25,7 +24,10 @@
     { "effect": "minecraft:slowness", "amplifier": 1, "duration": 3 }
   ],
   "texture": {
-    "mode": "default"
+    "refs": {
+      "still": "minecraft:block/lava_still",
+      "flowing": "minecraft:block/lava_flow"
+    }
   }
 }
 ```
@@ -45,7 +47,6 @@
     "es_mx": "Cubeta de {fluid_name}"
   },
   "light_level": 15,
-  "color": "0xFFFF6600",
   "tick_rate": 30,
   "spread_distance": 4,
   "burns_entities": true,
@@ -56,10 +57,24 @@
     { "effect": "minecraft:mining_fatigue", "amplifier": 0, "duration": 5 }
   ],
   "texture": {
-    "mode": "default"
+    "refs": {
+      "still": "minecraft:block/lava_still",
+      "flowing": "minecraft:block/lava_flow"
+    }
   }
 }
 ```
+
+> **Las texturas de fluido usan la forma corta** — `minecraft:block/lava_still`,
+> no la ruta completa. Un sprite de fluido se cose al atlas de bloques, y así es
+> como el atlas lo direcciona.
+>
+> No declarar ni `still` ni `flowing` convierte al fluido en un reskin del agua,
+> que es también lo que le da el tinte azul. Declarar uno y no el otro se
+> rechaza: el fluido dibujaría su propia textura estática y la de flujo del agua.
+>
+> Los fluidos animados necesitan su `.mcmeta` junto al PNG — consulta
+> [Texturas y Modelos](textures-and-models.md).
 
 ## Campos de fluidos
 

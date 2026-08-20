@@ -71,6 +71,7 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
 neoForge {
     version = project.neo_version
+    accessTransformers.from('src/main/accesstransformer.cfg')
 
     parchment {
         mappingsVersion = project.parchment_mappings_version
@@ -86,7 +87,7 @@ neoForge {
         server {
             server()
             programArgument '--nogui'
-            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            gameDirectory = file('runServer')
         }
 
         gameTestServer {
@@ -124,6 +125,10 @@ dependencies {
 
     // Geckolib
     implementation "software.bernie.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
+
+    // Curios
+    compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}+${minecraft_version}:api"
+    runtimeOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}+${minecraft_version}"
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
@@ -140,7 +145,8 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
             mod_version            : mod_version,
             mod_description        : mod_description,
             jei_version            : jei_version,
-            geckolib_version        : geckolib_version
+            geckolib_version       : geckolib_version,
+            curios_version         : curios_version
     ]
     inputs.properties replaceProperties
     expand replaceProperties
@@ -176,4 +182,16 @@ idea {
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
     options.getRelease().set(21)
+}
+
+// The AT has to be INSIDE the jar for production: accessTransformers.from()
+// above only tells moddev where to find it at compile time. Copied straight
+// into the jar rather than through generateModMetadata, because that task is a
+// ProcessResources whose output feeds createMinecraftArtifacts — routing the AT
+// through it makes Gradle see a task reading another's output with no declared
+// dependency, and the build fails.
+tasks.named('jar') {
+    from('src/main/accesstransformer.cfg') {
+        into 'META-INF'
+    }
 }

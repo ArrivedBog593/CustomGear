@@ -27,7 +27,6 @@
     { "effect": "minecraft:resistance",      "amplifier": 0, "duration": 300, "probability": 1.0 }
   ],
   "texture": {
-    "mode": "reference",
     "refs": { "item": "minecraft:item/golden_apple" }
   },
   "recipe": {

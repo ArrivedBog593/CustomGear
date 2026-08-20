@@ -1,7 +1,7 @@
 package arrivedbog593.ultimatecustomgear.items.items;
 
 import arrivedbog593.ultimatecustomgear.data.ItemData;
-import arrivedbog593.ultimatecustomgear.loader.ItemRegistry;
+import arrivedbog593.ultimatecustomgear.registry.ItemRegistry;
 import arrivedbog593.ultimatecustomgear.util.GearLookup;
 import arrivedbog593.ultimatecustomgear.util.TooltipHelper;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -53,5 +53,8 @@ public class CustomItem extends Item {
         super.appendHoverText(stack, context, tooltip, flag);
         ItemData live = ItemRegistry.ITEM_MAP.get(BuiltInRegistries.ITEM.getKey(this));
         TooltipHelper.appendMobDrops(live != null ? live : itemData, tooltip);
+        if (!TooltipHelper.detailsShown() && TooltipHelper.hasDetails(itemData)) {
+            TooltipHelper.addDetailsHint(tooltip);
+        }
     }
 }

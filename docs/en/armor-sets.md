@@ -40,7 +40,6 @@
     ]
   },
   "texture": {
-    "mode": "reference",
     "refs": {
       "helmet":     "minecraft:item/diamond_helmet",
       "chestplate": "minecraft:item/diamond_chestplate",
@@ -103,7 +102,6 @@
     "effects": [ { "effect": "minecraft:fire_resistance", "amplifier": 0 } ]
   },
   "texture": {
-    "mode": "custom",
     "refs": {
       "helmet":     "armor/textures/item/dragonslayer_helmet.png",
       "chestplate": "armor/textures/item/dragonslayer_chestplate.png",

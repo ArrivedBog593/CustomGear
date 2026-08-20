@@ -1,9 +1,6 @@
 package arrivedbog593.ultimatecustomgear.util;
 
-import arrivedbog593.ultimatecustomgear.data.BlockData;
-import arrivedbog593.ultimatecustomgear.data.FluidData;
-import arrivedbog593.ultimatecustomgear.data.GearData;
-import arrivedbog593.ultimatecustomgear.data.ItemData;
+import arrivedbog593.ultimatecustomgear.data.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -61,11 +58,13 @@ public final class GlobalIdValidator {
         public final List<ItemData>  items  = new ArrayList<>();
         public final List<BlockData> blocks = new ArrayList<>();
         public final List<FluidData> fluids = new ArrayList<>();
+        public final List<ContainerContentData> containers = new ArrayList<>();
         public int droppedEntries = 0;
     }
 
     public static Result validate(List<GearData> gearList, List<ItemData> itemList,
-                                  List<BlockData> blockList, List<FluidData> fluidList) {
+                                  List<BlockData> blockList, List<FluidData> fluidList,
+                                  List<ContainerContentData> containerList) {
 
         // finalId → human-readable owner ("gear 'myset' (weapon_set)", etc.)
         Map<String, String> itemIds  = new HashMap<>();
@@ -109,6 +108,27 @@ public final class GlobalIdValidator {
             );
             if (tryClaimAll(claims, owner)) {
                 result.blocks.add(data);
+            } else {
+                result.droppedEntries++;
+            }
+        }
+
+        // ── 3.5. Containers — a placeable one claims the same IDs as any block ──
+        // Same registries, same derived names: a Block plus a BlockItem. Only
+        // registration treats them differently, so they must compete with blocks
+        // for IDs here or a collision surfaces at registry freeze.
+        //
+        // A BACKPACK claims only the item id: it registers no Block, and
+        // reserving one would block a real block from using that name for
+        // nothing.
+        for (ContainerContentData data : containerList) {
+            String owner = "container '" + data.id + "' (" + data.container.kind() + ")";
+            List<Claim> claims = data.container.isBlock()
+                    ? List.of(new Claim(blockIds, "block", data.id),
+                    new Claim(itemIds,  "item",  data.id))
+                    : List.of(new Claim(itemIds,  "item",  data.id));
+            if (tryClaimAll(claims, owner)) {
+                result.containers.add(data);
             } else {
                 result.droppedEntries++;
             }

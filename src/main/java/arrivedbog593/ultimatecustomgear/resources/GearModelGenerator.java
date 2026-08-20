@@ -6,7 +6,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,74 +15,420 @@ import java.util.Optional;
 import static arrivedbog593.ultimatecustomgear.resources.ModelConstants.*;
 
 /**
- * Generates item models for all gear types:
- * armor sets, tool sets, weapon sets, and individual weapons/tools.
+ * Generates item models for all gear types: armor sets, tool sets, weapon sets,
+ * and individual weapons and tools.
  * <p>
- * Also handles:
- *   - Bow/crossbow animation models (pulling/charged overrides)
- *   - Shield BEWLR models (builtin/entity)
- *   - Vanilla shield texture injection into the item atlas
+ * NO TEXTURE MODE. What a value is gets deduced from the value itself — a
+ * resource location if it contains a colon, a file in the content root if it
+ * ends in an extension — so a single set can mix its own textures with another
+ * mod's, which one shared 'mode' per object made impossible.
+ * <p>
+ * WHAT A REFERENCE MEANS DEPENDS ON THE SLOT, and that is not arbitrary:
+ * <ul>
+ *   <li>A TOOL or WEAPON reference names a MODEL. Inheriting it brings that
+ *       item's display transforms along, which is the point of pointing at
+ *       one.</li>
+ *   <li>An ARMOR PIECE or a BOW's base reference names a TEXTURE, used as
+ *       layer0 under the type's own parent.</li>
+ *   <li>An ARMOR LAYER reference names a texture the armor renderer reads
+ *       directly — nothing is copied and no model is generated.</li>
+ * </ul>
+ * Every one of them takes the SHORT form: the model system adds 'textures/'
+ * and '.png' itself, so a long path there would resolve to nothing.
  */
 public final class GearModelGenerator {
 
     private static final Logger LOGGER = LogManager.getLogger("CustomGear");
-    // NOTE: custom texture paths resolve through TextureLoader.resolveUserResource
-    // (loose config folder + every pack zip). The old GEAR_FOLDER constant pointed
-    // at "./customgear" — the mod's OLD folder name — so custom gear textures
-    // never resolved correctly and never loaded from zips.
 
     private GearModelGenerator() {}
 
-    // ── Error messages ────────────────────────────────────────────────────────
-    private static final String ERROR_LAYER_NOT_FOUND         = "[CustomGear] Layer {} not found: {}";
-    private static final String ERROR_LAYER_NOT_DEFINED       = "[CustomGear] 'layer_{}' not defined in armor_layers for: {}";
-    private static final String ERROR_REFS_REQUIRED           = "[CustomGear] 'refs' is required for {} in {} mode: {}";
-    private static final String ERROR_PIECE_TEXTURE_NOT_FOUND = "[CustomGear] Piece texture not found: {}";
-    private static final String ERROR_TOOL_TEXTURE_NOT_FOUND  = "[CustomGear] Tool texture not found: {}";
-    private static final String ERROR_REFS_MISSING_KEY        = "[CustomGear] 'refs' missing key '{}' for: {}";
-    private static final String ERROR_REFS_MISSING_KEY_IN     = "[CustomGear] 'refs' missing key '{}' in: {}";
-    private static final String ERROR_REFS_REQUIRED_SIMPLE    = "[CustomGear] 'refs' is required in reference mode: {}";
+    private static final String ERROR_LAYER_NOT_FOUND   = "[CustomGear] Layer {} not found: {}";
+    private static final String ERROR_LAYER_NOT_DEFINED = "[CustomGear] 'layer_{}' not defined in armor_layers for: {}";
 
     // ── Public entry point ────────────────────────────────────────────────────
 
-    public static void loadVanillaShieldTexture(DynamicResourcePack pack) {
-        try (InputStream is = GearModelGenerator.class.getResourceAsStream(
-                "/assets/minecraft/textures/entity/shield_base_nopattern.png")) {
-            if (is != null) {
-                pack.addRaw(SHIELD_TEXTURE_LOC, is.readAllBytes());
-            } else {
-                LOGGER.error("[CustomGear] Could not find vanilla shield texture in classpath");
-            }
-        } catch (IOException e) {
-            LOGGER.error("[CustomGear] Failed to load vanilla shield texture: {}", e.getMessage());
+    public static void load(PackSink pack, GearData data) {
+        // A .geo.json has no reference form, so the 3D assets are copied
+        // whenever they are declared. The old code skipped them in reference
+        // mode, which meant an armor could not have vanilla-referenced icons
+        // and its own GeckoLib model at the same time.
+        if ("armor_set".equals(data.type)
+                && data.texture != null
+                && data.texture.armor3d != null
+                && data.texture.armor3d.isComplete()) {
+            loadArmor3D(pack, data);
+        }
+
+        if (!hasRefs(data)) {
+            generateDefaultModels(pack, data);
+            // Layers are independent of refs: an armor may rely on armor_3d or
+            // on vanilla's iron layers while its icons fall back.
+            loadArmorLayers(pack, data);
+            return;
+        }
+
+        switch (data.type) {
+            case "armor_set"  -> loadArmorSet(pack, data);
+            case "tool_set"   -> loadToolSet(pack, data);
+            case "weapon_set" -> loadWeaponSet(pack, data);
+            case "bow", "crossbow", "shield" -> loadWeapon(pack, data, data.type, data.id);
+            default           -> loadToolItem(pack, data, data.type, data.id);
         }
     }
 
-    public static void load(DynamicResourcePack pack, GearData data) {
-        if (data.texture == null || data.texture.mode == null) {
-            generateDefaultModels(pack, data);
+    // ── Resolution ────────────────────────────────────────────────────────────
+
+    /** What a resolved gear value turned out to be, and what to use for it. */
+    private record Resolved(TextureRef.Kind kind, String value) {}
+
+    /**
+     * Resolves one key, copying the file into the pack when it is one.
+     * <p>
+     * The KIND comes back with the value because the caller still needs it: a
+     * reference and a file produce different JSON, so collapsing them into one
+     * string here would lose the distinction two lines later.
+     *
+     * @param texId        the id a copied file lands under, usually the item id
+     * @param expectsModel true where a reference names a model rather than a
+     *                     texture, which only changes the wording of the error
+     */
+    private static Resolved resolveGearValue(PackSink pack, String owner, String slot,
+                                             String value, String texId, boolean expectsModel) {
+        if (value == null) {
+            LOGGER.error("[CustomGear] {}: 'refs' has no '{}' key.", owner, slot);
+            return new Resolved(TextureRef.Kind.INVALID, null);
+        }
+
+        switch (TextureRef.kindOf(value)) {
+            case REFERENCE -> {
+                // Both a model and a layer0 texture are addressed in the short
+                // form. A long path here resolves to nothing, and silently, so
+                // it is worth naming what was expected instead.
+                if (value.contains("textures/") || value.endsWith(".png")) {
+                    LOGGER.error("[CustomGear] {}: '{}' in '{}' is a full asset path, but this key "
+                                    + "takes the short form of {} — write it as '{}'.",
+                            owner, value, slot,
+                            expectsModel ? "a MODEL" : "a texture",
+                            expectsModel ? "minecraft:item/diamond_pickaxe" : "minecraft:item/diamond_helmet");
+                    return new Resolved(TextureRef.Kind.INVALID, null);
+                }
+                return new Resolved(TextureRef.Kind.REFERENCE, value);
+            }
+            case FILE -> {
+                Optional<Path> path = TextureLoader.resolveUserResource(value);
+                if (path.isEmpty()) {
+                    LOGGER.error("[CustomGear] {}: '{}' file not found in the config folder or any "
+                            + "pack zip: {}", owner, slot, value);
+                    return new Resolved(TextureRef.Kind.INVALID, null);
+                }
+                pack.addTextureWithMeta(itemTextureLoc(texId), path.get());
+                return new Resolved(TextureRef.Kind.FILE, NAMESPACE + ":item/" + texId);
+            }
+            default -> {
+                TextureRef.reportInvalid(owner, slot, value);
+                return new Resolved(TextureRef.Kind.INVALID, null);
+            }
+        }
+    }
+
+    private static String owner(GearData data) {
+        return "Gear '" + data.id + "'";
+    }
+
+    // ── Armor ─────────────────────────────────────────────────────────────────
+
+    private static void loadArmorSet(PackSink pack, GearData data) {
+        loadArmorLayers(pack, data);
+        for (String piece : ARMOR_PIECES) {
+            if (!hasPiece(data, piece)) continue;
+            loadArmorPiece(pack, data, piece);
+        }
+    }
+
+    private static void loadArmorPiece(PackSink pack, GearData data, String piece) {
+        String itemId = data.id + "_" + piece;
+        Resolved r = resolveGearValue(pack, owner(data), piece,
+                data.texture.refs.get(piece), itemId, false);
+
+        switch (r.kind()) {
+            case REFERENCE -> generateItemModelWithRef(pack, itemId, r.value());
+            case FILE      -> generateArmorItemModel(pack, itemId);
+            case INVALID   -> generateItemModelWithRef(pack, itemId, getDefaultArmorTexture(piece));
+        }
+    }
+
+    private static void loadArmorLayers(PackSink pack, GearData data) {
+        if (!hasArmorLayers(data)) {
+            if (data.texture != null && data.texture.armor3d == null) {
+                LOGGER.warn("[CustomGear] Armor '{}' has no armor_layers and no armor_3d — "
+                        + "the worn armor will use the vanilla iron layers", data.id);
+            }
             return;
         }
-        // Copy the 3D assets into the pack ONLY in custom mode; in reference
-        // mode the resource locations point at another mod's assets and
-        // nothing needs copying.
-        if ("armor_set".equals(data.type)
-                && data.texture.armor3d != null
-                && data.texture.armor3d.isComplete()
-                && !"reference".equals(data.texture.mode)) {
-            loadArmor3D(pack, data);
+        loadArmorLayer(pack, data, "layer_1");
+        loadArmorLayer(pack, data, "layer_2");
+    }
+
+    /**
+     * A worn layer, which the armor renderer reads directly rather than through
+     * a model — so a reference is left alone and only a file is copied.
+     */
+    private static void loadArmorLayer(PackSink pack, GearData data, String layerKey) {
+        String layerNum = layerKey.split("_")[1];
+        String value = data.texture.armorLayers.get(layerKey);
+        if (value == null) {
+            LOGGER.error(ERROR_LAYER_NOT_DEFINED, layerNum, data.id);
+            return;
         }
-        switch (data.texture.mode) {
-            case "custom"    -> loadCustom(pack, data);
-            case "reference" -> loadReference(pack, data);
-            case "default"   -> generateDefaultModels(pack, data);
-            default -> LOGGER.warn("[CustomGear] Invalid texture mode: {}", data.texture.mode);
+        // A keyword, not a path: it makes the worn armor invisible.
+        if (value.equals("transparent")) {
+            pack.addRaw(armorTextureLoc(data.id, layerKey), TRANSPARENT_LAYER_PNG);
+            return;
+        }
+
+        switch (TextureRef.kindOf(value)) {
+            case FILE -> {
+                Optional<Path> texPath = TextureLoader.resolveUserResource(value);
+                if (texPath.isPresent()) {
+                    pack.addTextureWithMeta(armorTextureLoc(data.id, layerKey), texPath.get());
+                } else {
+                    LOGGER.error(ERROR_LAYER_NOT_FOUND, layerNum, value);
+                }
+            }
+            case REFERENCE -> { /* another mod's layer: nothing to copy */ }
+            case INVALID   -> TextureRef.reportInvalid(owner(data), layerKey, value);
+        }
+    }
+
+    /**
+     * Copies the user's GeckoLib assets into the dynamic pack, or leaves them
+     * where they are when they point at another mod's.
+     */
+    private static void loadArmor3D(PackSink pack, GearData data) {
+        GearData.Armor3DData armor3d = data.texture.armor3d;
+        copy3DAsset(pack, armor3d.model,     "geo/armor/" + data.id + ".geo.json",              "model",     data.id);
+        copy3DAsset(pack, armor3d.texture,   "textures/armor/" + data.id + ".png",              "texture",   data.id);
+        copy3DAsset(pack, armor3d.animation, "animations/armor/" + data.id + ".animation.json", "animation", data.id);
+    }
+
+    /**
+     * Copies one 3D asset, unless it is a reference.
+     * <p>
+     * A REFERENCE points at a file already inside another mod's jar, and
+     * GeckoLib loads it by ResourceLocation just the same — so copying it would
+     * only duplicate it, and redistributing someone else's model is a licensing
+     * question this mod has no business answering. The item reads the reference
+     * directly; see GeckoArmorItem.
+     * <p>
+     * The cost is a hard dependency the JSON does not declare: without that mod
+     * installed the armor has no model at all. Worth it against shipping copies
+     * of assets that are not yours.
+     */
+    private static void copy3DAsset(PackSink pack, String value, String targetPath,
+                                    String fieldName, String gearId) {
+        // animation is optional: a null value is not an error
+        if (value == null || value.isBlank()) return;
+
+        switch (TextureRef.kindOf(value)) {
+            case REFERENCE -> { /* another mod's asset: GeckoLib reads it in place */ }
+            case FILE -> {
+                Optional<Path> resolved = TextureLoader.resolveUserResource(value);
+                if (resolved.isEmpty()) {
+                    LOGGER.error("[CustomGear] armor_3d.{} not found in the config folder or any "
+                            + "pack zip for '{}': {}", fieldName, gearId, value);
+                    return;
+                }
+                try {
+                    pack.addRaw(ResourceLocation.fromNamespaceAndPath(NAMESPACE, targetPath),
+                            Files.readAllBytes(resolved.get()));
+                } catch (IOException e) {
+                    LOGGER.error("[CustomGear] Could not read armor_3d.{} for '{}': {}",
+                            fieldName, gearId, e.getMessage());
+                }
+            }
+            case INVALID -> TextureRef.reportInvalid(
+                    "Gear '" + gearId + "'", "armor_3d." + fieldName, value);
+        }
+    }
+
+    // ── Tools ─────────────────────────────────────────────────────────────────
+
+    private static void loadToolSet(PackSink pack, GearData data) {
+        if (data.tools == null) return;
+        for (String toolType : TOOL_TYPES) {
+            if (!hasTool(data, toolType)) continue;
+            loadToolItem(pack, data, toolType, data.id + "_" + toolType);
+        }
+    }
+
+    /**
+     * A tool: a reference is a model to inherit, a file is a texture to hang on
+     * layer0 under the handheld parent.
+     */
+    private static void loadToolItem(PackSink pack, GearData data, String slot, String itemId) {
+        Resolved r = resolveGearValue(pack, owner(data), slot,
+                data.texture.refs.get(slot), itemId, true);
+
+        switch (r.kind()) {
+            case REFERENCE -> generateParentOnlyModel(pack, itemId, r.value());
+            case FILE      -> generateToolItemModel(pack, itemId);
+            case INVALID   -> generateParentOnlyModel(pack, itemId, getDefaultToolModelPath(slot));
+        }
+    }
+
+    // ── Weapons ───────────────────────────────────────────────────────────────
+
+    private static void loadWeaponSet(PackSink pack, GearData data) {
+        if (data.weapons == null) return;
+        for (String weaponType : WEAPON_TYPES) {
+            if (!data.weapons.containsKey(weaponType)) continue;
+            loadWeapon(pack, data, weaponType, data.id + "_" + weaponType);
+        }
+    }
+
+    private static void loadWeapon(PackSink pack, GearData data, String slot, String itemId) {
+        switch (slot) {
+            case "bow"      -> loadBow(pack, data, itemId);
+            case "crossbow" -> loadCrossbow(pack, data, itemId);
+            // The shield ignores its ref: the BEWLR hardcodes the vanilla atlas
+            // materials, so there is nothing a value here could change yet.
+            case "shield"   -> generateShieldFlatModel(pack, itemId);
+            default         -> loadToolItem(pack, data, slot, itemId);
+        }
+    }
+
+    /**
+     * A bow: the base value plus three pulling frames.
+     * <p>
+     * The parent is DEFAULT_BOW, never HANDHELD_PARENT. That parent is where
+     * the bow's display transforms live — with the handheld one the bow renders
+     * at tool scale and fills a quarter of the screen in first person.
+     * <p>
+     * Frames fall back INDIVIDUALLY. One missing texture dropping all three
+     * overrides freezes the animation with no visible cause.
+     */
+    private static void loadBow(PackSink pack, GearData data, String itemId) {
+        Resolved base = resolveGearValue(pack, owner(data), "bow",
+                data.texture.refs.get("bow"), itemId, false);
+        if (base.kind() == TextureRef.Kind.INVALID) {
+            generateParentOnlyModel(pack, itemId, DEFAULT_BOW);
+            return;
+        }
+
+        Map<String, String> refs = data.texture.refs;
+        String p0 = frame(pack, itemId, "_pulling_0", refs, "bow_pulling_0",
+                DEFAULT_BOW_PULLING_0, DEFAULT_BOW, owner(data));
+        String p1 = frame(pack, itemId, "_pulling_1", refs, "bow_pulling_1",
+                DEFAULT_BOW_PULLING_1, DEFAULT_BOW, owner(data));
+        String p2 = frame(pack, itemId, "_pulling_2", refs, "bow_pulling_2",
+                DEFAULT_BOW_PULLING_2, DEFAULT_BOW, owner(data));
+
+        String json = """
+        {
+          "parent": "%s",
+          "textures": { "layer0": "%s" },
+          "overrides": [
+            { "predicate": { "pulling": 1 },               "model": "%s" },
+            { "predicate": { "pulling": 1, "pull": 0.65 }, "model": "%s" },
+            { "predicate": { "pulling": 1, "pull": 0.9 },  "model": "%s" }
+          ]
+        }
+        """.formatted(DEFAULT_BOW, base.value(), p0, p1, p2);
+
+        pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * A crossbow. Override ORDER matters — Minecraft takes the LAST match, so
+     * charged has to come after the pulling entries and firework after charged,
+     * otherwise a loaded crossbow renders as a pulling frame.
+     */
+    private static void loadCrossbow(PackSink pack, GearData data, String itemId) {
+        Resolved base = resolveGearValue(pack, owner(data), "crossbow",
+                data.texture.refs.get("crossbow"), itemId, false);
+        if (base.kind() == TextureRef.Kind.INVALID) {
+            generateParentOnlyModel(pack, itemId, DEFAULT_CROSSBOW);
+            return;
+        }
+
+        Map<String, String> refs = data.texture.refs;
+        String p0 = frame(pack, itemId, "_pulling_0", refs, "crossbow_pulling_0",
+                DEFAULT_CROSSBOW_PULLING_0, DEFAULT_CROSSBOW, owner(data));
+        String p1 = frame(pack, itemId, "_pulling_1", refs, "crossbow_pulling_1",
+                DEFAULT_CROSSBOW_PULLING_1, DEFAULT_CROSSBOW, owner(data));
+        String p2 = frame(pack, itemId, "_pulling_2", refs, "crossbow_pulling_2",
+                DEFAULT_CROSSBOW_PULLING_2, DEFAULT_CROSSBOW, owner(data));
+        String arrow = frame(pack, itemId, "_arrow", refs, "crossbow_arrow",
+                DEFAULT_CROSSBOW_ARROW, DEFAULT_CROSSBOW, owner(data));
+        String firework = frame(pack, itemId, "_firework", refs, "crossbow_firework",
+                DEFAULT_CROSSBOW_FIREWORK, DEFAULT_CROSSBOW, owner(data));
+
+        String json = """
+        {
+          "parent": "%s",
+          "textures": { "layer0": "%s" },
+          "overrides": [
+            { "predicate": { "pulling": 1 },                "model": "%s" },
+            { "predicate": { "pulling": 1, "pull": 0.58 },  "model": "%s" },
+            { "predicate": { "pulling": 1, "pull": 1.0 },   "model": "%s" },
+            { "predicate": { "charged": 1 },                "model": "%s" },
+            { "predicate": { "charged": 1, "firework": 1 }, "model": "%s" }
+          ]
+        }
+        """.formatted(DEFAULT_CROSSBOW, base.value(), p0, p1, p2, arrow, firework);
+
+        pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * One animation frame, returning the MODEL reference the overrides array
+     * needs.
+     * <p>
+     * A reference here already names a model and goes straight in. A file is a
+     * texture, so it gets copied and wrapped in a generated child model — which
+     * is what makes the two forms interchangeable from the author's side.
+     * Anything missing falls back to the vanilla frame, so a partial set still
+     * animates.
+     */
+    private static String frame(PackSink pack, String itemId, String suffix,
+                                Map<String, String> refs, String refKey,
+                                String vanilla, String parent, String owner) {
+        String value = refs.get(refKey);
+        if (value == null || value.isBlank()) return vanilla;
+
+        switch (TextureRef.kindOf(value)) {
+            case REFERENCE -> {
+                return value;
+            }
+            case FILE -> {
+                Optional<Path> path = TextureLoader.resolveUserResource(value);
+                if (path.isEmpty()) {
+                    LOGGER.error("[CustomGear] {}: '{}' file not found in the config folder or any "
+                            + "pack zip: {}", owner, refKey, value);
+                    return vanilla;
+                }
+                String childId = itemId + suffix;
+                pack.addTextureWithMeta(itemTextureLoc(childId), path.get());
+
+                String childJson = """
+                {
+                  "parent": "%s",
+                  "textures": { "layer0": "%s:item/%s" }
+                }
+                """.formatted(parent, NAMESPACE, childId);
+                pack.addRaw(itemModelLoc(childId), childJson.getBytes(StandardCharsets.UTF_8));
+                return NAMESPACE + ":item/" + childId;
+            }
+            default -> {
+                TextureRef.reportInvalid(owner, refKey, value);
+                return vanilla;
+            }
         }
     }
 
     // ── Default models ────────────────────────────────────────────────────────
 
-    public static void generateDefaultModels(DynamicResourcePack pack, GearData data) {
+    public static void generateDefaultModels(PackSink pack, GearData data) {
         switch (data.type) {
             case "armor_set" -> {
                 for (String piece : ARMOR_PIECES) {
@@ -118,426 +463,6 @@ public final class GearModelGenerator {
         }
     }
 
-    // ── Custom loading ────────────────────────────────────────────────────────
-
-    private static void loadCustom(DynamicResourcePack pack, GearData data) {
-        switch (data.type) {
-            case "armor_set"  -> loadCustomArmor(pack, data);
-            case "tool_set"   -> loadCustomToolSet(pack, data);
-            case "weapon_set" -> loadCustomWeaponSet(pack, data);
-            case "bow", "crossbow", "shield" -> loadCustomWeapon(pack, data);
-            default           -> loadCustomTool(pack, data);
-        }
-    }
-
-    private static void loadCustomArmor(DynamicResourcePack pack, GearData data) {
-        // Layers are optional: an armor may rely on armor_3d (GeckoLib) or fall
-        // back to the vanilla iron layers. Missing layers must NOT prevent the
-        // item icons from being generated.
-        if (hasArmorLayers(data)) {
-            loadArmorLayer(pack, data, "layer_1");
-            loadArmorLayer(pack, data, "layer_2");
-        } else if (data.texture.armor3d == null) {
-            LOGGER.warn("[CustomGear] Armor '{}' has no armor_layers and no armor_3d — "
-                    + "the worn armor will use the vanilla iron layers", data.id);
-        }
-
-        if (!hasRefs(data)) {
-            LOGGER.error(ERROR_REFS_REQUIRED, "armor pieces", "custom", data.id);
-            return;
-        }
-        for (String piece : ARMOR_PIECES) {
-            if (!hasPiece(data, piece)) continue;
-            loadArmorPiece(pack, data, piece);
-        }
-    }
-
-    private static void loadArmorLayer(DynamicResourcePack pack, GearData data, String layerKey) {
-        String layerNum  = layerKey.split("_")[1];
-        String layerPath = data.texture.armorLayers.get(layerKey);
-        if (layerPath != null) {
-            if (layerPath.equals("transparent")) {
-                pack.addRaw(armorTextureLoc(data.id, layerKey), TRANSPARENT_LAYER_PNG);
-                return;
-            }
-            Optional<Path> texPath = TextureLoader.resolveUserResource(layerPath);
-            if (texPath.isPresent()) {
-                pack.addTexture(armorTextureLoc(data.id, layerKey), texPath.get());
-            } else {
-                LOGGER.error(ERROR_LAYER_NOT_FOUND, layerNum, layerPath);
-            }
-        } else {
-            LOGGER.error(ERROR_LAYER_NOT_DEFINED, layerNum, data.id);
-        }
-    }
-
-    /** Copies the user's GeckoLib assets into the dynamic pack (custom mode). */
-    private static void loadArmor3D(DynamicResourcePack pack, GearData data) {
-        GearData.Armor3DData armor3d = data.texture.armor3d;
-        copy3DAsset(pack, armor3d.model,     "geo/armor/" + data.id + ".geo.json",              "model",     data.id);
-        copy3DAsset(pack, armor3d.texture,   "textures/armor/" + data.id + ".png",              "texture",   data.id);
-        copy3DAsset(pack, armor3d.animation, "animations/armor/" + data.id + ".animation.json", "animation", data.id);
-    }
-
-    private static void copy3DAsset(DynamicResourcePack pack, String ref, String targetPath,
-                                    String fieldName, String gearId) {
-        // animation is optional: a null value is not an error
-        if (ref == null || ref.isBlank()) return;
-
-        Optional<Path> resolved = TextureLoader.resolveUserResource(ref);
-        if (resolved.isEmpty()) {
-            LOGGER.error("[CustomGear] armor_3d.{} not found in config folder or any pack zip "
-                    + "for '{}': {}", fieldName, gearId, ref);
-            return;
-        }
-        try {
-            pack.addRaw(ResourceLocation.fromNamespaceAndPath(NAMESPACE, targetPath),
-                    Files.readAllBytes(resolved.get()));
-        } catch (IOException e) {
-            LOGGER.error("[CustomGear] Could not read armor_3d.{} for '{}': {}",
-                    fieldName, gearId, e.getMessage());
-        }
-    }
-
-    private static void loadArmorPiece(DynamicResourcePack pack, GearData data, String piece) {
-        String ref = data.texture.refs.get(piece);
-        if (ref != null) {
-            Optional<Path> texPath = TextureLoader.resolveUserResource(ref);
-            if (texPath.isPresent()) {
-                String itemId = data.id + "_" + piece;
-                pack.addTexture(itemTextureLoc(itemId), texPath.get());
-                generateArmorItemModel(pack, itemId);
-            } else {
-                LOGGER.error(ERROR_PIECE_TEXTURE_NOT_FOUND, ref);
-            }
-        } else {
-            LOGGER.error(ERROR_REFS_MISSING_KEY, piece, data.id);
-        }
-    }
-
-    private static void loadCustomToolSet(DynamicResourcePack pack, GearData data) {
-        if (data.tools == null) return;
-        if (!hasRefs(data)) {
-            LOGGER.error(ERROR_REFS_REQUIRED, "tools", "custom", data.id);
-            return;
-        }
-        for (String toolType : TOOL_TYPES) {
-            if (!hasTool(data, toolType)) continue;
-            loadCustomToolItem(pack, data, toolType);
-        }
-    }
-
-    private static void loadCustomTool(DynamicResourcePack pack, GearData data) {
-        if (!hasRefs(data)) {
-            LOGGER.error(ERROR_REFS_REQUIRED, "tool", "custom", data.id);
-            return;
-        }
-        String ref = data.texture.refs.get(data.type);
-        if (ref != null) {
-            loadToolTexture(pack, data.id, ref);
-            generateToolItemModel(pack, data.id);
-        }
-    }
-
-    private static void loadCustomToolItem(DynamicResourcePack pack, GearData data, String toolType) {
-        String ref = data.texture.refs.get(toolType);
-        if (ref != null) {
-            String itemId = data.id + "_" + toolType;
-            loadToolTexture(pack, itemId, ref);
-            generateToolItemModel(pack, itemId);
-        } else {
-            LOGGER.error(ERROR_REFS_MISSING_KEY, toolType, data.id);
-        }
-    }
-
-    private static void loadToolTexture(DynamicResourcePack pack, String itemId, String ref) {
-        Optional<Path> texPath = TextureLoader.resolveUserResource(ref);
-        if (texPath.isPresent()) {
-            pack.addTexture(itemTextureLoc(itemId), texPath.get());
-        } else {
-            LOGGER.error(ERROR_TOOL_TEXTURE_NOT_FOUND, ref);
-        }
-    }
-
-    private static void loadCustomWeaponSet(DynamicResourcePack pack, GearData data) {
-        if (data.weapons == null) return;
-        if (!hasRefs(data)) {
-            LOGGER.error(ERROR_REFS_REQUIRED, "weapons", "custom", data.id);
-            return;
-        }
-        for (String weaponType : WEAPON_TYPES) {
-            if (!data.weapons.containsKey(weaponType)) continue;
-            String ref = data.texture.refs.get(weaponType);
-            if (ref == null) {
-                LOGGER.error(ERROR_REFS_MISSING_KEY, weaponType, data.id);
-                continue;
-            }
-            String itemId = data.id + "_" + weaponType;
-            switch (weaponType) {
-                case "bow"      -> loadCustomBowTextures(pack, data, itemId, ref);
-                case "crossbow" -> loadCustomCrossbowTextures(pack, data, itemId, ref);
-                case "shield"   -> generateShieldFlatModel(pack, itemId);
-                default         -> {
-                    loadToolTexture(pack, itemId, ref);
-                    generateToolItemModel(pack, itemId);
-                }
-            }
-        }
-    }
-
-    /**
-     * Custom-mode bow: base texture plus the three pulling frames.
-     * <p>
-     * The parent is DEFAULT_BOW, never HANDHELD_PARENT. That parent is where
-     * the bow's display transforms live — with the handheld one the bow renders
-     * at tool scale and fills a quarter of the screen in first person.
-     * <p>
-     * Frames fall back INDIVIDUALLY to the vanilla frame. The previous
-     * all-or-nothing flag meant one missing texture dropped all three
-     * overrides, which freezes the animation with no visible cause.
-     */
-    private static void loadCustomBowTextures(DynamicResourcePack pack, GearData data,
-                                              String itemId, String baseRef) {
-        Optional<Path> basePath = TextureLoader.resolveUserResource(baseRef);
-        if (basePath.isEmpty()) {
-            LOGGER.error(ERROR_TOOL_TEXTURE_NOT_FOUND, baseRef);
-            generateParentOnlyModel(pack, itemId, DEFAULT_BOW);
-            return;
-        }
-        pack.addTexture(itemTextureLoc(itemId), basePath.get());
-
-        Map<String, String> refs = data.texture.refs;
-        String p0 = customFrame(pack, itemId, "_pulling_0", refs,
-                "bow_pulling_0", DEFAULT_BOW_PULLING_0, DEFAULT_BOW);
-        String p1 = customFrame(pack, itemId, "_pulling_1", refs,
-                "bow_pulling_1", DEFAULT_BOW_PULLING_1, DEFAULT_BOW);
-        String p2 = customFrame(pack, itemId, "_pulling_2", refs,
-                "bow_pulling_2", DEFAULT_BOW_PULLING_2, DEFAULT_BOW);
-
-        String json = """
-        {
-          "parent": "%s",
-          "textures": { "layer0": "%s:item/%s" },
-          "overrides": [
-            { "predicate": { "pulling": 1 },               "model": "%s" },
-            { "predicate": { "pulling": 1, "pull": 0.65 }, "model": "%s" },
-            { "predicate": { "pulling": 1, "pull": 0.9 },  "model": "%s" }
-          ]
-        }
-        """.formatted(DEFAULT_BOW, NAMESPACE, itemId, p0, p1, p2);
-
-        pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
-    }
-
-    /**
-     * Custom-mode crossbow. This did not exist: crossbows fell to the generic
-     * tool branch, so crossbow_pulling_*, crossbow_arrow and crossbow_firework
-     * were read nowhere in custom mode.
-     * <p>
-     * Override ORDER matters — Minecraft takes the LAST match, so charged has
-     * to come after the pulling entries and firework after charged, otherwise a
-     * loaded crossbow renders as a pulling frame.
-     */
-    private static void loadCustomCrossbowTextures(DynamicResourcePack pack, GearData data,
-                                                   String itemId, String baseRef) {
-        Optional<Path> basePath = TextureLoader.resolveUserResource(baseRef);
-        if (basePath.isEmpty()) {
-            LOGGER.error(ERROR_TOOL_TEXTURE_NOT_FOUND, baseRef);
-            generateParentOnlyModel(pack, itemId, DEFAULT_CROSSBOW);
-            return;
-        }
-        pack.addTexture(itemTextureLoc(itemId), basePath.get());
-
-        Map<String, String> refs = data.texture.refs;
-        String p0 = customFrame(pack, itemId, "_pulling_0", refs,
-                "crossbow_pulling_0", DEFAULT_CROSSBOW_PULLING_0, DEFAULT_CROSSBOW);
-        String p1 = customFrame(pack, itemId, "_pulling_1", refs,
-                "crossbow_pulling_1", DEFAULT_CROSSBOW_PULLING_1, DEFAULT_CROSSBOW);
-        String p2 = customFrame(pack, itemId, "_pulling_2", refs,
-                "crossbow_pulling_2", DEFAULT_CROSSBOW_PULLING_2, DEFAULT_CROSSBOW);
-        String arrow = customFrame(pack, itemId, "_arrow", refs,
-                "crossbow_arrow", DEFAULT_CROSSBOW_ARROW, DEFAULT_CROSSBOW);
-        String firework = customFrame(pack, itemId, "_firework", refs,
-                "crossbow_firework", DEFAULT_CROSSBOW_FIREWORK, DEFAULT_CROSSBOW);
-
-        String json = """
-        {
-          "parent": "%s",
-          "textures": { "layer0": "%s:item/%s" },
-          "overrides": [
-            { "predicate": { "pulling": 1 },                "model": "%s" },
-            { "predicate": { "pulling": 1, "pull": 0.58 },  "model": "%s" },
-            { "predicate": { "pulling": 1, "pull": 1.0 },   "model": "%s" },
-            { "predicate": { "charged": 1 },                "model": "%s" },
-            { "predicate": { "charged": 1, "firework": 1 }, "model": "%s" }
-          ]
-        }
-        """.formatted(DEFAULT_CROSSBOW, NAMESPACE, itemId, p0, p1, p2, arrow, firework);
-
-        pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
-    }
-
-    /**
-     * Injects one animation-frame texture plus the child model wrapping it, and
-     * returns the model reference for the overrides array. Falls back to the
-     * vanilla frame when the key is absent or the file does not resolve, so a
-     * partial set of custom frames still animates.
-     *
-     * @param suffix    appended to itemId, e.g. "_pulling_0"
-     * @param refKey    key to look up in refs, e.g. "bow_pulling_0"
-     * @param vanilla   model reference to use when the user did not supply this
-     * @param parent    parent for the child model (carries display transforms)
-     */
-    private static String customFrame(DynamicResourcePack pack, String itemId, String suffix,
-                                      Map<String, String> refs, String refKey,
-                                      String vanilla, String parent) {
-        String ref = refs.get(refKey);
-        if (ref == null || ref.isBlank()) return vanilla;
-
-        Optional<Path> path = TextureLoader.resolveUserResource(ref);
-        if (path.isEmpty()) {
-            LOGGER.error(ERROR_TOOL_TEXTURE_NOT_FOUND, ref);
-            return vanilla;
-        }
-
-        String childId = itemId + suffix;
-        pack.addTexture(itemTextureLoc(childId), path.get());
-
-        String childJson = """
-        {
-          "parent": "%s",
-          "textures": { "layer0": "%s:item/%s" }
-        }
-        """.formatted(parent, NAMESPACE, childId);
-        pack.addRaw(itemModelLoc(childId), childJson.getBytes(StandardCharsets.UTF_8));
-
-        return NAMESPACE + ":item/" + childId;
-    }
-
-    /**
-     * Individual bow / crossbow / shield in custom mode. Mirrors
-     * loadReferenceWeapon — the missing counterpart that sent these types to
-     * loadCustomTool through the default branch.
-     */
-    private static void loadCustomWeapon(DynamicResourcePack pack, GearData data) {
-        if (!hasRefs(data)) {
-            LOGGER.error(ERROR_REFS_REQUIRED, data.type, "custom", data.id);
-            return;
-        }
-        String ref = data.texture.refs.get(data.type);
-        if (ref == null) {
-            LOGGER.error(ERROR_REFS_MISSING_KEY, data.type, data.id);
-            generateParentOnlyModel(pack, data.id, getDefaultWeaponParent(data.type));
-            return;
-        }
-        switch (data.type) {
-            case "bow"      -> loadCustomBowTextures(pack, data, data.id, ref);
-            case "crossbow" -> loadCustomCrossbowTextures(pack, data, data.id, ref);
-            // Shield ignores the ref by design in this version — the BEWLR
-            // hardcodes the vanilla atlas materials. See the shield notes.
-            default         -> generateShieldFlatModel(pack, data.id);
-        }
-    }
-
-    // ── Reference loading ─────────────────────────────────────────────────────
-
-    private static void loadReference(DynamicResourcePack pack, GearData data) {
-        if (!hasRefs(data)) {
-            LOGGER.error(ERROR_REFS_REQUIRED_SIMPLE, data.id);
-            return;
-        }
-        switch (data.type) {
-            case "armor_set"  -> loadReferenceArmor(pack, data);
-            case "tool_set"   -> loadReferenceToolSet(pack, data);
-            case "weapon_set" -> loadReferenceWeaponSet(pack, data);
-            case "bow", "crossbow", "shield" -> loadReferenceWeapon(pack, data);
-            default           -> loadReferenceTool(pack, data);
-        }
-    }
-
-    private static void loadReferenceArmor(DynamicResourcePack pack, GearData data) {
-        for (String piece : ARMOR_PIECES) {
-            if (!hasPiece(data, piece)) continue;
-            String ref = data.texture.refs.get(piece);
-            if (ref != null) {
-                generateItemModelWithRef(pack, data.id + "_" + piece, ref);
-            } else {
-                LOGGER.error(ERROR_REFS_MISSING_KEY_IN, piece, data.id);
-            }
-        }
-        if (hasArmorLayers(data)) {
-            loadReferenceLayer(pack, data, "layer_1");
-            loadReferenceLayer(pack, data, "layer_2");
-        }
-    }
-
-    /** Reference-mode armor layer: a resource location, or "transparent" for invisibility. */
-    private static void loadReferenceLayer(DynamicResourcePack pack, GearData data, String layerKey) {
-        String ref = data.texture.armorLayers.get(layerKey);
-        if (ref == null) return;
-        if (ref.equals("transparent")) {
-            // Same invisibility mechanism as custom mode: inject a fully
-            // transparent PNG at the layer's texture location
-            pack.addRaw(armorTextureLoc(data.id, layerKey), TRANSPARENT_LAYER_PNG);
-            return;
-        }
-        generateItemModelWithRef(pack, data.id + "_" + layerKey, ref);
-    }
-
-    private static void loadReferenceToolSet(DynamicResourcePack pack, GearData data) {
-        for (String toolType : TOOL_TYPES) {
-            if (!hasTool(data, toolType)) continue;
-            String ref = data.texture.refs.get(toolType);
-            if (ref != null) {
-                generateParentOnlyModel(pack, data.id + "_" + toolType, ref);
-            } else {
-                LOGGER.error(ERROR_REFS_MISSING_KEY_IN, toolType, data.id);
-            }
-        }
-    }
-
-    private static void loadReferenceTool(DynamicResourcePack pack, GearData data) {
-        String ref = data.texture.refs.get(data.type);
-        if (ref != null) {
-            generateParentOnlyModel(pack, data.id, ref);
-        } else {
-            LOGGER.error(ERROR_REFS_MISSING_KEY_IN, data.type, data.id);
-        }
-    }
-
-    private static void loadReferenceWeaponSet(DynamicResourcePack pack, GearData data) {
-        for (String weaponType : WEAPON_TYPES) {
-            if (data.weapons == null || !data.weapons.containsKey(weaponType)) continue;
-            String ref    = data.texture.refs.get(weaponType);
-            String itemId = data.id + "_" + weaponType;
-            if (ref != null) {
-                switch (weaponType) {
-                    case "bow"      -> generateBowModelWithRef(pack, itemId, ref, data.texture.refs);
-                    case "crossbow" -> generateCrossbowModelWithRef(pack, itemId, ref, data.texture.refs);
-                    case "shield"   -> generateShieldFlatModel(pack, itemId);
-                    default         -> generateParentOnlyModel(pack, itemId, ref);
-                }
-            } else {
-                LOGGER.error(ERROR_REFS_MISSING_KEY_IN, weaponType, data.id);
-                generateParentOnlyModel(pack, itemId, getDefaultWeaponParent(weaponType));
-            }
-        }
-    }
-
-    private static void loadReferenceWeapon(DynamicResourcePack pack, GearData data) {
-        String ref = data.texture.refs.get(data.type);
-        if (ref != null) {
-            switch (data.type) {
-                case "bow"      -> generateBowModelWithRef(pack, data.id, ref, data.texture.refs);
-                case "crossbow" -> generateCrossbowModelWithRef(pack, data.id, ref, data.texture.refs);
-                default         -> generateShieldFlatModel(pack, data.id);
-            }
-        } else {
-            LOGGER.error(ERROR_REFS_MISSING_KEY_IN, data.type, data.id);
-            generateParentOnlyModel(pack, data.id, getDefaultWeaponParent(data.type));
-        }
-    }
-
     /** Fully transparent 64x32 PNG, generated once — used for "transparent" armor layers. */
     private static final byte[] TRANSPARENT_LAYER_PNG = createTransparentLayerPng();
 
@@ -556,7 +481,7 @@ public final class GearModelGenerator {
 
     // ── JSON model generation ─────────────────────────────────────────────────
 
-    public static void generateToolItemModel(DynamicResourcePack pack, String itemId) {
+    public static void generateToolItemModel(PackSink pack, String itemId) {
         String json = """
             {
               "parent": "%s",
@@ -566,7 +491,7 @@ public final class GearModelGenerator {
         pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
     }
 
-    public static void generateArmorItemModel(DynamicResourcePack pack, String itemId) {
+    public static void generateArmorItemModel(PackSink pack, String itemId) {
         String json = """
             {
               "parent": "%s",
@@ -576,7 +501,7 @@ public final class GearModelGenerator {
         pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
     }
 
-    public static void generateGeneratedItemModel(DynamicResourcePack pack, String itemId) {
+    public static void generateGeneratedItemModel(PackSink pack, String itemId) {
         String json = """
             {
               "parent": "%s",
@@ -586,7 +511,7 @@ public final class GearModelGenerator {
         pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
     }
 
-    public static void generateItemModelWithRef(DynamicResourcePack pack, String itemId, String ref) {
+    public static void generateItemModelWithRef(PackSink pack, String itemId, String ref) {
         String json = """
             {
               "parent": "%s",
@@ -596,7 +521,7 @@ public final class GearModelGenerator {
         pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
     }
 
-    public static void generateParentOnlyModel(DynamicResourcePack pack, String itemId, String parent) {
+    public static void generateParentOnlyModel(PackSink pack, String itemId, String parent) {
         String json = """
             {
               "parent": "%s"
@@ -605,7 +530,7 @@ public final class GearModelGenerator {
         pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
     }
 
-    public static void generateShieldFlatModel(DynamicResourcePack pack, String itemId) {
+    public static void generateShieldFlatModel(PackSink pack, String itemId) {
         String blockingModelId = itemId + "_blocking";
         String json = """
         {
@@ -646,7 +571,7 @@ public final class GearModelGenerator {
         pack.addRaw(itemModelLoc(blockingModelId), blockingJson.getBytes(StandardCharsets.UTF_8));
     }
 
-    public static void generateBowModelWithRef(DynamicResourcePack pack, String itemId,
+    public static void generateBowModelWithRef(PackSink pack, String itemId,
                                                String ref, Map<String, String> refs) {
         String p0 = refs.getOrDefault("bow_pulling_0", DEFAULT_BOW_PULLING_0);
         String p1 = refs.getOrDefault("bow_pulling_1", DEFAULT_BOW_PULLING_1);
@@ -683,7 +608,7 @@ public final class GearModelGenerator {
         pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
     }
 
-    public static void generateCrossbowModelWithRef(DynamicResourcePack pack, String itemId,
+    public static void generateCrossbowModelWithRef(PackSink pack, String itemId,
                                                     String ref, Map<String, String> refs) {
         String p0       = refs.getOrDefault("crossbow_pulling_0", DEFAULT_CROSSBOW_PULLING_0);
         String p1       = refs.getOrDefault("crossbow_pulling_1", DEFAULT_CROSSBOW_PULLING_1);
@@ -734,7 +659,6 @@ public final class GearModelGenerator {
         return data.texture != null && data.texture.armorLayers != null && !data.texture.armorLayers.isEmpty();
     }
 
-    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private static boolean hasRefs(GearData data) {
         return data.texture != null && data.texture.refs != null && !data.texture.refs.isEmpty();
     }

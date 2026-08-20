@@ -4,9 +4,36 @@ Breaking changes only — things that make a JSON file that worked in one versio
 behave differently or stop loading in the next. Everything additive lives in the
 [CHANGELOG](../../CHANGELOG.md).
 
-> This page is incomplete. It currently covers 1.6.0, and the network protocol
+> This page is incomplete. It currently covers 1.7.0, 1.6.0, and the network protocol
 > change in 1.3.0. Earlier-breaking changes need to be pulled out of the
 > CHANGELOG.
+
+## 1.7.0
+
+**Nothing to change.** Packs written for 1.6.0 load unchanged.
+
+### `texture.mode` no longer does anything
+
+```diff
+  "texture": {
+-   "mode": "reference",
+    "refs": {
+      "sword": "minecraft:item/netherite_sword"
+    }
+  }
+```
+
+What a value is now comes from the value itself: a `:` makes it another mod's
+asset, a file extension makes it a file in your folder. A pack that still
+declares `mode` works exactly as before — the field is read and ignored — so
+deleting it is cleanup, not a fix.
+
+The one thing that genuinely changed: a pack declaring `"mode": "default"` **and**
+values in `refs` used to ignore those values and show the placeholder textures.
+Those values now apply. Nobody writes both on purpose, but if you did, remove the
+`refs` block rather than the `mode` line.
+
+See [Textures & Models](textures-and-models.md) for the full rule.
 
 ## 1.6.0
 

@@ -6,6 +6,8 @@ import arrivedbog593.ultimatecustomgear.util.MapColorResolver;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 
+import java.util.function.UnaryOperator;
+
 /**
  * Generic block built from a BlockData JSON.
  * <p>
@@ -23,6 +25,11 @@ public class CustomBlock extends Block {
 
     public CustomBlock(BlockData data) {
         super(buildProperties(data));
+    }
+
+    /** For subtypes that had to adjust the properties before construction. */
+    protected CustomBlock(Properties properties) {
+        super(properties);
     }
 
     public static Properties buildProperties(BlockData data) {
@@ -47,5 +54,17 @@ public class CustomBlock extends Block {
         }
 
         return props;
+    }
+
+    /**
+     * Overload for subtypes that need properties the JSON does not express.
+     * <p>
+     * The shulker forced this: its shape changes at runtime, and it stops
+     * occluding while the lid is out, and none of that can be set after
+     * construction — Properties are frozen the moment the Block is built.
+     */
+    public static Properties buildProperties(BlockData data,
+                                             UnaryOperator<Properties> extra) {
+        return extra.apply(buildProperties(data));
     }
 }

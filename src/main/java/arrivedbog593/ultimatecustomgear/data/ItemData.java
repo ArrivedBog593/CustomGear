@@ -28,7 +28,7 @@ public class ItemData {
     public boolean fireResistant = false;
 
     /** Texture path */
-    public GearData.TextureData texture;
+    public TextureData texture;
 
     /**
      * Translatable names by language code.

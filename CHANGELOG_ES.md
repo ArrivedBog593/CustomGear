@@ -2,6 +2,89 @@
 
 Todas las notas de cambios importantes para el proyecto UltimateCustomGear.
 
+## [1.7.0] - 2026-08-20
+
+### ⚠️ Notas Importantes
+
+**No se rompe nada. Los packs escritos para 1.6.0 cargan sin cambios.** El campo `mode` dentro de `texture` desapareció, pero un pack que aún lo declare funciona igual que antes — el valor simplemente se ignora. Bórralo cuando quieras.
+
+- Los contenedores son nuevos en esta versión, así que ninguna de sus reglas cambia nada existente
+- `container.slots` se fija al registrar: cambiarlo requiere **reiniciar**, no `/customgear reload`. Todo lo demás de un contenedor se recarga en caliente
+- `curios_slots` requiere `/reload` **además de** `/customgear reload` — Curios lee su asignación de slots fuera de la recarga que dispara este mod. El log avisa cuando el conjunto cambia
+- Los cambios de textura siguen necesitando **F3+T** para verse, como siempre
+
+### ✨ Nuevas Características
+
+#### Contenedores
+- Nuevo tipo de contenido `container`, con cuatro subtipos elegidos por `container.type`:
+  - **`barrel`** — un cubo completo colocado en cualquiera de seis ejes, con estado de apertura real. Sin renderer, así que dibujarlo no cuesta nada
+  - **`chest`** — la forma del cofre de vanilla con tapa animada, y **se une en doble** con un vecino
+  - **`shulker`** — se pega a la superficie donde lo coloques, su caja de colisión crece al abrirse la tapa, y se niega a abrir si no hay sitio
+  - **`backpack`** — no es un bloque: un objeto que llevas encima, se abre con clic derecho o con una tecla, y se puede equipar en un slot de Curios
+- `container.type` es **obligatorio**. Los cuatro difieren en forma, en cómo se colocan y en sí al romperlos conservan el contenido — un valor por defecto decidiría eso último a tus espaldas
+- `keeps_contents` decide si al romperlo el contenido se suelta o se guarda en el objeto. Por defecto según el subtipo: `true` para shulker y mochila, `false` para barril y cofre. Un barril que conserva su contenido es perfectamente válido
+- `slots` no tiene tope duro. Pasando de 128 el parser avisa: ahí es donde el paquete de clic de vanilla se rinde, y una sola acción que cambie más slots que eso a la vez desconecta al jugador
+- **Columnas automáticas.** Omite `columns` y el ancho se calcula para que el contenido quepa en nueve filas, con techo en `max_columns` (12 por defecto). Declara `columns` y se usa ese ancho exacto
+- Un cofre doble mantiene **un solo** inventario del doble de tamaño. Romper cualquiera de las mitades devuelve el contenido de esa mitad, igual que en vanilla — y copiar una con Ctrl+clic central copia solo su mitad
+- Tolvas, comparadores y superposiciones de otros mods leen un cofre doble correctamente desde **ambos** lados
+- Los contenedores no se anidan: un shulker no entra en otro shulker, ni en uno de vanilla. Un contenedor que suelta al romperse no lleva NBT dentro, así que sí se anida libremente
+
+#### Mochilas y Curios
+- Se abren con clic derecho, o con la nueva tecla **Abrir mochila** (B por defecto) desde cualquier parte del inventario
+- La tecla busca en este orden: el slot activo de la barra, la mano izquierda, **los slots de Curios equipados**, y luego el resto del inventario. Lo equipado gana sobre lo suelto — quien lleva un anillo de almacenamiento puesto lo lleva para tenerlo a mano
+- Nuevo campo `curios_slots` con los tipos de slot de Curios que aceptan esta mochila (`"back"`, `"ring"`, `"charm"`…). Esos tipos de slot **también se le asignan al jugador**, así que existen sin depender de que otro mod los proporcione
+- Solo se asignan los slots declarados. Instalar este mod para hacer una espada no te llena el inventario de Curios de huecos vacíos
+- El slot que ocupa la mochila queda bloqueado mientras su pantalla está abierta, y la pantalla se cierra sola si la mochila desaparece — tirada, robada o perdida al morir
+- Curios es una dependencia **opcional**
+
+#### Las rutas de textura se leen del valor
+- **`mode` desapareció.** Si un valor es el recurso de otro mod o un archivo tuyo se deduce del propio valor: un `:` lo convierte en resource location, una extensión lo convierte en un archivo de tu carpeta de contenido
+- **Ya se pueden mezclar valores dentro del mismo objeto.** Un barril con la tapa propia y los lados de vanilla era imposible mientras un solo `mode` decidía por todo el objeto
+- Un valor que no es ninguna de las dos cosas se rechaza con un error que nombra las dos formas válidas. `item/bundle` es ambiguo y ya no se adivina
+- **Las texturas animadas funcionan.** Pon un `.mcmeta` junto a tu PNG — `mi_fluido.png` y `mi_fluido.png.mcmeta` — y ambos viajan al pack, igual que en un resource pack normal
+
+#### Tooltips
+- Las secciones largas — efectos, bono de conjunto, las tres capas de resistencias y los drops de mobs — ahora se ocultan tras **Shift**, con una línea que avisa de que están ahí. Las estadísticas de herramientas y armas siguen visibles, porque comparar dos de un vistazo es para lo que sirve un tooltip
+- Un contenedor que puede guardar contenido lo muestra como una **rejilla de objetos** al mantener Shift, ordenada de mayor a menor cantidad, con «…y N tipos más» cuando hay demasiados
+
+### 🐛 Correcciones
+- **El access transformer nunca llegaba al jar compilado.** Todo lo que dependía de él funcionaba en el entorno de desarrollo y lanzaba `IllegalAccessError` en una instalación real — lo que significaba que abrir cualquier contenedor desconectaba al jugador. Es el tipo de fallo que ninguna prueba en `runClient` puede encontrar
+- **La caché de contenido se saltaba la validación entera.** Un archivo cacheado se aceptaba sin volver a comprobarlo, así que las reglas que cambiaban entre versiones nunca se aplicaban a archivos que nadie había editado, y los avisos de validación se mostraban una vez y nunca más. La validación ahora corre en cada carga; la caché sigue ahorrando la lectura de disco y el parseo del JSON
+- **Las texturas propias de fluido nunca funcionaron.** El registro apuntaba un fluido custom a `customgear:fluid/<id>_still`, pero nada copiaba jamás un archivo ahí. Las texturas de fluido ahora se toman de `block/`, porque el atlas de bloques se construye desde una lista fija de directorios y un `fluid/` arbitrario no está en ella
+- **El daño de flecha salía de lo que el tirador llevaba en la mano, no de lo que disparó.** Disparar un arco de vanilla con uno custom en la otra mano le daba el daño custom a la flecha equivocada. El daño ahora se aplica donde el arma se conoce con certeza. Los mobs siguen resolviéndose por el arma que llevan — construyen sus flechas sin consultar el objeto
+- **`armor_3d` se saltaba en modo referencia**, así que una armadura no podía tener iconos referenciados a vanilla y su propio modelo de GeckoLib a la vez. Un `.geo.json` no tiene forma de referencia, así que ahora se copia siempre que se declare — y referenciar el modelo de otro mod también funciona, lo que evita redistribuir recursos que no son tuyos
+- **La animación de tensado del arco seguía ignorando `charge_speed`.** El arreglo publicado en 1.6.0 describía el comportamiento correcto en un comentario, pero el código seguía dividiendo entre 20 ticks fijos
+- Un `System.out.println` de depuración saltaba en cada cambio de modo de ordenación de un contenedor
+
+### 🔧 Cambios Técnicos
+- `TextureRef.java` — nuevo en `resources/`: el único sitio que decide a qué apunta un valor de textura. Tanto los parsers como los generadores resuelven a través de él
+- `TextureData.java` — nuevo en `data/`: el bloque de texturas compartido. `BlockData`, `GearData` y `FluidData` tenían tres copias casi idénticas
+- `PackSink.addTextureWithMeta` — copia una textura y su `.mcmeta` juntos
+- `ContainerData.java` / `ContainerContentData.java` / `ContainerContents.java` — nuevos: las definiciones de contenedor y el componente donde vive su contenido
+- `ContainerRegistry.java` — nuevo en `loader/`: los contenedores registran su propio Block, Item y BlockEntityType. Fuera de `BlockRegistry` porque una mochila no es un bloque
+- `CustomContainerBlock` y `CustomContainerBlockEntity` — bases abstractas; `CustomBarrelBlock`, `CustomChestBlock` y `CustomShulkerBlock` añaden solo lo suyo
+- `ChestRenderer.java` / `ShulkerRenderer.java` — nuevos en `client/render/`. Las tres mallas del cofre se construyen a mano; el shulker reutiliza el `ShulkerModel` de vanilla
+- `ContainerOpenData.java` — nuevo en `network/`: el paquete de apertura de contenedor, ahora **versionado**. Sus campos se escribían y leían campo a campo en dos archivos sin ninguna comprobación, así que añadir uno desplazaba en silencio todos los valores siguientes
+- `BackpackAnchor.java` — nuevo: dónde vive una mochila que se lleva encima, para que su menú note que se va. Tres casos: un slot del inventario, la mano izquierda, un slot de Curios
+- `CuriosCompat.java` — nuevo en `compat/`: la única clase que toca la API de Curios, para que nada más se rompa cuando falta
+- `CuriosTagLoader.java` — nuevo en `loader/`: emite los tags de objeto y la asignación de slots a la entidad
+- `ContainerTooltip.java` / `ContainerTooltipRenderer.java` — nuevos en `client/`: la rejilla de contenido
+- `ArrowDamageHandler.java` — reducido a los mobs; los jugadores resuelven por `createProjectile`, donde el arma es un parámetro
+- `GearModelGenerator.java` — la división `loadCustom` / `loadReference` colapsada en un solo camino por tipo de gear
+- `build.gradle` — el access transformer ahora se copia al jar y se declara en `neoforge.mods.toml`
+
+### ⚙️ Limitaciones Conocidas
+- **Un contenedor de más de 128 slots puede desconectar al jugador.** Una sola acción que cambie más slots que eso a la vez — un arrastre largo, un shift+clic masivo — supera lo que el paquete de clic de vanilla puede llevar. Difícil de alcanzar en supervivencia, trivial en creativo
+- **El contenido de una mochila viaja dentro de su ItemStack**, y ese stack se reenvía cada vez que algo se mueve en el inventario del jugador. Una mochila grande llena de objetos con NBT pesado es el caso donde el número de slots más cuesta
+- **Un escudo aún no puede tener su propia textura.** Se dibuja con los materiales del atlas de vanilla, y apuntar directamente a un PNG significa perder los patrones de estandarte — un intercambio que conviene hacer a propósito, no por accidente
+- **Cambiar `curios_slots` requiere también `/reload`.** Curios lee su asignación de slots fuera de la recarga que dispara este mod
+- Intentar anidar un contenedor parpadea un fotograma antes de que el servidor lo rechace: el inventario suplente del cliente conoce la regla, pero la predicción corre primero
+
+### 📦 Dependencias
+- **Curios API** — opcional, solo necesaria para `curios_slots`
+
+---
+
 ## [1.6.0] - 2026-08-01
 
 ### 💥 CAMBIOS ROMPIENTES
