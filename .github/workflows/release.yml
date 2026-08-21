@@ -1,10 +1,5 @@
 name: Release
 
-# Fires only when a version tag is pushed:
-#   git tag -a v1.7.0 -m "Release 1.7.0"
-#   git push origin v1.7.0
-#
-# Pushing to a branch does NOT trigger this.
 on:
   push:
     tags:
@@ -16,7 +11,6 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -26,50 +20,57 @@ jobs:
       - name: Set up JDK 21
         uses: actions/setup-java@v5.7.0
         with:
-          distribution: temurin
           java-version: "21"
-          cache: gradle
+          distribution: "temurin"
 
-      # Make sure the version in gradle.properties matches the tag.
-      # Example:
-      #   Tag:              v1.7.0
-      #   gradle.properties: mod_version=1.7.0
-      #
-      # This prevents accidentally publishing a v1.7.0 release
-      # containing a JAR built as version 1.6.0.
+      # Both pre-flight checks run BEFORE the build: a wrong version or a
+      # missing changelog should fail in twenty seconds, not in four minutes.
+
+      # The tag rules, but gradle.properties is what ends up inside the jar.
+      # If they don't match, you'd publish a v1.6.1 containing a 1.6.0.
       - name: Verify tag matches mod_version
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
           MOD_VERSION=$(grep '^mod_version=' gradle.properties | cut -d'=' -f2 | tr -d '[:space:]')
-
           echo "tag: $TAG_VERSION | gradle.properties: $MOD_VERSION"
-
           if [ "$TAG_VERSION" != "$MOD_VERSION" ]; then
             echo "::error::The tag ($TAG_VERSION) does not match mod_version ($MOD_VERSION). Fix gradle.properties or delete and recreate the tag."
             exit 1
           fi
 
+      # One changelog file per version means the whole file IS the release
+      # body — nothing to slice out of a growing document.
+      - name: Locate this version's changelog
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          NOTES="changelogs/changelog-${VERSION}.md"
+          if [ ! -s "$NOTES" ]; then
+            echo "::error::$NOTES is missing or empty. Write the changelog for this version before tagging it."
+            exit 1
+          fi
+          echo "NOTES_PATH=$NOTES" >> "$GITHUB_ENV"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
       - name: Make gradlew executable
-        run: chmod +x ./gradlew
+        run: chmod +x gradlew
 
       - name: Build
-        run: ./gradlew build --stacktrace
-
-      # Use the commit message as the release notes.
-      # The tag points to the exact commit that gets built.
-      - name: Extract release notes
-        id: notes
-        run: |
-          {
-            echo "body<<RELEASE_NOTES_EOF"
-            git log -1 --pretty=%B "${GITHUB_SHA}"
-            echo "RELEASE_NOTES_EOF"
-          } >> "$GITHUB_OUTPUT"
+        run: ./gradlew build
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           name: UltimateCustomGear ${{ github.ref_name }}
-          body: ${{ steps.notes.outputs.body }}
-          files: build/libs/*.jar
-          draft: true
+          body_path: ${{ env.NOTES_PATH }}
+          # A tag with a hyphen (v1.8.0-beta1) is a prerelease and does not
+          # become the "Latest" one people download by default.
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          # Named rather than build/libs/*.jar: that glob would also pick up a
+          # sources or javadoc jar the day the build starts producing one.
+          files: build/libs/ultimatecustomgear-*-NeoForge.jar
+          # Without this, a build that produced no jar publishes an empty
+          # release instead of failing.
+          fail_on_unmatched_files: true
