@@ -25,14 +25,13 @@ public class CustomItem extends Item {
 
     private final ItemData itemData;
 
-    public CustomItem(ItemData data) {
-        super(buildProps(data));
+    public CustomItem(ItemData data, Item.Properties props) {
+        super(buildProps(props, data));
         this.itemData = data;
     }
 
-    private static Item.Properties buildProps(ItemData data) {
-        Item.Properties p = new Item.Properties();
-        return data.fireResistant ? p.fireResistant() : p;
+    private static Item.Properties buildProps(Item.Properties props, ItemData data) {
+        return data.fireResistant ? props.fireResistant() : props;
     }
 
     @Override
@@ -49,8 +48,10 @@ public class CustomItem extends Item {
 
     @Override
     public void appendHoverText(@NotNull ItemStack stack, @NotNull TooltipContext context,
-                                @NotNull List<Component> tooltip, @NotNull TooltipFlag flag) {
-        super.appendHoverText(stack, context, tooltip, flag);
+                                @NotNull net.minecraft.world.item.component.TooltipDisplay display,
+                                @NotNull java.util.function.Consumer<Component> tooltip,
+                                @NotNull TooltipFlag flag) {
+        super.appendHoverText(stack, context, display, tooltip, flag);
         ItemData live = ItemRegistry.ITEM_MAP.get(BuiltInRegistries.ITEM.getKey(this));
         TooltipHelper.appendMobDrops(live != null ? live : itemData, tooltip);
         if (!TooltipHelper.detailsShown() && TooltipHelper.hasDetails(itemData)) {

@@ -6,7 +6,7 @@ import arrivedbog593.ultimatecustomgear.util.TooltipHelper;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
@@ -48,13 +48,13 @@ public class CustomFoodItem extends Item {
 
     private final ItemData itemData;
 
-    public CustomFoodItem(ItemData data) {
-        super(buildProps(data));
+    public CustomFoodItem(ItemData data, Item.Properties props) {
+        super(buildProps(props, data));
         this.itemData = data;
     }
 
-    private static Item.Properties buildProps(ItemData data) {
-        Item.Properties p = new Item.Properties().food(buildFoodProperties(data));
+    private static Item.Properties buildProps(Item.Properties props, ItemData data) {
+        Item.Properties p = props.food(buildFoodProperties(data));
         return data.fireResistant ? p.fireResistant() : p;
     }
 
@@ -71,7 +71,7 @@ public class CustomFoodItem extends Item {
                 .saturationModifier(data.saturation);
 
         if (data.alwaysEdible) builder.alwaysEdible();
-        if (data.fastFood)     builder.fast();
+        
 
         // Effects are NOT baked here: they are applied from live data in
         // finishUsingItem so /customgear reload can change them without a restart
@@ -88,9 +88,9 @@ public class CustomFoodItem extends Item {
             return null;
         }
         try {
-            ResourceLocation rl = ResourceLocation.parse(effectData.effect);
+            Identifier rl = Identifier.parse(effectData.effect);
             Optional<Holder.Reference<MobEffect>> holder =
-                    BuiltInRegistries.MOB_EFFECT.getHolder(rl);
+                    BuiltInRegistries.MOB_EFFECT.get(rl);
             if (holder.isEmpty()) {
                 LOGGER.warn("[CustomGear] Food effect not found in registry: '{}' — skipping",
                         effectData.effect);
@@ -115,9 +115,10 @@ public class CustomFoodItem extends Item {
     @Override
     public void appendHoverText(@NotNull ItemStack stack,
                                 @NotNull Item.TooltipContext context,
-                                @NotNull List<Component> tooltipComponents,
+                                @NotNull net.minecraft.world.item.component.TooltipDisplay display,
+                                @NotNull java.util.function.Consumer<Component> tooltipComponents,
                                 @NotNull net.minecraft.world.item.TooltipFlag flag) {
-        super.appendHoverText(stack, context, tooltipComponents, flag);
+        super.appendHoverText(stack, context, display, tooltipComponents, flag);
         ItemData live = ItemRegistry.ITEM_MAP.get(BuiltInRegistries.ITEM.getKey(this));
         ItemData data = live != null ? live : itemData;
         TooltipHelper.addFoodEffectsTooltip(tooltipComponents, data);

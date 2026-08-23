@@ -4,19 +4,20 @@ import arrivedbog593.ultimatecustomgear.data.GearData;
 import arrivedbog593.ultimatecustomgear.items.gear.CustomArmorItem;
 import arrivedbog593.ultimatecustomgear.resources.ModelConstants;
 import arrivedbog593.ultimatecustomgear.resources.TextureRef;
-import net.minecraft.client.model.HumanoidModel;
-import net.minecraft.resources.ResourceLocation;
+import com.geckolib.animatable.GeoItem;
+import com.geckolib.animatable.client.GeoRenderProvider;
+import com.geckolib.animatable.instance.AnimatableInstanceCache;
+import com.geckolib.animatable.manager.AnimatableManager;
+import com.geckolib.model.GeoModel;
+import com.geckolib.renderer.GeoArmorRenderer;
+import com.geckolib.renderer.base.GeoRenderState;
+import com.geckolib.util.GeckoLibUtil;
+import net.minecraft.client.renderer.entity.state.HumanoidRenderState;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.ModList;
-import software.bernie.geckolib.animatable.GeoItem;
-import software.bernie.geckolib.animatable.client.GeoRenderProvider;
-import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.animation.AnimatableManager;
-import software.bernie.geckolib.model.GeoModel;
-import software.bernie.geckolib.renderer.GeoArmorRenderer;
-import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.function.Consumer;
 
@@ -32,9 +33,9 @@ import java.util.function.Consumer;
  * plain CustomArmorItem is registered instead, which is why the mod still
  * works without GeckoLib installed (the armor falls back to armor_layers).
  * <p>
- * Asset resolution follows the mod's usual texture "mode" grammar:
+ * Asset resolution follows the mod's usual texture grammar:
  * <ul>
- *   <li><b>custom</b> — armor_3d paths point to the user's own files; the
+ *   <li><b>file</b> — armor_3d paths point to the user's own files; the
  *       GearModelGenerator has already copied them into the dynamic pack at
  *       customgear:geo/armor/&lt;id&gt;.geo.json (and siblings), so the model
  *       reads them from there.</li>
@@ -42,14 +43,20 @@ import java.util.function.Consumer;
  *       shipped by another mod (or vanilla); they are used as-is, nothing is
  *       copied. NOTE: this makes that mod REQUIRED for the armor to render.</li>
  * </ul>
+ * <p>
+ * GECKOLIB 5 MOVED THE RESOURCE LOOKUP OFF THE ITEM. A GeoModel is now asked
+ * for its model and texture given a {@link GeoRenderState}, not given the item
+ * instance — that state is built on the render thread and no longer carries the
+ * item. Which costs nothing here: the three locations depend only on the gear
+ * definition this renderer was built for, so they are resolved once in the
+ * constructor and handed straight back.
  */
-@SuppressWarnings("deprecation")
 public class GeckoArmorItem extends CustomArmorItem implements GeoItem {
 
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
-    public GeckoArmorItem(GearData data, String piece) {
-        super(data, piece);
+    public GeckoArmorItem(GearData data, String piece, Item.Properties props) {
+        super(data, piece, props);
 
         if (!ModList.get().isLoaded("geckolib")) {
             throw new IllegalStateException(
@@ -75,13 +82,11 @@ public class GeckoArmorItem extends CustomArmorItem implements GeoItem {
     @Override
     public void createGeoRenderer(Consumer<GeoRenderProvider> consumer) {
         consumer.accept(new GeoRenderProvider() {
-            private GeoArmorRenderer<GeckoArmorItem> renderer;
+            private GeoArmorRenderer<GeckoArmorItem, HumanoidRenderState> renderer;
 
             @Override
-            public <T extends LivingEntity> HumanoidModel<?> getGeoArmorRenderer(
-                    T livingEntity, ItemStack itemStack, EquipmentSlot equipmentSlot,
-                    HumanoidModel<T> original) {
-
+            public GeoArmorRenderer<?, ?> getGeoArmorRenderer(ItemStack itemStack,
+                                                              EquipmentSlot equipmentSlot) {
                 if (this.renderer == null) {
                     this.renderer = new GeoArmorRenderer<>(
                             new GearArmorGeoModel(getGearDataDirect()));
@@ -105,9 +110,9 @@ public class GeckoArmorItem extends CustomArmorItem implements GeoItem {
      */
     private static class GearArmorGeoModel extends GeoModel<GeckoArmorItem> {
 
-        private final ResourceLocation modelResource;
-        private final ResourceLocation textureResource;
-        private final ResourceLocation animationResource;
+        private final Identifier modelResource;
+        private final Identifier textureResource;
+        private final Identifier animationResource;
 
         GearArmorGeoModel(GearData data) {
             GearData.Armor3DData armor3d = data.texture != null ? data.texture.armor3d : null;
@@ -120,34 +125,34 @@ public class GeckoArmorItem extends CustomArmorItem implements GeoItem {
                     "animations/armor/" + data.id + ".animation.json");
         }
 
-        private static ResourceLocation packLoc(String path) {
-            return ResourceLocation.fromNamespaceAndPath(ModelConstants.NAMESPACE, path);
+        private static Identifier packLoc(String path) {
+            return Identifier.fromNamespaceAndPath(ModelConstants.NAMESPACE, path);
         }
 
         /**
          * A reference is used as written; anything else was copied into the
          * pack under the derived path.
          */
-        private static ResourceLocation resolve(String value, String packPath) {
+        private static Identifier resolve(String value, String packPath) {
             if (value != null && TextureRef.kindOf(value) == TextureRef.Kind.REFERENCE) {
-                ResourceLocation rl = ResourceLocation.tryParse(value);
+                Identifier rl = Identifier.tryParse(value);
                 if (rl != null) return rl;
             }
             return packLoc(packPath);
         }
 
         @Override
-        public ResourceLocation getModelResource(GeckoArmorItem animatable) {
+        public Identifier getModelResource(GeoRenderState renderState) {
             return this.modelResource;
         }
 
         @Override
-        public ResourceLocation getTextureResource(GeckoArmorItem animatable) {
+        public Identifier getTextureResource(GeoRenderState renderState) {
             return this.textureResource;
         }
 
         @Override
-        public ResourceLocation getAnimationResource(GeckoArmorItem animatable) {
+        public Identifier getAnimationResource(GeckoArmorItem animatable) {
             return this.animationResource;
         }
     }

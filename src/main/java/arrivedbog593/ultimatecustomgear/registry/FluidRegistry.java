@@ -5,7 +5,7 @@ import arrivedbog593.ultimatecustomgear.items.fluids.CustomFluid;
 import arrivedbog593.ultimatecustomgear.resources.TextureRef;
 import arrivedbog593.ultimatecustomgear.util.GearLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
@@ -22,6 +22,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,18 +45,23 @@ public class FluidRegistry {
     public static final DeferredRegister<Fluid> FLUIDS =
             DeferredRegister.create(BuiltInRegistries.FLUID, "customgear");
 
-    public static final DeferredRegister<Block> FLUID_BLOCKS =
-            DeferredRegister.create(BuiltInRegistries.BLOCK, "customgear");
+    public static final DeferredRegister.Blocks FLUID_BLOCKS =
+            DeferredRegister.createBlocks("customgear");
 
-    public static final DeferredRegister<Item> FLUID_BUCKETS =
-            DeferredRegister.create(BuiltInRegistries.ITEM, "customgear");
+    public static final DeferredRegister.Items FLUID_BUCKETS =
+            DeferredRegister.createItems("customgear");
 
-    public static final Map<ResourceLocation, FluidData> FLUID_MAP = new HashMap<>();
+    public static final Map<Identifier, FluidData> FLUID_MAP = new HashMap<>();
 
-    private static final ResourceLocation WATER_STILL =
-            ResourceLocation.withDefaultNamespace("block/water_still");
-    private static final ResourceLocation WATER_FLOW =
-            ResourceLocation.withDefaultNamespace("block/water_flow");
+    /**
+     * Everything the client needs to build one FluidModel: the two fluids and
+     * the definition that names their sprites.
+     */
+    public record RenderEntry(DeferredHolder<Fluid, CustomFluid.Source> source,
+                              DeferredHolder<Fluid, CustomFluid.Flowing> flowing,
+                              FluidData data) {}
+
+    public static final List<RenderEntry> RENDERED = new ArrayList<>();
 
     private static final Logger LOGGER = LogManager.getLogger("CustomGear");
 
@@ -88,17 +94,23 @@ public class FluidRegistry {
         flowingRef[0] = FLUIDS.register(data.id + "_flowing", () ->
                 new CustomFluid.Flowing(buildProps(typeHolder, sourceRef, flowingRef, blockRef, bucketRef, data)));
 
-        blockRef[0] = FLUID_BLOCKS.register(data.id, () ->
-                CustomFluid.createBlock(sourceRef[0], data));
+        blockRef[0] = FLUID_BLOCKS.registerBlock(data.id, props ->
+                CustomFluid.createBlock(sourceRef[0], data, props));
 
-        bucketRef[0] = FLUID_BUCKETS.register(data.id + "_bucket", () ->
-                new BucketItem(sourceRef[0].get(), bucketProps(data)));
+        bucketRef[0] = FLUID_BUCKETS.registerItem(data.id + "_bucket", props ->
+                new BucketItem(sourceRef[0].get(), bucketProps(data, props)));
 
-        FLUID_MAP.put(ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
+        // Kept so the client can build a FluidModel per fluid — see
+        // ClientSetup.onRegisterFluidModels. The textures used to be answered by
+        // the FluidType itself; they are now registered separately, and this is
+        // the only place that still pairs a fluid with the JSON it came from.
+        RENDERED.add(new RenderEntry(sourceRef[0], flowingRef[0], data));
+
+        FLUID_MAP.put(Identifier.fromNamespaceAndPath("customgear", data.id), data);
     }
 
-    private static Item.Properties bucketProps(FluidData data) {
-        Item.Properties p = new Item.Properties()
+    private static Item.Properties bucketProps(FluidData data, Item.Properties props) {
+        Item.Properties p = props
                 .craftRemainder(Items.BUCKET)
                 .stacksTo(1);
         return data.fireResistant ? p.fireResistant() : p;
@@ -124,6 +136,13 @@ public class FluidRegistry {
                 .levelDecreasePerBlock(levelDecrease);
     }
 
+    /**
+     * NO CLIENT EXTENSION HERE ANY MORE. A FluidType used to answer its own
+     * still/flowing sprites and tint through initializeClient. Those methods are
+     * gone: a fluid's appearance is now a FluidModel, registered on the client
+     * event — see ClientSetup.onRegisterFluidModels. What is left here is the
+     * part that is genuinely server-side.
+     */
     private static FluidType buildFluidType(FluidData data) {
         FluidType.Properties props = FluidType.Properties.create()
                 .descriptionId("fluid.customgear." + data.id);
@@ -138,76 +157,6 @@ public class FluidRegistry {
                 return net.minecraft.network.chat.Component.literal(resolveFluidName(data));
             }
 
-            @SuppressWarnings("removal")
-            @Override
-            public void initializeClient(
-                    java.util.function.@NotNull Consumer<net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions> consumer) {
-                consumer.accept(new net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions() {
-                    @Override
-                    public @NotNull ResourceLocation getStillTexture() {
-                        return resolveStillTexture(data);
-                    }
-
-                    @Override
-                    public @NotNull ResourceLocation getFlowingTexture() {
-                        return resolveFlowingTexture(data);
-                    }
-
-                    @Override
-                    public int getTintColor() {
-                        if (data.color != null && !data.color.equals("0xFFFFFFFF")) {
-                            try {
-                                return (int) Long.parseLong(
-                                        data.color.replace("0x", "").replace("0X", ""), 16);
-                            } catch (Exception ignored) {}
-                        }
-                        // No textures declared means the fluid is drawing water's
-                        // sprites, so it gets water's blue. A fluid that brought
-                        // its own textures already has whatever color they have.
-                        boolean hasOwnTextures = data.texture != null
-                                && data.texture.refs != null
-                                && (data.texture.refs.get("still") != null
-                                || data.texture.refs.get("flowing") != null);
-                        return hasOwnTextures ? 0xFFFFFFFF : 0xFF3F76E4;
-                    }
-                });
-            }
-        };
-    }
-
-    private static ResourceLocation resolveStillTexture(FluidData data) {
-        return resolveFluidTexture(data, "still", WATER_STILL);
-    }
-
-    private static ResourceLocation resolveFlowingTexture(FluidData data) {
-        return resolveFluidTexture(data, "flowing", WATER_FLOW);
-    }
-
-    /**
-     * The sprite this fluid draws with.
-     * <p>
-     * A reference is used as written — and for a fluid that means the SHORT
-     * form, minecraft:block/lava_still, because that is how atlas sprites are
-     * addressed. A file was copied into the pack by the generator, so it is
-     * referenced by the name derived from the id.
-     */
-    private static ResourceLocation resolveFluidTexture(FluidData data, String slot,
-                                                        ResourceLocation fallback) {
-        String value = data.texture != null && data.texture.refs != null
-                ? data.texture.refs.get(slot) : null;
-        if (value == null) return fallback;
-
-        return switch (TextureRef.kindOf(value)) {
-            case REFERENCE -> {
-                ResourceLocation parsed = ResourceLocation.tryParse(value);
-                yield parsed != null ? parsed : fallback;
-            }
-            case FILE -> ResourceLocation.fromNamespaceAndPath(
-                    "customgear", "block/" + data.id + "_" + slot);
-            case INVALID -> {
-                TextureRef.reportInvalid("Fluid '" + data.id + "'", slot, value);
-                yield fallback;
-            }
         };
     }
 
@@ -224,7 +173,7 @@ public class FluidRegistry {
     public static void updateFluidData(List<FluidData> fluidList) {
         FLUID_MAP.clear();
         for (FluidData data : fluidList) {
-            FLUID_MAP.put(ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
+            FLUID_MAP.put(Identifier.fromNamespaceAndPath("customgear", data.id), data);
         }
         LOGGER.info("[CustomGear] Updated {} fluids in registry", fluidList.size());
     }

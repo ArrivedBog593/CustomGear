@@ -12,14 +12,13 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.material.PushReaction;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -44,13 +43,13 @@ public class CustomShulkerBlock extends CustomContainerBlock {
      * not the direction the player is looking. Place one on the floor and it
      * opens upward; stick it to a wall and it opens toward you.
      */
-    public static final DirectionProperty FACING = BlockStateProperties.FACING;
+    public static final EnumProperty<Direction> FACING = BlockStateProperties.FACING;
     /** Almost the full block, so dropped items rest on top instead of sinking in. */
     private static final VoxelShape ITEM_ENTITY_SHAPE = box(0.05, 0.05, 0.05, 15.95, 15.95, 15.95);
 
 
-    public CustomShulkerBlock(ContainerContentData data) {
-        super(data, shulkerProperties(data));
+    public CustomShulkerBlock(ContainerContentData data, Properties props) {
+        super(data, shulkerProperties(data, props));
         this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.UP));
     }
 
@@ -65,8 +64,8 @@ public class CustomShulkerBlock extends CustomContainerBlock {
      * it must not occlude, suffocate or block the view while open — and
      * DESTROY stops a piston from moving a full inventory around.
      */
-    private static Properties shulkerProperties(ContainerContentData data) {
-        return CustomBlock.buildProperties(data, p -> p
+    private static Properties shulkerProperties(ContainerContentData data, Properties base) {
+        return CustomBlock.buildProperties(data, base, p -> p
                 .forceSolidOn()
                 .dynamicShape()
                 .noOcclusion()
@@ -119,10 +118,8 @@ public class CustomShulkerBlock extends CustomContainerBlock {
         return Shapes.block();
     }
 
-    @Override
-    protected @NotNull RenderShape getRenderShape(@NotNull BlockState state) {
-        return RenderShape.ENTITYBLOCK_ANIMATED;
-    }
+    // NO getRenderShape OVERRIDE — see CustomChestBlock for why the baked model
+    // is now suppressed by the model file rather than by the block.
 
     /**
      * Refuses to open when the box it would grow into is occupied.
@@ -133,8 +130,8 @@ public class CustomShulkerBlock extends CustomContainerBlock {
     @Override
     protected boolean canOpen(BlockState state, Level level, BlockPos pos) {
         if (!state.hasProperty(FACING)) return true;
-        AABB needed = Shulker.getProgressDeltaAabb(1.0F, state.getValue(FACING), 0.0F, 0.5F)
-                .move(pos)
+        AABB needed = Shulker.getProgressDeltaAabb(1.0F, state.getValue(FACING), 0.0F, 0.5F,
+                        pos.getBottomCenter())
                 .deflate(1.0E-6);
         return level.noCollision(needed);
     }

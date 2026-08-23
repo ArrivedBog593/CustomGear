@@ -1,0 +1,8 @@
+[01:32:30] [main/INFO]: [CustomGear] Loaded: 1 blocks, 1 fluids, 2 items, 4 containers
+[01:32:30] [main/INFO]: [CustomGear] Global ID validation passed: 21 item IDs, 5 block IDs, 2 fluid IDs — no collisions
+[01:32:31] [main/INFO]: [CustomGear] Loading item texture: test_food
+[01:32:31] [main/INFO]: [CustomGear] Loading item texture: test_item
+[01:32:31] [main/INFO]: [CustomGear] Loading block: test_block
+[01:32:31] [main/INFO]: [CustomGear] Loading block: test_barrel
+[01:32:31] [main/INFO]: [CustomGear] Loading block: test_chest
+[01:32:31] [main/INFO]: [CustomGear] Loading block: test_shulker

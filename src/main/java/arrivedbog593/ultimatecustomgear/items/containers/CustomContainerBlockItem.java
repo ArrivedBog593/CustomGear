@@ -56,8 +56,10 @@ public class CustomContainerBlockItem extends BlockItem {
 
     @Override
     public void appendHoverText(@NotNull ItemStack stack, @NotNull TooltipContext context,
-                                @NotNull List<Component> tooltip, @NotNull TooltipFlag flag) {
-        super.appendHoverText(stack, context, tooltip, flag);
+                                @NotNull net.minecraft.world.item.component.TooltipDisplay display,
+                                @NotNull java.util.function.Consumer<Component> tooltip,
+                                @NotNull TooltipFlag flag) {
+        super.appendHoverText(stack, context, display, tooltip, flag);
         ContainerContentData d = definition();
         ContainerItemTooltip.appendHint(d, stack, tooltip);
         ContainerItemTooltip.appendContentsHeader(d, stack, tooltip);

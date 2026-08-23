@@ -11,6 +11,7 @@ import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.Optional;
 
 /**
@@ -34,7 +35,7 @@ public final class ContainerItemTooltip {
      * that turns out to say "empty".
      */
     public static void appendHint(ContainerContentData data, ItemStack stack,
-                                  List<Component> tooltip) {
+                                  Consumer<Component> tooltip) {
         if (TooltipHelper.detailsShown()) return;
 
         boolean canHold = data != null && data.container != null
@@ -51,7 +52,7 @@ public final class ContainerItemTooltip {
      * item's name, so a text line can never sit above it.
      */
     public static void appendContentsHeader(ContainerContentData data, ItemStack stack,
-                                            List<Component> tooltip) {
+                                            Consumer<Component> tooltip) {
         if (!TooltipHelper.detailsShown()) return;
 
         boolean canHold = data != null && data.container != null
@@ -60,7 +61,7 @@ public final class ContainerItemTooltip {
         boolean hasContents = contents != null && !contents.isEmpty();
 
         if (hasContents || !canHold) return;
-        tooltip.add(Component.translatable("tooltip.ultimatecustomgear.container.empty")
+        tooltip.accept(Component.translatable("tooltip.ultimatecustomgear.container.empty")
                 .withStyle(ChatFormatting.YELLOW));
     }
 

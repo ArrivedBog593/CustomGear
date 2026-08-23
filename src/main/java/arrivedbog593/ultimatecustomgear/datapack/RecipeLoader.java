@@ -6,7 +6,7 @@ import arrivedbog593.ultimatecustomgear.data.ItemData;
 import arrivedbog593.ultimatecustomgear.data.RecipeData;
 import arrivedbog593.ultimatecustomgear.resources.PackSink;
 import com.google.gson.*;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -96,7 +96,7 @@ public class RecipeLoader {
             String     recipeId = itemId + "_" + suffix;
             JsonObject json   = buildRecipeJson(itemId, rd);
             if (json != null) {
-                ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(
+                Identifier loc = Identifier.fromNamespaceAndPath(
                         "customgear", "recipe/" + recipeId + ".json");
                 pack.addRaw(loc, GSON.toJson(json).getBytes(StandardCharsets.UTF_8));
                 LOGGER.debug("[CustomGear] Generated recipe: {}", recipeId);
@@ -357,7 +357,7 @@ public class RecipeLoader {
         }
 
         String typeStr = innerType.getAsString();
-        ResourceLocation typeRl = ResourceLocation.tryParse(typeStr);
+        Identifier typeRl = Identifier.tryParse(typeStr);
         if (typeRl == null) {
             LOGGER.warn("[CustomGear] Passthrough recipe for '{}': malformed inner type '{}' — "
                     + "skipping. Expected 'namespace:path'.", itemId, typeStr);
@@ -420,7 +420,7 @@ public class RecipeLoader {
         boolean isTag = value.startsWith("#");
         String rl = isTag ? value.substring(1) : value;
 
-        if (ResourceLocation.tryParse(rl) == null) {
+        if (Identifier.tryParse(rl) == null) {
             LOGGER.warn("[CustomGear] Recipe for '{}': malformed {} '{}' in {} — skipping recipe. "
                             + "Expected 'namespace:path' (e.g. 'minecraft:diamond') or "
                             + "'#namespace:tag' (e.g. '#minecraft:planks'). Only lowercase letters, "

@@ -1,7 +1,7 @@
 package arrivedbog593.ultimatecustomgear.resources;
 
 import arrivedbog593.ultimatecustomgear.data.GearData;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -157,6 +157,20 @@ public final class GearModelGenerator {
         }
     }
 
+    /**
+     * The worn layers, plus the EQUIPMENT ASSET that names them.
+     * <p>
+     * WHAT CHANGED. The renderer used to build the texture path itself, from the
+     * material's prefix plus a {@code _layer_1} / {@code _layer_2} suffix, so
+     * dropping two PNGs in the right folder was the whole job. It no longer
+     * guesses: an armour piece names an equipment asset, and that asset is a
+     * JSON listing one texture per body layer. So the two files still get
+     * copied — into two different folders now — and this writes the small file
+     * that ties them to the item.
+     * <p>
+     * NOTHING IS WRITTEN FOR A REFERENCE. Those name another mod's asset, which
+     * already exists; CustomArmorItem points the item straight at it.
+     */
     private static void loadArmorLayers(PackSink pack, GearData data) {
         if (!hasArmorLayers(data)) {
             if (data.texture != null && data.texture.armor3d == null) {
@@ -165,39 +179,71 @@ public final class GearModelGenerator {
             }
             return;
         }
-        loadArmorLayer(pack, data, "layer_1");
-        loadArmorLayer(pack, data, "layer_2");
+        boolean body     = loadArmorLayer(pack, data, "layer_1");
+        boolean leggings = loadArmorLayer(pack, data, "layer_2");
+
+        if (body || leggings) {
+            writeEquipmentAsset(pack, data.id, body, leggings);
+        }
     }
 
     /**
-     * A worn layer, which the armor renderer reads directly rather than through
-     * a model — so a reference is left alone and only a file is copied.
+     * The asset an armour piece reads to find its worn textures.
+     * <p>
+     * Only the layers that actually landed are listed. Naming a layer whose PNG
+     * is missing draws the missing-texture checkerboard on the player, which is
+     * louder and less informative than drawing nothing while the log says which
+     * file could not be found.
      */
-    private static void loadArmorLayer(PackSink pack, GearData data, String layerKey) {
+    private static void writeEquipmentAsset(PackSink pack, String gearId,
+                                            boolean body, boolean leggings) {
+        StringBuilder sb = new StringBuilder("{\n  \"layers\": {\n");
+        if (body) {
+            sb.append("    \"humanoid\": [ { \"texture\": \"")
+                    .append(NAMESPACE).append(':').append(gearId).append("\" } ]");
+            if (leggings) sb.append(',');
+            sb.append('\n');
+        }
+        if (leggings) {
+            sb.append("    \"humanoid_leggings\": [ { \"texture\": \"")
+                    .append(NAMESPACE).append(':').append(gearId).append("\" } ]\n");
+        }
+        sb.append("  }\n}\n");
+        pack.addRaw(equipmentLoc(gearId), sb.toString().getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Copies one worn layer into the pack.
+     *
+     * @return true when a texture was written for this layer, so the caller
+     *         knows whether the equipment asset may name it
+     */
+    private static boolean loadArmorLayer(PackSink pack, GearData data, String layerKey) {
         String layerNum = layerKey.split("_")[1];
         String value = data.texture.armorLayers.get(layerKey);
         if (value == null) {
             LOGGER.error(ERROR_LAYER_NOT_DEFINED, layerNum, data.id);
-            return;
+            return false;
         }
         // A keyword, not a path: it makes the worn armor invisible.
         if (value.equals("transparent")) {
-            pack.addRaw(armorTextureLoc(data.id, layerKey), TRANSPARENT_LAYER_PNG);
-            return;
+            pack.addRaw(armorLayerLoc(data.id, layerKey), TRANSPARENT_LAYER_PNG);
+            return true;
         }
 
         switch (TextureRef.kindOf(value)) {
             case FILE -> {
                 Optional<Path> texPath = TextureLoader.resolveUserResource(value);
                 if (texPath.isPresent()) {
-                    pack.addTextureWithMeta(armorTextureLoc(data.id, layerKey), texPath.get());
-                } else {
-                    LOGGER.error(ERROR_LAYER_NOT_FOUND, layerNum, value);
+                    pack.addTextureWithMeta(armorLayerLoc(data.id, layerKey), texPath.get());
+                    return true;
                 }
+                LOGGER.error(ERROR_LAYER_NOT_FOUND, layerNum, value);
             }
-            case REFERENCE -> { /* another mod's layer: nothing to copy */ }
+            case REFERENCE -> { /* another mod's asset: nothing to copy */ }
             case INVALID   -> TextureRef.reportInvalid(owner(data), layerKey, value);
         }
+        return false;
     }
 
     /**
@@ -215,7 +261,7 @@ public final class GearModelGenerator {
      * Copies one 3D asset, unless it is a reference.
      * <p>
      * A REFERENCE points at a file already inside another mod's jar, and
-     * GeckoLib loads it by ResourceLocation just the same — so copying it would
+     * GeckoLib loads it by Identifier just the same — so copying it would
      * only duplicate it, and redistributing someone else's model is a licensing
      * question this mod has no business answering. The item reads the reference
      * directly; see GeckoArmorItem.
@@ -239,7 +285,7 @@ public final class GearModelGenerator {
                     return;
                 }
                 try {
-                    pack.addRaw(ResourceLocation.fromNamespaceAndPath(NAMESPACE, targetPath),
+                    pack.addRaw(Identifier.fromNamespaceAndPath(NAMESPACE, targetPath),
                             Files.readAllBytes(resolved.get()));
                 } catch (IOException e) {
                     LOGGER.error("[CustomGear] Could not read armor_3d.{} for '{}': {}",
@@ -305,7 +351,7 @@ public final class GearModelGenerator {
      * at tool scale and fills a quarter of the screen in first person.
      * <p>
      * Frames fall back INDIVIDUALLY. One missing texture dropping all three
-     * overrides freezes the animation with no visible cause.
+     * stages freezes the animation with no visible cause.
      */
     private static void loadBow(PackSink pack, GearData data, String itemId) {
         Resolved base = resolveGearValue(pack, owner(data), "bow",
@@ -326,22 +372,23 @@ public final class GearModelGenerator {
         String json = """
         {
           "parent": "%s",
-          "textures": { "layer0": "%s" },
-          "overrides": [
-            { "predicate": { "pulling": 1 },               "model": "%s" },
-            { "predicate": { "pulling": 1, "pull": 0.65 }, "model": "%s" },
-            { "predicate": { "pulling": 1, "pull": 0.9 },  "model": "%s" }
-          ]
+          "textures": { "layer0": "%s" }
         }
-        """.formatted(DEFAULT_BOW, base.value(), p0, p1, p2);
+        """.formatted(DEFAULT_BOW, base.value());
 
         pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
+        ItemDefinitions.bow(pack, itemId, NAMESPACE + ":item/" + itemId, p0, p1, p2);
     }
 
     /**
-     * A crossbow. Override ORDER matters — Minecraft takes the LAST match, so
-     * charged has to come after the pulling entries and firework after charged,
-     * otherwise a loaded crossbow renders as a pulling frame.
+     * A crossbow.
+     * <p>
+     * ORDER USED TO BE THE WHOLE PROBLEM: the old override list was matched
+     * last-wins, so charged had to sit after the pulling entries and firework
+     * after charged, and reordering the array silently broke the item. The
+     * definition says it structurally instead — what the crossbow is loaded with
+     * is checked ABOVE how far it is drawn — so there is no order left to get
+     * wrong. See ItemDefinitions.crossbow.
      */
     private static void loadCrossbow(PackSink pack, GearData data, String itemId) {
         Resolved base = resolveGearValue(pack, owner(data), "crossbow",
@@ -366,22 +413,17 @@ public final class GearModelGenerator {
         String json = """
         {
           "parent": "%s",
-          "textures": { "layer0": "%s" },
-          "overrides": [
-            { "predicate": { "pulling": 1 },                "model": "%s" },
-            { "predicate": { "pulling": 1, "pull": 0.58 },  "model": "%s" },
-            { "predicate": { "pulling": 1, "pull": 1.0 },   "model": "%s" },
-            { "predicate": { "charged": 1 },                "model": "%s" },
-            { "predicate": { "charged": 1, "firework": 1 }, "model": "%s" }
-          ]
+          "textures": { "layer0": "%s" }
         }
-        """.formatted(DEFAULT_CROSSBOW, base.value(), p0, p1, p2, arrow, firework);
+        """.formatted(DEFAULT_CROSSBOW, base.value());
 
         pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
+        ItemDefinitions.crossbow(pack, itemId, NAMESPACE + ":item/" + itemId,
+                p0, p1, p2, arrow, firework);
     }
 
     /**
-     * One animation frame, returning the MODEL reference the overrides array
+     * One animation frame, returning the MODEL reference the item definition
      * needs.
      * <p>
      * A reference here already names a model and goes straight in. A file is a
@@ -481,6 +523,18 @@ public final class GearModelGenerator {
 
     // ── JSON model generation ─────────────────────────────────────────────────
 
+    /**
+     * Points this item at the model that was just written for it.
+     * <p>
+     * Every emitter below writes models/item/&lt;id&gt;.json, and every one of them
+     * needs this too: an item with no ITEM DEFINITION renders as missing,
+     * however correct that model is. Kept as one call so a new emitter cannot
+     * quietly forget it.
+     */
+    public static void defineOwnModel(PackSink pack, String itemId) {
+        ItemDefinitions.plain(pack, itemId, NAMESPACE + ":item/" + itemId);
+    }
+
     public static void generateToolItemModel(PackSink pack, String itemId) {
         String json = """
             {
@@ -489,6 +543,7 @@ public final class GearModelGenerator {
             }
             """.formatted(HANDHELD_PARENT, NAMESPACE, itemId);
         pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
+        defineOwnModel(pack, itemId);
     }
 
     public static void generateArmorItemModel(PackSink pack, String itemId) {
@@ -499,6 +554,7 @@ public final class GearModelGenerator {
             }
             """.formatted(GENERATED_PARENT, NAMESPACE, itemId);
         pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
+        defineOwnModel(pack, itemId);
     }
 
     public static void generateGeneratedItemModel(PackSink pack, String itemId) {
@@ -509,6 +565,7 @@ public final class GearModelGenerator {
             }
             """.formatted(GENERATED_PARENT, NAMESPACE, itemId);
         pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
+        defineOwnModel(pack, itemId);
     }
 
     public static void generateItemModelWithRef(PackSink pack, String itemId, String ref) {
@@ -519,6 +576,7 @@ public final class GearModelGenerator {
             }
             """.formatted(GENERATED_PARENT, ref);
         pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
+        defineOwnModel(pack, itemId);
     }
 
     public static void generateParentOnlyModel(PackSink pack, String itemId, String parent) {
@@ -528,15 +586,25 @@ public final class GearModelGenerator {
             }
             """.formatted(parent);
         pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
+        defineOwnModel(pack, itemId);
     }
 
+    /**
+     * The two shield models — held and blocking — plus the definition that
+     * switches between them.
+     * <p>
+     * NO GEOMETRY IN EITHER, and no "builtin/entity" parent any more: that
+     * keyword is gone. A model here carries only the display transforms and a
+     * particle texture; the shield SHAPE comes from vanilla's shield renderer,
+     * named by the item definition. Which is the same division of labour the old
+     * BEWLR had, moved from Java into data.
+     */
     public static void generateShieldFlatModel(PackSink pack, String itemId) {
         String blockingModelId = itemId + "_blocking";
         String json = """
         {
-          "parent": "builtin/entity",
           "gui_light": "front",
-          "textures": { "particle": "block/dark_oak_planks" },
+          "textures": { "particle": "minecraft:block/dark_oak_planks" },
           "display": {
             "thirdperson_righthand": { "rotation": [0,90,0],    "translation": [10,6,-4],     "scale": [1,1,1] },
             "thirdperson_lefthand":  { "rotation": [0,90,0],    "translation": [10,6,12],     "scale": [1,1,1] },
@@ -545,18 +613,14 @@ public final class GearModelGenerator {
             "gui":                   { "rotation": [15,-25,-5],  "translation": [2,3,0],       "scale": [0.65,0.65,0.65] },
             "fixed":                 { "rotation": [0,180,0],   "translation": [-4.5,4.5,-5], "scale": [0.55,0.55,0.55] },
             "ground":                { "rotation": [0,0,0],     "translation": [2,4,2],        "scale": [0.25,0.25,0.25] }
-          },
-          "overrides": [
-            { "predicate": { "blocking": 1 }, "model": "%s:item/%s" }
-          ]
+          }
         }
-        """.formatted(NAMESPACE, blockingModelId);
+        """;
 
         String blockingJson = """
         {
-          "parent": "builtin/entity",
           "gui_light": "front",
-          "textures": { "particle": "block/dark_oak_planks" },
+          "textures": { "particle": "minecraft:block/dark_oak_planks" },
           "display": {
             "thirdperson_righthand": { "rotation": [45,155,0],  "translation": [-3.49,11,-2],  "scale": [1,1,1] },
             "thirdperson_lefthand":  { "rotation": [45,155,0],  "translation": [11.51,7,2.5],  "scale": [1,1,1] },
@@ -569,6 +633,9 @@ public final class GearModelGenerator {
 
         pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
         pack.addRaw(itemModelLoc(blockingModelId), blockingJson.getBytes(StandardCharsets.UTF_8));
+        ItemDefinitions.shield(pack, itemId,
+                NAMESPACE + ":item/" + itemId,
+                NAMESPACE + ":item/" + blockingModelId);
     }
 
     public static void generateBowModelWithRef(PackSink pack, String itemId,
@@ -577,35 +644,19 @@ public final class GearModelGenerator {
         String p1 = refs.getOrDefault("bow_pulling_1", DEFAULT_BOW_PULLING_1);
         String p2 = refs.getOrDefault("bow_pulling_2", DEFAULT_BOW_PULLING_2);
 
-        String json;
-        if (ref.equals(DEFAULT_BOW)
-                && p0.equals(DEFAULT_BOW_PULLING_0)
-                && p1.equals(DEFAULT_BOW_PULLING_1)
-                && p2.equals(DEFAULT_BOW_PULLING_2)) {
-            json = """
-            {
-              "parent": "minecraft:item/bow",
-              "overrides": [
-                { "predicate": { "pulling": 1 },               "model": "minecraft:item/bow_pulling_0" },
-                { "predicate": { "pulling": 1, "pull": 0.65 }, "model": "minecraft:item/bow_pulling_1" },
-                { "predicate": { "pulling": 1, "pull": 0.9 },  "model": "minecraft:item/bow_pulling_2" }
-              ]
-            }
-            """;
-        } else {
-            json = """
-            {
-              "parent": "minecraft:item/bow",
-              "textures": { "layer0": "%s" },
-              "overrides": [
-                { "predicate": { "pulling": 1 },               "model": "%s" },
-                { "predicate": { "pulling": 1, "pull": 0.65 }, "model": "%s" },
-                { "predicate": { "pulling": 1, "pull": 0.9 },  "model": "%s" }
-              ]
-            }
-            """.formatted(ref, p0, p1, p2);
+        // ONE BRANCH, not two. The old code special-cased "everything is
+        // vanilla" to avoid emitting a layer0 that pointed at a MODEL rather
+        // than a texture — a bug the else branch had. Splitting the model from
+        // the definition removes the need: the model is always parent-only, and
+        // the frames are named by the definition, where they belong.
+        String json = """
+        {
+          "parent": "%s"
         }
+        """.formatted(ref);
+
         pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
+        ItemDefinitions.bow(pack, itemId, NAMESPACE + ":item/" + itemId, p0, p1, p2);
     }
 
     public static void generateCrossbowModelWithRef(PackSink pack, String itemId,
@@ -616,41 +667,15 @@ public final class GearModelGenerator {
         String arrow    = refs.getOrDefault("crossbow_arrow",     DEFAULT_CROSSBOW_ARROW);
         String firework = refs.getOrDefault("crossbow_firework",  DEFAULT_CROSSBOW_FIREWORK);
 
-        String json;
-        if (ref.equals(DEFAULT_CROSSBOW)
-                && p0.equals(DEFAULT_CROSSBOW_PULLING_0)
-                && p1.equals(DEFAULT_CROSSBOW_PULLING_1)
-                && p2.equals(DEFAULT_CROSSBOW_PULLING_2)
-                && arrow.equals(DEFAULT_CROSSBOW_ARROW)
-                && firework.equals(DEFAULT_CROSSBOW_FIREWORK)) {
-            json = """
-            {
-              "parent": "minecraft:item/crossbow",
-              "overrides": [
-                { "predicate": { "pulling": 1 },                "model": "minecraft:item/crossbow_pulling_0" },
-                { "predicate": { "pulling": 1, "pull": 0.58 },  "model": "minecraft:item/crossbow_pulling_1" },
-                { "predicate": { "pulling": 1, "pull": 1.0 },   "model": "minecraft:item/crossbow_pulling_2" },
-                { "predicate": { "charged": 1 },                "model": "minecraft:item/crossbow_arrow" },
-                { "predicate": { "charged": 1, "firework": 1 }, "model": "minecraft:item/crossbow_firework" }
-              ]
-            }
-            """;
-        } else {
-            json = """
-            {
-              "parent": "minecraft:item/crossbow",
-              "textures": { "layer0": "%s" },
-              "overrides": [
-                { "predicate": { "pulling": 1 },                "model": "%s" },
-                { "predicate": { "pulling": 1, "pull": 0.58 },  "model": "%s" },
-                { "predicate": { "pulling": 1, "pull": 1.0 },   "model": "%s" },
-                { "predicate": { "charged": 1 },                "model": "%s" },
-                { "predicate": { "charged": 1, "firework": 1 }, "model": "%s" }
-              ]
-            }
-            """.formatted(ref, p0, p1, p2, arrow, firework);
+        String json = """
+        {
+          "parent": "%s"
         }
+        """.formatted(ref);
+
         pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
+        ItemDefinitions.crossbow(pack, itemId, NAMESPACE + ":item/" + itemId,
+                p0, p1, p2, arrow, firework);
     }
 
     // ── Validation helpers ────────────────────────────────────────────────────

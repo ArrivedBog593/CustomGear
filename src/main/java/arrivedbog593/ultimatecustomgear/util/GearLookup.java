@@ -3,7 +3,7 @@ package arrivedbog593.ultimatecustomgear.util;
 import arrivedbog593.ultimatecustomgear.data.GearData;
 import arrivedbog593.ultimatecustomgear.registry.GearRegistry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.neoforged.fml.loading.FMLEnvironment;
 
@@ -28,7 +28,7 @@ public final class GearLookup {
      * which can happen during the first tick after registration.
      */
     public static GearData getGearData(Item item, GearData initialData) {
-        ResourceLocation loc = BuiltInRegistries.ITEM.getKey(item);
+        Identifier loc = BuiltInRegistries.ITEM.getKey(item);
         GearData found = GearRegistry.lookupGear(loc);
         return found != null ? found : initialData;
     }
@@ -38,7 +38,7 @@ public final class GearLookup {
      * or {@code "en_us"} as a safe fallback on dedicated servers.
      */
     public static String getCurrentLang() {
-        if (FMLEnvironment.dist.isClient()) {
+        if (FMLEnvironment.getDist().isClient()) {
             try {
                 return net.minecraft.client.Minecraft.getInstance()
                         .getLanguageManager().getSelected();

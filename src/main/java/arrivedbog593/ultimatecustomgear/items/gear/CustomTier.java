@@ -1,56 +1,57 @@
 package arrivedbog593.ultimatecustomgear.items.gear;
 
 import arrivedbog593.ultimatecustomgear.data.GearData;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
-import net.minecraft.world.item.Tier;
-import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ToolMaterial;
 import net.minecraft.world.level.block.Block;
-import org.jetbrains.annotations.NotNull;
 
-public class CustomTier implements Tier {
+/**
+ * Builds the vanilla {@link ToolMaterial} for a gear definition.
+ * <p>
+ * WHY THIS NO LONGER IMPLEMENTS ANYTHING. Up to 1.21.1 a tool's stats came from
+ * a {@code Tier} interface the mod could implement, so every value was read live
+ * from the JSON on each call. {@code ToolMaterial} is a record: the numbers are
+ * baked in when the item is built and cannot change afterwards.
+ * <p>
+ * That costs the mod less than it looks. The live values still reach the player,
+ * because every custom tool overrides {@code getMaxDamage} and builds its
+ * tooltip from the current {@code GearData}. What is now fixed at registration
+ * is the mining tier and the attribute modifiers — and both already needed a
+ * restart before, since they are baked into the item's components.
+ */
+public final class CustomTier {
 
-    private final GearData data;
+    private CustomTier() {}
 
-    public CustomTier(GearData data) {
-        this.data = data;
+    /**
+     * Repair material is not part of the JSON schema, so custom gear repairs
+     * from nothing. An empty tag is how that is spelled now that the old
+     * {@code Ingredient.EMPTY} is gone.
+     */
+    private static final TagKey<Item> NO_REPAIR_ITEMS = ItemTags.create(
+            Identifier.fromNamespaceAndPath("customgear", "never_repairs"));
+
+    public static ToolMaterial of(GearData data) {
+        return new ToolMaterial(
+                incorrectBlocksFor(data.harvestLevel),
+                data.durability > 0 ? data.durability : 64,
+                data.miningSpeed > 0 ? data.miningSpeed : 1.0f,
+                Math.max(data.attackDamageBonus, 0),
+                data.enchantability,
+                NO_REPAIR_ITEMS);
     }
 
-    @Override
-    public int getUses() {
-        return data.durability > 0 ? data.durability : 64;
-    }
-
-    @Override
-    public float getSpeed() {
-        return data.miningSpeed > 0 ? data.miningSpeed : 1.0f;
-    }
-
-    @Override
-    public float getAttackDamageBonus() {
-        return data.attackDamageBonus > 0 ? data.attackDamageBonus : 0;
-    }
-
-    @Override
-    @NotNull
-    public TagKey<Block> getIncorrectBlocksForDrops() {
-        return switch (data.harvestLevel) {
+    private static TagKey<Block> incorrectBlocksFor(int harvestLevel) {
+        return switch (harvestLevel) {
             case 0  -> BlockTags.INCORRECT_FOR_WOODEN_TOOL;
             case 1  -> BlockTags.INCORRECT_FOR_STONE_TOOL;
             case 2  -> BlockTags.INCORRECT_FOR_IRON_TOOL;
             case 3  -> BlockTags.INCORRECT_FOR_DIAMOND_TOOL;
             default -> BlockTags.INCORRECT_FOR_NETHERITE_TOOL;
         };
-    }
-
-    @Override
-    public int getEnchantmentValue() {
-        return data.enchantability;
-    }
-
-    @Override
-    @NotNull
-    public Ingredient getRepairIngredient() {
-        return Ingredient.EMPTY;
     }
 }

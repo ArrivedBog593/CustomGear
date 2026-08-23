@@ -1,7 +1,7 @@
 package arrivedbog593.ultimatecustomgear.datapack;
 
 import arrivedbog593.ultimatecustomgear.data.BlockData;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -117,8 +117,8 @@ public class BlockTagLoader {
         for (String blockId : needsDiamond)   tags.add("block", mc("needs_diamond_tool"), blockId, true);
     }
 
-    private static ResourceLocation mc(String path) {
-        return ResourceLocation.fromNamespaceAndPath("minecraft", path);
+    private static Identifier mc(String path) {
+        return Identifier.fromNamespaceAndPath("minecraft", path);
     }
 
 }

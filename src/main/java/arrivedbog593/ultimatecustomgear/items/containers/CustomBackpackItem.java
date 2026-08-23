@@ -5,7 +5,7 @@ import arrivedbog593.ultimatecustomgear.menu.CustomContainerMenu;
 import arrivedbog593.ultimatecustomgear.network.ContainerOpenData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Player;
@@ -41,18 +41,18 @@ public class CustomBackpackItem extends Item {
     public ContainerContentData getData() { return data; }
 
     @Override
-    public @NotNull InteractionResultHolder<ItemStack> use(@NotNull Level level,
-                                                           @NotNull Player player,
-                                                           @NotNull InteractionHand hand) {
+    public @NotNull InteractionResult use(@NotNull Level level,
+                                         @NotNull Player player,
+                                         @NotNull InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
-        if (level.isClientSide()) return InteractionResultHolder.success(stack);
+        if (level.isClientSide()) return InteractionResult.SUCCESS;
 
         BackpackAnchor anchor = hand == InteractionHand.OFF_HAND
                 ? new BackpackAnchor.Offhand()
-                : new BackpackAnchor.InventorySlot(player.getInventory().selected);
+                : new BackpackAnchor.InventorySlot(player.getInventory().getSelectedSlot());
 
         open(player, anchor, stack);
-        return InteractionResultHolder.consume(stack);
+        return InteractionResult.CONSUME;
     }
 
     /**
@@ -103,8 +103,10 @@ public class CustomBackpackItem extends Item {
 
     @Override
     public void appendHoverText(@NotNull ItemStack stack, @NotNull TooltipContext context,
-                                @NotNull List<Component> tooltip, @NotNull TooltipFlag flag) {
-        super.appendHoverText(stack, context, tooltip, flag);
+                                @NotNull net.minecraft.world.item.component.TooltipDisplay display,
+                                @NotNull java.util.function.Consumer<Component> tooltip,
+                                @NotNull TooltipFlag flag) {
+        super.appendHoverText(stack, context, display, tooltip, flag);
         ContainerItemTooltip.appendHint(data, stack, tooltip);
         ContainerItemTooltip.appendContentsHeader(data, stack, tooltip);
     }

@@ -1,40 +1,32 @@
 package arrivedbog593.ultimatecustomgear.items.tools;
 
 import arrivedbog593.ultimatecustomgear.data.GearData;
-import arrivedbog593.ultimatecustomgear.items.gear.CustomTier;
 import arrivedbog593.ultimatecustomgear.items.weapons.CustomSwordItem;
 import arrivedbog593.ultimatecustomgear.util.GearLookup;
 import arrivedbog593.ultimatecustomgear.util.TooltipHelper;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.PickaxeItem;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
+import java.util.function.Consumer;
 
-public class CustomPickaxeItem extends PickaxeItem {
+/**
+ * A pickaxe built from JSON.
+ * <p>
+ * NOT a subclass of the vanilla pickaxe: those classes no longer exist. What made
+ * an item a pickaxe is now a set of data components, applied by
+ * {@code Item.Properties.pickaxe(...)} — see {@link CustomToolItem}.
+ */
+public class CustomPickaxeItem extends Item {
 
     private final GearData initialGearData;
 
-    public CustomPickaxeItem(GearData data) {
-        this(data, new CustomTier(data));
-    }
-
-    private CustomPickaxeItem(GearData data, CustomTier tier) {
-        super(tier, buildProps(data, tier));
+    public CustomPickaxeItem(GearData data, Item.Properties props) {
+        super(CustomToolItem.applyToolProperties(props, data, "pickaxe"));
         this.initialGearData = data;
-    }
-
-    private static Properties buildProps(GearData data, CustomTier tier) {
-        Properties p = new Properties()
-                .durability(data.durability)
-                .attributes(PickaxeItem.createAttributes(
-                        tier,
-                        data.attackDamage - 1,
-                        data.attackSpeed - 4
-                ));
-        return data.fireResistant ? p.fireResistant() : p;
     }
 
     private GearData getGearData() {
@@ -56,13 +48,15 @@ public class CustomPickaxeItem extends PickaxeItem {
     @Override
     public void appendHoverText(@NotNull ItemStack stack,
                                 @NotNull Item.TooltipContext context,
-                                @NotNull List<Component> tooltipComponents,
-                                @NotNull net.minecraft.world.item.TooltipFlag tooltipFlag) {
-        super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
-        TooltipHelper.addToolStatsTooltip(tooltipComponents, getGearData());
-        TooltipHelper.addHeldEffectsTooltip(tooltipComponents, getGearData());
-        if (!TooltipHelper.detailsShown() && TooltipHelper.hasDetails(getGearData())) {
-            TooltipHelper.addDetailsHint(tooltipComponents);
+                                @NotNull TooltipDisplay display,
+                                @NotNull Consumer<Component> builder,
+                                @NotNull TooltipFlag tooltipFlag) {
+        super.appendHoverText(stack, context, display, builder, tooltipFlag);
+        GearData data = getGearData();
+        TooltipHelper.addToolStatsTooltip(builder, data);
+        TooltipHelper.addHeldEffectsTooltip(builder, data);
+        if (!TooltipHelper.detailsShown() && TooltipHelper.hasDetails(data)) {
+            TooltipHelper.addDetailsHint(builder);
         }
     }
 }

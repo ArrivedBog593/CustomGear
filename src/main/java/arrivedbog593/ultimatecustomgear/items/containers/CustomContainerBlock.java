@@ -61,13 +61,12 @@ public abstract class CustomContainerBlock extends CustomBlock implements Entity
      */
     private final Set<BlockPos> creativeBreaks = ConcurrentHashMap.newKeySet();
 
-    protected CustomContainerBlock(ContainerContentData data) {
-        super(data);
-        this.data = data;
-        this.container = data.container != null ? data.container : new ContainerData();
-    }
-
-    /** For subtypes that had to adjust the properties before construction. */
+    /**
+     * Takes FINISHED properties, not the raw ones the registry hands out. The
+     * shulker has to adjust them before construction — BlockStateBase freezes
+     * them the moment the Block is built — so every subtype runs
+     * CustomBlock.buildProperties itself and passes the result in.
+     */
     protected CustomContainerBlock(ContainerContentData data, Properties properties) {
         super(properties);
         this.data = data;
@@ -150,9 +149,13 @@ public abstract class CustomContainerBlock extends CustomBlock implements Entity
      * the drop carry the exact size the block had.
      */
     @Override
-    protected void onRemove(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos,
-                            @NotNull BlockState newState, boolean movedByPiston) {
-        if (!state.is(newState.getBlock())) {
+    protected void affectNeighborsAfterRemoval(@NotNull BlockState state,
+                                               net.minecraft.server.level.@NotNull ServerLevel level,
+                                               @NotNull BlockPos pos, boolean movedByPiston) {
+        // NO "did the block actually change" GUARD ANY MORE. onRemove fired on
+        // every state change and had to check; this only fires once the block is
+        // really gone, so the check would now always pass.
+        {
             if (level.getBlockEntity(pos) instanceof CustomContainerBlockEntity be) {
                 if (container.keepsContents()) {
                     // Vanilla drops a shulker broken in creative ONLY when it
@@ -178,7 +181,7 @@ public abstract class CustomContainerBlock extends CustomBlock implements Entity
                 }
                 level.updateNeighbourForOutputSignal(pos, this);
             }
-            super.onRemove(state, level, pos, newState, movedByPiston);
+            super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
         }
     }
 
@@ -204,7 +207,8 @@ public abstract class CustomContainerBlock extends CustomBlock implements Entity
     }
 
     @Override
-    protected int getAnalogOutputSignal(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos) {
+    protected int getAnalogOutputSignal(@NotNull BlockState state, @NotNull Level level,
+                                        @NotNull BlockPos pos, net.minecraft.core.@NotNull Direction direction) {
         // Same redirection the menu uses: the shell half of a double chest holds
         // nothing, so a comparator against it would read zero forever.
         if (level.getBlockEntity(inventoryPos(state, pos)) instanceof CustomContainerBlockEntity be) {

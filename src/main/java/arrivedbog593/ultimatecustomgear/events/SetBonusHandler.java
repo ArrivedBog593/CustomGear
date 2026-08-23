@@ -53,7 +53,7 @@ public class SetBonusHandler {
         Map<String, GearData> setDataMap = new HashMap<>();
         List<PieceInfo> equippedPieces = new ArrayList<>();
 
-        for (ItemStack stack : player.getArmorSlots()) {
+        for (ItemStack stack : arrivedbog593.ultimatecustomgear.util.ArmorSlots.of(player)) {
             if (stack.getItem() instanceof CustomArmorItem armorItem) {
                 GearData data = armorItem.getGearDataDirect();
                 String piece = armorItem.getPiece();

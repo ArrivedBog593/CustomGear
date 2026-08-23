@@ -1,6 +1,6 @@
 # Tipos de daño
 
-Todos los ID y tags de tipo de daño disponibles en Minecraft 1.21.1, para usar
+Todos los ID y tags de tipo de daño disponibles en Minecraft 26.1.2, para usar
 en el campo `damage_resistances` y en la clave `damage` de
 `conditional_resistances`.
 

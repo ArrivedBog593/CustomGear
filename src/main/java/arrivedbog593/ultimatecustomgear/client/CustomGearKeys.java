@@ -2,6 +2,7 @@ package arrivedbog593.ultimatecustomgear.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.settings.KeyConflictContext;
 
@@ -14,12 +15,21 @@ import net.neoforged.neoforge.client.settings.KeyConflictContext;
  */
 public final class CustomGearKeys {
 
+    /**
+     * The category is no longer a bare translation key: it is a registered
+     * object with an id of its own, so it has to exist before any mapping names
+     * it — and be handed to the event, or the mappings land in a category the
+     * controls screen never draws.
+     */
+    public static final KeyMapping.Category CATEGORY = new KeyMapping.Category(
+            Identifier.fromNamespaceAndPath("customgear", "general"));
+
     public static final KeyMapping SORT = new KeyMapping(
             "key.customgear.sort",
             KeyConflictContext.GUI,
             InputConstants.Type.MOUSE,
             InputConstants.MOUSE_BUTTON_MIDDLE,
-            "key.categories.customgear");
+            CATEGORY);
 
     /**
      * Transfer without pointing at the button. Same two payloads the buttons
@@ -34,14 +44,14 @@ public final class CustomGearKeys {
             KeyConflictContext.GUI,
             InputConstants.Type.KEYSYM,
             InputConstants.UNKNOWN.getValue(),
-            "key.categories.customgear");
+            CATEGORY);
 
     public static final KeyMapping TRANSFER_OUT = new KeyMapping(
             "key.customgear.transfer_out",
             KeyConflictContext.GUI,
             InputConstants.Type.KEYSYM,
             InputConstants.UNKNOWN.getValue(),
-            "key.categories.customgear");
+            CATEGORY);
 
     /**
      * Opens a backpack without pointing at it.
@@ -55,11 +65,12 @@ public final class CustomGearKeys {
             KeyConflictContext.UNIVERSAL,
             InputConstants.Type.KEYSYM,
             InputConstants.KEY_B,
-            "key.categories.customgear");
+            CATEGORY);
 
     private CustomGearKeys() {}
 
     public static void register(RegisterKeyMappingsEvent event) {
+        event.registerCategory(CATEGORY);
         event.register(SORT);
         event.register(TRANSFER_IN);
         event.register(TRANSFER_OUT);

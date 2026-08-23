@@ -43,11 +43,14 @@ public class CustomFluid {
 
     // ── Fluid block (with optional light emission) ───────────────────────────
 
-    public static LiquidBlock createBlock(Supplier<? extends FlowingFluid> fluid, FluidData data) {
-        BlockBehaviour.Properties props = BlockBehaviour.Properties.of()
+    public static LiquidBlock createBlock(Supplier<? extends FlowingFluid> fluid, FluidData data,
+                                         BlockBehaviour.Properties base) {
+        // The base comes from the registry: a block carries its own id now, and
+        // only the DeferredRegister about to name it knows what that id is.
+        BlockBehaviour.Properties props = base
                 .replaceable()      // place blocks into the fluid, like water/lava
                 .liquid()           // liquid material semantics
-                .noCollission()
+                .noCollision()
                 .strength(100f)
                 .noLootTable()
                 .pushReaction(PushReaction.DESTROY);

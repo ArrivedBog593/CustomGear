@@ -3,7 +3,7 @@ package arrivedbog593.ultimatecustomgear.util;
 import arrivedbog593.ultimatecustomgear.data.GearData;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.player.Player;
@@ -115,15 +115,15 @@ public class EffectUtils {
     }
 
     private static Holder<MobEffect> resolve(String effectId) {
-        ResourceLocation rl;
+        Identifier rl;
         try {
-            rl = ResourceLocation.parse(effectId);
+            rl = Identifier.parse(effectId);
         } catch (Exception e) {
             LOGGER.error("[CustomGear] Malformed effect ID skipped: {}", effectId);
             return null;
         }
         Holder<MobEffect> holder = BuiltInRegistries.MOB_EFFECT
-                .getHolder(rl)
+                .get(rl)
                 .orElse(null);
         if (holder == null) {
             LOGGER.error("[CustomGear] Effect not found: {}", effectId);

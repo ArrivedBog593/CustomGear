@@ -1,12 +1,15 @@
 package arrivedbog593.ultimatecustomgear.resources;
 
+import net.minecraft.SharedConstants;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.AbstractPackResources;
 import net.minecraft.server.packs.PackLocationInfo;
 import net.minecraft.server.packs.PackType;
-import net.minecraft.server.packs.metadata.MetadataSectionSerializer;
+import net.minecraft.server.packs.metadata.MetadataSectionType;
+import net.minecraft.server.packs.metadata.pack.PackFormat;
 import net.minecraft.server.packs.metadata.pack.PackMetadataSection;
+import net.minecraft.util.InclusiveRange;
 import net.minecraft.server.packs.repository.KnownPack;
 import net.minecraft.server.packs.resources.IoSupplier;
 import org.apache.logging.log4j.LogManager;
@@ -32,7 +35,7 @@ public class DynamicResourcePack extends AbstractPackResources implements PackSi
     // ConcurrentHashMap: Minecraft loads resources on parallel worker threads,
     // and /customgear reload mutates this map at runtime. A plain HashMap risks
     // ConcurrentModificationException if a resource reload overlaps a mutation.
-    private final Map<ResourceLocation, byte[]> resources = new ConcurrentHashMap<>();
+    private final Map<Identifier, byte[]> resources = new ConcurrentHashMap<>();
     private final Map<String, byte[]> rootResources = new ConcurrentHashMap<>();
 
     /** Cached content hash — invalidated on every mutation (addTexture/addRaw/clear). */
@@ -70,7 +73,7 @@ public class DynamicResourcePack extends AbstractPackResources implements PackSi
     private static final long MAX_RESOURCE_BYTES = 8L * 1024 * 1024;
 
     @Override
-    public void addTexture(ResourceLocation location, Path texturePath) {
+    public void addTexture(Identifier location, Path texturePath) {
         try {
             long size = Files.size(texturePath);
             if (size > MAX_RESOURCE_BYTES) {
@@ -88,7 +91,7 @@ public class DynamicResourcePack extends AbstractPackResources implements PackSi
     }
 
     @Override
-    public void addRaw(ResourceLocation location, byte[] data) {
+    public void addRaw(Identifier location, byte[] data) {
         resources.put(location, data);
         cachedHash = null;
     }
@@ -112,7 +115,7 @@ public class DynamicResourcePack extends AbstractPackResources implements PackSi
     }
 
     @Override
-    public @Nullable IoSupplier<InputStream> getResource(@NotNull PackType type, @NotNull ResourceLocation location) {
+    public @Nullable IoSupplier<InputStream> getResource(@NotNull PackType type, @NotNull Identifier location) {
         byte[] data = resources.get(location);
         if (data == null) return null;
         return () -> new ByteArrayInputStream(data);
@@ -126,8 +129,8 @@ public class DynamicResourcePack extends AbstractPackResources implements PackSi
         // Now only the prefix normalized with a slash at the end is used.
         String normalizedPrefix = prefix.endsWith("/") ? prefix : prefix + "/";
 
-        for (Map.Entry<ResourceLocation, byte[]> entry : resources.entrySet()) {
-            ResourceLocation loc = entry.getKey();
+        for (Map.Entry<Identifier, byte[]> entry : resources.entrySet()) {
+            Identifier loc = entry.getKey();
             if (loc.getNamespace().equals(namespace) &&
                     loc.getPath().startsWith(normalizedPrefix)) {
                 byte[] data = entry.getValue();
@@ -140,23 +143,42 @@ public class DynamicResourcePack extends AbstractPackResources implements PackSi
     @NotNull
     public Set<String> getNamespaces(@NotNull PackType type) {
         Set<String> namespaces = new HashSet<>();
-        for (ResourceLocation loc : resources.keySet()) {
+        for (Identifier loc : resources.keySet()) {
             namespaces.add(loc.getNamespace());
         }
         return namespaces;
     }
 
+    /**
+     * The pack version is no longer one number: there is a separate format for
+     * resources and for data, and each is a major/minor pair. Both types are
+     * answered here because this one pack is registered on both sides — see
+     * CustomGearMod.onAddPackFinders.
+     * <p>
+     * The range is open-topped on purpose. This pack is generated against the
+     * running game, so it is never the stale one; declaring a narrow range would
+     * only make it refuse to load after a version bump that changed nothing it
+     * writes.
+     */
     @Override
     @SuppressWarnings("unchecked")
-    public @Nullable <T> T getMetadataSection(@NotNull MetadataSectionSerializer<T> deserializer) {
-        if (deserializer == PackMetadataSection.TYPE) {
-            return (T) new PackMetadataSection(
-                    Component.literal("CustomGear Dynamic Resources"),
-                    34,  // pack_format for 1.21.1
-                    java.util.Optional.empty()
-            );
+    public @Nullable <T> T getMetadataSection(@NotNull MetadataSectionType<T> deserializer) {
+        if (deserializer == PackMetadataSection.CLIENT_TYPE) {
+            return (T) packMeta(SharedConstants.RESOURCE_PACK_FORMAT_MAJOR,
+                    SharedConstants.RESOURCE_PACK_FORMAT_MINOR);
+        }
+        if (deserializer == PackMetadataSection.SERVER_TYPE) {
+            return (T) packMeta(SharedConstants.DATA_PACK_FORMAT_MAJOR,
+                    SharedConstants.DATA_PACK_FORMAT_MINOR);
         }
         return null;
+    }
+
+    private static PackMetadataSection packMeta(int major, int minor) {
+        return new PackMetadataSection(
+                Component.literal("CustomGear Dynamic Resources"),
+                new InclusiveRange<>(new PackFormat(major, minor),
+                        new PackFormat(Integer.MAX_VALUE, Integer.MAX_VALUE)));
     }
 
     @Override
@@ -170,7 +192,7 @@ public class DynamicResourcePack extends AbstractPackResources implements PackSi
 
     /**
      * Deterministic SHA-256 hash of the full pack contents (keys + bytes),
-     * sorted by ResourceLocation so map iteration order never affects the result.
+     * sorted by Identifier so map iteration order never affects the result.
      * Used as the KnownPack version: if client and server generated identical
      * packs, the hashes match and vanilla skips re-sending the data. If they
      * differ in ANY byte, the versions differ and the server sends its data —
@@ -193,7 +215,7 @@ public class DynamicResourcePack extends AbstractPackResources implements PackSi
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             resources.entrySet().stream()
                     .sorted(Map.Entry.comparingByKey(
-                            Comparator.comparing(ResourceLocation::toString)))
+                            Comparator.comparing(Identifier::toString)))
                     .forEach(e -> {
                         digest.update(e.getKey().toString().getBytes(StandardCharsets.UTF_8));
                         digest.update((byte) 0); // separator: key/value boundary

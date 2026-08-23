@@ -2,7 +2,7 @@ package arrivedbog593.ultimatecustomgear.client;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -101,8 +101,8 @@ public final class ContainerSearch {
      * miss "c:ingots" for everything whose namespace happens to contain the term.
      */
     private static boolean matchesTag(ItemStack stack, String term) {
-        return stack.getTags().anyMatch(tag -> {
-            ResourceLocation id = tag.location();
+        return stack.typeHolder().tags().anyMatch(tag -> {
+            Identifier id = tag.location();
             return term.contains(":")
                     ? id.toString().contains(term)
                     : id.getNamespace().contains(term) || id.getPath().contains(term);

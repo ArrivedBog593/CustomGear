@@ -6,7 +6,7 @@ import arrivedbog593.ultimatecustomgear.util.EntityMatcher;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.decoration.ArmorStand;
@@ -73,7 +73,7 @@ public class MobDropHandler {
         // ITEM_MAP can hold hundreds of entries — it must not live in the loop.
         int lootingLevel = (killer != null) ? lootingLevel(killer) : 0;
 
-        for (Map.Entry<ResourceLocation, ItemData> entry : ItemRegistry.ITEM_MAP.entrySet()) {
+        for (Map.Entry<Identifier, ItemData> entry : ItemRegistry.ITEM_MAP.entrySet()) {
             ItemData.MobDropsData drops = entry.getValue().mobDrops;
             if (drops == null) continue;
 
@@ -102,7 +102,7 @@ public class MobDropHandler {
 
             if (count <= 0) continue; // 0 is a valid roll: this time nothing drops
 
-            Item item = BuiltInRegistries.ITEM.get(entry.getKey());
+            Item item = BuiltInRegistries.ITEM.getValue(entry.getKey());
             event.getDrops().add(new ItemEntity(
                     entity.level(),
                     entity.getX(), entity.getY(), entity.getZ(),
@@ -120,8 +120,8 @@ public class MobDropHandler {
     private static int lootingLevel(Player killer) {
         try {
             Holder<Enchantment> looting = killer.level().registryAccess()
-                    .registryOrThrow(Registries.ENCHANTMENT)
-                    .getHolderOrThrow(Enchantments.LOOTING);
+                    .lookupOrThrow(Registries.ENCHANTMENT)
+                    .getOrThrow(Enchantments.LOOTING);
             return EnchantmentHelper.getItemEnchantmentLevel(looting, killer.getMainHandItem());
         } catch (IllegalStateException e) {
             // A datapack can remove minecraft:looting from the registry.

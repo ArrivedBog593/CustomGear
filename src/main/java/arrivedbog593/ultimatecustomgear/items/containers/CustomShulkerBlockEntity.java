@@ -95,7 +95,7 @@ public class CustomShulkerBlockEntity extends CustomContainerBlockEntity {
         if (!state.hasProperty(CustomShulkerBlock.FACING)) return;
         Direction facing = state.getValue(CustomShulkerBlock.FACING);
 
-        AABB swept = Shulker.getProgressDeltaAabb(1.0F, facing, progressOld, progress).move(pos);
+        AABB swept = Shulker.getProgressDeltaAabb(1.0F, facing, progressOld, progress, pos.getBottomCenter());
         List<Entity> caught = level.getEntities(null, swept);
         if (caught.isEmpty()) return;
 
@@ -112,7 +112,10 @@ public class CustomShulkerBlockEntity extends CustomContainerBlockEntity {
     public AABB getBoundingBox(BlockState state) {
         Direction facing = state.hasProperty(CustomShulkerBlock.FACING)
                 ? state.getValue(CustomShulkerBlock.FACING) : Direction.UP;
-        return Shulker.getProgressAabb(1.0F, facing, 0.5F * getProgress(1.0F));
+        // Relative to the block corner: getShape wants a shape in block space, and
+        // the AABB comes back already positioned around whatever centre it is given.
+        return Shulker.getProgressAabb(1.0F, facing, 0.5F * getProgress(1.0F),
+                new Vec3(0.5, 0.0, 0.5));
     }
 
     /**

@@ -3,7 +3,7 @@
 [![CurseForge](https://cf.way2muchnoise.eu/versions/ultimate-custom-gear.svg)](https://www.curseforge.com/minecraft/mc-mods/ultimate-custom-gear)
 [![CurseForge](https://cf.way2muchnoise.eu/ultimate-custom-gear.svg)](https://www.curseforge.com/minecraft/mc-mods/ultimate-custom-gear)
 
-**UltimateCustomGear** es un mod de NeoForge para Minecraft 1.21.1 basado en datos, que permite a administradores de servidores, creadores de modpacks y jugadores agregar sets de armadura, armas, herramientas, comida, ítems, bloques y fluidos completamente personalizados — todo mediante simples archivos JSON. No se requiere programar.
+**UltimateCustomGear** es un mod de NeoForge para Minecraft 26.1.2 basado en datos, que permite a administradores de servidores, creadores de modpacks y jugadores agregar sets de armadura, armas, herramientas, comida, ítems, bloques y fluidos completamente personalizados — todo mediante simples archivos JSON. No se requiere programar.
 
 [**Documentación**](docs/es/index.md) · [English](README.md)
 
@@ -11,7 +11,7 @@
 
 ## Instalación
 
-1. Instala [NeoForge 1.21.1](https://neoforged.net/)
+1. Instala [NeoForge 26.1.2](https://neoforged.net/)
 2. Coloca `ultimatecustomgear-1.x.x.jar` en tu carpeta `mods/`
 3. Lanza el juego una vez para que se genere la carpeta `ultimatecustomgear/` dentro de `.minecraft/`
 4. Agrega tus archivos JSON en `.minecraft/ultimatecustomgear/`, o coloca un `.zip` de contenido en `.minecraft/ultimatecustomgear/packs/`
@@ -67,7 +67,7 @@ Ese es el archivo entero. Los no muertos ya lo sueltan, es fabricable, y JEI lo 
 
 ## Compatibilidad
 
-- Minecraft 1.21.1 · NeoForge 21.1.x
+- Minecraft 26.1.2 · NeoForge 26.1.2.x · Java 25
 - **JEI** — opcional, recomendado. Las recetas son completamente visibles
 - **GeckoLib** — opcional, requerido solo para modelos de armadura en 3D
 - Referencia modelos, usa ingredientes y etiqueta contenido de cualquier mod instalado

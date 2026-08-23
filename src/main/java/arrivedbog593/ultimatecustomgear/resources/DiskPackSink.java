@@ -1,6 +1,6 @@
 package arrivedbog593.ultimatecustomgear.resources;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -35,7 +35,7 @@ public class DiskPackSink implements PackSink {
      * apart here by what the path starts with: the folders vanilla reads as
      * server data go under data/, everything else under assets/.
      */
-    private Path target(ResourceLocation loc) {
+    private Path target(Identifier loc) {
         String p = loc.getPath();
         boolean serverData =
                 p.startsWith("recipe") || p.startsWith("recipes") ||
@@ -47,12 +47,12 @@ public class DiskPackSink implements PackSink {
     }
 
     @Override
-    public void addRaw(ResourceLocation location, byte[] data) {
+    public void addRaw(Identifier location, byte[] data) {
         write(target(location), data);
     }
 
     @Override
-    public void addTexture(ResourceLocation location, Path texturePath) {
+    public void addTexture(Identifier location, Path texturePath) {
         Path dest = target(location);
         try {
             Files.createDirectories(dest.getParent());

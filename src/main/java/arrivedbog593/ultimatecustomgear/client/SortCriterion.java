@@ -2,7 +2,7 @@ package arrivedbog593.ultimatecustomgear.client;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -66,7 +66,7 @@ public enum SortCriterion {
         return stack.getHoverName().getString().toLowerCase(Locale.ROOT);
     }
 
-    private static ResourceLocation registryId(ItemStack stack) {
+    private static Identifier registryId(ItemStack stack) {
         return BuiltInRegistries.ITEM.getKey(stack.getItem());
     }
 
@@ -76,7 +76,7 @@ public enum SortCriterion {
      * everything the player was looking for down the grid.
      */
     private static String firstTag(ItemStack stack) {
-        List<TagKey<Item>> tags = stack.getTags().sorted(Comparator.comparing(t -> t.location().toString())).toList();
+        List<TagKey<Item>> tags = stack.typeHolder().tags().sorted(Comparator.comparing(t -> t.location().toString())).toList();
         return tags.isEmpty() ? "\uFFFF" : tags.getFirst().location().toString();
     }
 

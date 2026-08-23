@@ -1,6 +1,6 @@
 # Damage Types Reference
 
-All damage type IDs and damage type tags are available in Minecraft 1.21.1, for use
+All damage type IDs and damage type tags are available in Minecraft 26.1.2, for use
 in the `damage_resistances` field and in the `damage` key of
 `conditional_resistances`.
 

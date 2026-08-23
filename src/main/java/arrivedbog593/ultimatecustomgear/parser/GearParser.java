@@ -9,7 +9,7 @@ import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -360,8 +360,8 @@ public class GearParser {
             return false;
         }
         try {
-            ResourceLocation rl = ResourceLocation.parse(effectData.effect);
-            if (BuiltInRegistries.MOB_EFFECT.getHolder(rl).isEmpty()) {
+            Identifier rl = Identifier.parse(effectData.effect);
+            if (BuiltInRegistries.MOB_EFFECT.get(rl).isEmpty()) {
                 LOGGER.warn("[CustomGear] Effect not found in registry: '{}' (gear: '{}')",
                         effectData.effect, gearId);
                 return false;
@@ -378,7 +378,7 @@ public class GearParser {
         double sum = 0;
         for (Map.Entry<String, Double> e : map.entrySet()) {
             String key = e.getKey().startsWith("#") ? e.getKey().substring(1) : e.getKey();
-            if (ResourceLocation.tryParse(key) == null) {
+            if (Identifier.tryParse(key) == null) {
                 LOGGER.warn("[CustomGear] Gear '{}' ({}): malformed damage type '{}' — entry ignored",
                         id, where, e.getKey());
             }

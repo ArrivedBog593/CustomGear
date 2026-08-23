@@ -2,7 +2,7 @@ plugins {
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
-    id 'net.neoforged.moddev' version '2.0.141'
+    id 'net.neoforged.moddev' version '2.0.144'
 }
 
 tasks.named('wrapper', Wrapper).configure {
@@ -57,7 +57,7 @@ repositories {
         name = "Geckolib Maven"
         url = "https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/"
         content {
-            includeGroup "software.bernie.geckolib"
+            includeGroup "com.geckolib"
         }
     }
 }
@@ -67,16 +67,12 @@ base {
 }
 
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
 neoForge {
     version = project.neo_version
     accessTransformers.from('src/main/accesstransformer.cfg')
 
-    parchment {
-        mappingsVersion = project.parchment_mappings_version
-        minecraftVersion = project.parchment_minecraft_version
-    }
 
     runs {
         client {
@@ -124,7 +120,7 @@ dependencies {
     localRuntime "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
 
     // Geckolib
-    implementation "software.bernie.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
+    implementation "com.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
 
     // Curios
     compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}+${minecraft_version}:api"
@@ -181,7 +177,8 @@ idea {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-    options.getRelease().set(21)
+    options.compilerArgs << '-Xmaxerrs' << '10000' << '-Xmaxwarns' << '20'
+    options.getRelease().set(25)
 }
 
 // The AT has to be INSIDE the jar for production: accessTransformers.from()
