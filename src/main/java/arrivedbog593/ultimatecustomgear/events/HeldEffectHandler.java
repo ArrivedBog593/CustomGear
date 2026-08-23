@@ -5,7 +5,7 @@ import arrivedbog593.ultimatecustomgear.items.gear.CustomArmorItem;
 import arrivedbog593.ultimatecustomgear.registry.GearRegistry;
 import arrivedbog593.ultimatecustomgear.util.EffectUtils;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -32,8 +32,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class HeldEffectHandler {
 
-    private static final Map<UUID, ResourceLocation> lastMainHand = new ConcurrentHashMap<>();
-    private static final Map<UUID, ResourceLocation> lastOffHand  = new ConcurrentHashMap<>();
+    private static final Map<UUID, Identifier> lastMainHand = new ConcurrentHashMap<>();
+    private static final Map<UUID, Identifier> lastOffHand  = new ConcurrentHashMap<>();
 
     @SubscribeEvent
     public static void onPlayerDisconnect(PlayerEvent.PlayerLoggedOutEvent event) {
@@ -54,11 +54,11 @@ public class HeldEffectHandler {
         ItemStack mainStack = player.getMainHandItem();
         ItemStack offStack  = player.getOffhandItem();
 
-        ResourceLocation currentMain = getItemId(mainStack);
-        ResourceLocation currentOff  = getItemId(offStack);
+        Identifier currentMain = getItemId(mainStack);
+        Identifier currentOff  = getItemId(offStack);
 
-        ResourceLocation prevMain = lastMainHand.get(id);
-        ResourceLocation prevOff  = lastOffHand.get(id);
+        Identifier prevMain = lastMainHand.get(id);
+        Identifier prevOff  = lastOffHand.get(id);
 
         // If main hand item changed, remove effects from previous item
         // (potion-safe removal — real potions of the same effect survive)
@@ -96,7 +96,7 @@ public class HeldEffectHandler {
         EffectUtils.applyEffects(player, effects);
     }
 
-    private static ResourceLocation getItemId(ItemStack stack) {
+    private static Identifier getItemId(ItemStack stack) {
         if (stack.isEmpty()) return null;
         return BuiltInRegistries.ITEM.getKey(stack.getItem());
     }
@@ -104,7 +104,7 @@ public class HeldEffectHandler {
     private static List<GearData.EffectData> getHeldEffects(ItemStack stack) {
         if (stack.isEmpty()) return null;
         Item item = stack.getItem();
-        ResourceLocation id = BuiltInRegistries.ITEM.getKey(item);
+        Identifier id = BuiltInRegistries.ITEM.getKey(item);
         GearData data = GearRegistry.lookupGear(id);
         if (data == null) return null;
         if (item instanceof CustomArmorItem) return null;

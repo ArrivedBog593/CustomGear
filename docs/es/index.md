@@ -1,6 +1,6 @@
 # UltimateCustomGear
 
-**UltimateCustomGear** es un mod de NeoForge para Minecraft 1.21.1 basado en datos, que permite a administradores de servidores, creadores de modpacks y jugadores agregar sets de armadura, armas, herramientas, comida, ítems, bloques y fluidos completamente personalizados — todo mediante simples archivos JSON. No se requiere programar.
+**UltimateCustomGear** es un mod de NeoForge para Minecraft 26.2 basado en datos, que permite a administradores de servidores, creadores de modpacks y jugadores agregar sets de armadura, armas, herramientas, comida, ítems, bloques y fluidos completamente personalizados — todo mediante simples archivos JSON. No se requiere programar.
 
 ## Documentación
 
@@ -74,8 +74,9 @@
 
 ## Compatibilidad
 
-- Minecraft 1.21.1
-- NeoForge 21.1.x
+- Minecraft 26.2
+- NeoForge 26.2.x
+- Java 25
 - JEI (opcional, recomendado) — las recetas son completamente visibles
 - GeckoLib (opcional) — requerido solo para modelos de armadura en 3D
 - Los encantamientos de otros mods funcionan automáticamente en ítems encantables

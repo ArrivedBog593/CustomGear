@@ -7,11 +7,11 @@ import arrivedbog593.ultimatecustomgear.registry.GearRegistry;
 import arrivedbog593.ultimatecustomgear.util.ArrowUtils;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.AbstractArrow;
-import net.minecraft.world.entity.projectile.ThrownTrident;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
+import net.minecraft.world.entity.projectile.arrow.ThrownTrident;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -52,7 +52,7 @@ public class ArrowDamageHandler {
         // base damage and writes a scaled value back, so a second pass would
         // compound the scaling every time the chunk cycles.
         CompoundTag persistent = arrow.getPersistentData();
-        if (persistent.getBoolean(DAMAGE_APPLIED)) return;
+        if (persistent.getBooleanOr(DAMAGE_APPLIED, false)) return;
 
         if (!(arrow.getOwner() instanceof LivingEntity living)) return;
 
@@ -66,7 +66,7 @@ public class ArrowDamageHandler {
         ItemStack weapon = getWeaponStack(living);
         if (weapon.isEmpty()) return;
 
-        ResourceLocation loc = BuiltInRegistries.ITEM.getKey(weapon.getItem());
+        Identifier loc = BuiltInRegistries.ITEM.getKey(weapon.getItem());
         GearData data = GearRegistry.lookupGear(loc);
         if (data == null) return;
 

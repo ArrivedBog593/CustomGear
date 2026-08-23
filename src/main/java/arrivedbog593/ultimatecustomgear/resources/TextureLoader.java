@@ -89,13 +89,13 @@ public final class TextureLoader {
             }
         }
 
-        // Fluid buckets
-        for (FluidData data : fluidList) {
-            BlockModelGenerator.generateBucketModel(pack, data);
-        }
-
+        // Fluids: the textures, the block that holds them, and the bucket.
+        //
+        // ONE LOOP, where this used to be two — the second was the first with a
+        // texture copy added, so every bucket model was generated twice.
         for (FluidData data : fluidList) {
             BlockModelGenerator.loadFluidTextures(pack, data);
+            BlockModelGenerator.generateFluidBlockModel(pack, data);
             BlockModelGenerator.generateBucketModel(pack, data);
         }
 

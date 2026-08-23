@@ -5,7 +5,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -18,7 +18,7 @@ import java.util.Set;
 /**
  * Shared accumulator for every tag file the mod injects into the dynamic pack.
  * <p>
- * WHY THIS EXISTS: DynamicResourcePack.addRaw is keyed by ResourceLocation, so
+ * WHY THIS EXISTS: DynamicResourcePack.addRaw is keyed by Identifier, so
  * two loaders writing the same tag path silently overwrite each other — the last
  * one wins, no warning, entries just vanish. That was already reachable before
  * this class existed: a block declaring "tags": ["minecraft:mineable/pickaxe"]
@@ -54,7 +54,7 @@ public class TagFileBuilder {
     private static final Gson   GSON   = new GsonBuilder().setPrettyPrinting().create();
 
     /** One output file: a registry ("item" | "block" | "fluid" | ...) plus the tag id. */
-    private record TagKey(String registry, ResourceLocation tag) {}
+    private record TagKey(String registry, Identifier tag) {}
 
     /**
      * (registry, tag) → ordered map of contentId → required.
@@ -84,7 +84,7 @@ public class TagFileBuilder {
      *                 {"id": ..., "required": false} so a missing mod does not
      *                 blow up the whole tag at datapack load.
      */
-    public void add(String registry, ResourceLocation tag, String contentId, boolean required) {
+    public void add(String registry, Identifier tag, String contentId, boolean required) {
         files.computeIfAbsent(new TagKey(registry, tag), k -> new LinkedHashMap<>())
                 // Same id added twice from different sources: the LEAST strict
                 // wins. If any source says it may be absent, treating it as
@@ -101,7 +101,7 @@ public class TagFileBuilder {
      * inheritance and not adding it changes nothing. Mekanism does exactly this
      * for its MekaSuit.
      */
-    public void remove(String registry, ResourceLocation tag, String contentId) {
+    public void remove(String registry, Identifier tag, String contentId) {
         removals.computeIfAbsent(new TagKey(registry, tag), k -> new LinkedHashSet<>())
                 .add(contentId);
     }
@@ -121,7 +121,7 @@ public class TagFileBuilder {
         // pasting "#c:ingots" here shouldn't silently fail.
         String cleaned = rawTag.startsWith("#") ? rawTag.substring(1) : rawTag;
 
-        ResourceLocation tagRl = ResourceLocation.tryParse(cleaned);
+        Identifier tagRl = Identifier.tryParse(cleaned);
         if (tagRl == null) {
             LOGGER.warn("[CustomGear] {}: malformed tag '{}' — skipped. Expected "
                     + "'namespace:path' like 'c:ingots' or 'minecraft:planks' "
@@ -187,8 +187,8 @@ public class TagFileBuilder {
                 // The tag's OWN namespace/path decide the file location:
                 //   c:ingots → data/c/tags/item/ingots.json
                 // 1.21 uses singular directory names (item/block/fluid/damage_type).
-            ResourceLocation tag = key.tag();
-            ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(
+            Identifier tag = key.tag();
+            Identifier loc = Identifier.fromNamespaceAndPath(
                     tag.getNamespace(),
                     "tags/" + key.registry() + "/" + tag.getPath() + ".json");
 

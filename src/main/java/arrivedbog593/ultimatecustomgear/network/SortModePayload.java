@@ -5,7 +5,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -19,7 +19,7 @@ import org.jetbrains.annotations.NotNull;
 public record SortModePayload(byte criterion, boolean descending) implements CustomPacketPayload {
 
     public static final Type<SortModePayload> TYPE = new Type<>(
-            ResourceLocation.fromNamespaceAndPath(CustomGearMod.MOD_ID, "sort_mode"));
+            Identifier.fromNamespaceAndPath(CustomGearMod.MOD_ID, "sort_mode"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, SortModePayload> STREAM_CODEC =
             StreamCodec.composite(

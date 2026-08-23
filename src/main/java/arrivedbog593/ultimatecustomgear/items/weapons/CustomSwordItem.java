@@ -7,33 +7,40 @@ import arrivedbog593.ultimatecustomgear.util.TooltipHelper;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.SwordItem;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
-public class CustomSwordItem extends SwordItem {
+/**
+ * A sword built from JSON.
+ * <p>
+ * NOT a subclass of the vanilla sword: that class no longer exists. What makes
+ * an item a sword is now the set of components applied by
+ * {@code Item.Properties.sword(...)}.
+ */
+public class CustomSwordItem extends Item {
 
     private final GearData initialGearData;
 
-    public CustomSwordItem(GearData data) {
-        this(data, new CustomTier(data));
-    }
-
-    private CustomSwordItem(GearData data, CustomTier tier) {
-        super(tier, buildProps(data, tier));
+    public CustomSwordItem(GearData data, Item.Properties props) {
+        super(buildProps(props, data));
         this.initialGearData = data;
     }
 
-    private static Properties buildProps(GearData data, CustomTier tier) {
-        Properties p = new Properties()
-                .durability(data.durability)
-                .attributes(SwordItem.createAttributes(
-                        tier,
-                        (int) data.attackDamage - 1,
-                        data.attackSpeed - 4
-                ));
+    /**
+     * Same baseline conversion the tools use: vanilla adds the player's own 1.0
+     * damage and the material's bonus, so the JSON's totals arrive here minus
+     * one and minus four.
+     */
+    private static Item.Properties buildProps(Item.Properties props, GearData data) {
+        Item.Properties p = props.sword(
+                CustomTier.of(data),
+                data.attackDamage - 1,
+                data.attackSpeed - 4);
+        if (data.durability > 0) p = p.durability(data.durability);
         return data.fireResistant ? p.fireResistant() : p;
     }
 
@@ -88,12 +95,14 @@ public class CustomSwordItem extends SwordItem {
     @Override
     public void appendHoverText(@NotNull ItemStack stack,
                                 @NotNull Item.TooltipContext context,
-                                @NotNull List<Component> tooltipComponents,
-                                @NotNull net.minecraft.world.item.TooltipFlag tooltipFlag) {
-        super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
-        TooltipHelper.addHeldEffectsTooltip(tooltipComponents, getGearData());
-        if (!TooltipHelper.detailsShown() && TooltipHelper.hasDetails(getGearData())) {
-            TooltipHelper.addDetailsHint(tooltipComponents);
+                                @NotNull TooltipDisplay display,
+                                @NotNull Consumer<Component> builder,
+                                @NotNull TooltipFlag tooltipFlag) {
+        super.appendHoverText(stack, context, display, builder, tooltipFlag);
+        GearData data = getGearData();
+        TooltipHelper.addHeldEffectsTooltip(builder, data);
+        if (!TooltipHelper.detailsShown() && TooltipHelper.hasDetails(data)) {
+            TooltipHelper.addDetailsHint(builder);
         }
     }
 }

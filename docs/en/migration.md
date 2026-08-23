@@ -4,9 +4,44 @@ Breaking changes only — things that make a JSON file that worked in one versio
 behave differently or stop loading in the next. Everything additive lives in the
 [CHANGELOG](../../CHANGELOG.md).
 
-> This page is incomplete. It currently covers 1.7.0, 1.6.0, and the network protocol
-> change in 1.3.0. Earlier-breaking changes need to be pulled out of the
+> This page is incomplete. It currently covers 3.0.0, 1.7.0, 1.6.0, and the network
+> protocol change in 1.3.0. Earlier-breaking changes need to be pulled out of the
 > CHANGELOG.
+
+## 3.0.0
+
+**Nothing in your JSON changes.** No field was added, removed or renamed in the
+port to Minecraft 26.2. Copy your content folder across and it loads.
+
+What does change is the jar, and none of it is optional:
+
+- **3.0.0 runs on Minecraft 26.2 only.** 1.7.0 will not load on it, and this
+  will not load on 1.21.1. Keep the version that matches your game
+- **Java 25**, up from Java 21. A server pinned to an older JDK refuses to start
+- **GeckoLib 5.5.3**, **JEI 30.25.0.177**, **Curios 16.0.0**. The builds you were
+  running alongside 1.7.0 do not load on 26.2
+
+### Two texture forms got shorter, and both still work
+
+Chest, shulker and armour-layer references can now be written the way the game
+addresses them:
+
+```diff
+  "refs": {
+-   "single": "minecraft:textures/entity/chest/normal.png"
++   "single": "minecraft:normal"
+  }
+```
+
+```diff
+  "armor_layers": {
+-   "layer_1": "othermod:models/armor/diamond_layer_1"
++   "layer_1": "othermod:diamond"
+  }
+```
+
+Both forms are read, and the long one resolves to exactly the same asset, so this
+is cleanup rather than a fix. Nothing breaks if you leave it alone.
 
 ## 1.7.0
 

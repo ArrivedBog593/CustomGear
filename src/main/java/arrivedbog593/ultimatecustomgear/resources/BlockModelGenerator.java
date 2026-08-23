@@ -4,7 +4,8 @@ import arrivedbog593.ultimatecustomgear.data.BlockData;
 import arrivedbog593.ultimatecustomgear.data.ContainerContentData;
 import arrivedbog593.ultimatecustomgear.data.ContainerData;
 import arrivedbog593.ultimatecustomgear.data.FluidData;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.level.block.state.properties.ChestType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -127,6 +128,7 @@ public final class BlockModelGenerator {
             }
             """.formatted(bucketTexture);
         pack.addRaw(itemModelLoc(data.id + "_bucket"), json.getBytes(StandardCharsets.UTF_8));
+        GearModelGenerator.defineOwnModel(pack, data.id + "_bucket");
     }
 
     /**
@@ -148,6 +150,36 @@ public final class BlockModelGenerator {
         copyFluidTexture(pack, data.id, "flowing", data.texture.refs.get("flowing"));
     }
 
+    /**
+     * The blockstate and model for a fluid BLOCK.
+     * <p>
+     * NEITHER DRAWS THE FLUID — that is a FluidModel, registered on the client
+     * (see ClientSetup). These exist because vanilla still resolves a model for
+     * every block: without them the game logs a missing-model error for the
+     * fluid on every load, and the block has no particle texture, so breaking or
+     * splashing produces the black-and-magenta square. Vanilla's own water is
+     * written exactly this way, particle and all.
+     */
+    public static void generateFluidBlockModel(PackSink pack, FluidData data) {
+        String particle = FluidTextures.still(data).toString();
+
+        String model = """
+            {
+              "textures": { "particle": "%s" }
+            }
+            """.formatted(particle);
+        pack.addRaw(blockModelLoc(data.id), model.getBytes(StandardCharsets.UTF_8));
+
+        String blockstate = """
+            {
+              "variants": {
+                "": { "model": "%s:block/%s" }
+              }
+            }
+            """.formatted(NAMESPACE, data.id);
+        pack.addRaw(blockStateLoc(data.id), blockstate.getBytes(StandardCharsets.UTF_8));
+    }
+
     private static void copyFluidTexture(PackSink pack, String fluidId, String slot, String value) {
         // A reference points at a sprite already in the atlas; only a file needs
         // copying, and an unusable value is reported by FluidRegistry when it
@@ -161,7 +193,7 @@ public final class BlockModelGenerator {
             return;
         }
 
-        pack.addTextureWithMeta(ResourceLocation.fromNamespaceAndPath(
+        pack.addTextureWithMeta(Identifier.fromNamespaceAndPath(
                 NAMESPACE, "textures/block/" + fluidId + "_" + slot + ".png"), texPath.get());
     }
 
@@ -302,6 +334,7 @@ public final class BlockModelGenerator {
             }
             """.formatted(NAMESPACE, blockId);
         pack.addRaw(itemModelLoc(blockId), json.getBytes(StandardCharsets.UTF_8));
+        GearModelGenerator.defineOwnModel(pack, blockId);
     }
 
     public static void generateBlockWithRef(PackSink pack, String blockId, String ref) {
@@ -340,10 +373,17 @@ public final class BlockModelGenerator {
     }
 
     /**
-     * A chest generates almost nothing: the block model is never drawn, since
-     * the block reports ENTITYBLOCK_ANIMATED. The blockstate still has to exist
-     * and point somewhere, or the game logs a missing-model error for every
-     * variant, and the item model is a placeholder until the BEWLR lands.
+     * A chest generates almost nothing: the block model declares a particle
+     * texture and NO elements, which is how a block drawn by a renderer
+     * suppresses its baked form now that ENTITYBLOCK_ANIMATED is gone. The
+     * blockstate still has to exist and point somewhere, or the game logs a
+     * missing-model error for every variant.
+     * <p>
+     * THE ITEM IS WHERE THE REAL CHANGE IS. It used to hand rendering to a BEWLR
+     * through a "builtin/entity" parent, and both of those are gone. The item
+     * definition names vanilla's chest renderer instead and passes it the sprite
+     * this container resolved to; the model beside it is left holding only the
+     * display transforms.
      */
     private static void loadChest(PackSink pack, ContainerContentData data) {
         String id = data.id;
@@ -364,30 +404,38 @@ public final class BlockModelGenerator {
         // a real texture even though its geometry is never drawn.
         String model = """
             {
-              "parent": "minecraft:block/block",
               "textures": { "particle": "minecraft:block/oak_planks" }
             }
             """;
         pack.addRaw(blockModelLoc(id), model.getBytes(StandardCharsets.UTF_8));
 
-        // builtin/entity hands rendering over to the BEWLR. Parenting to the
-        // block model instead would draw the invisible placeholder above.
-        String itemModel = """
-            {
-              "parent": "builtin/entity",
-              "display": {
-                "gui":            { "rotation": [30, 45, 0],  "translation": [0, 0, 0],    "scale": [0.625, 0.625, 0.625] },
-                "ground":         { "rotation": [0, 0, 0],    "translation": [0, 3, 0],    "scale": [0.25, 0.25, 0.25] },
-                "head":           { "rotation": [0, 180, 0],  "translation": [0, 0, 0],    "scale": [1, 1, 1] },
-                "fixed":          { "rotation": [0, 180, 0],  "translation": [0, 0, 0],    "scale": [0.5, 0.5, 0.5] },
-                "thirdperson_righthand": { "rotation": [75, 315, 0], "translation": [0, 2.5, 0], "scale": [0.375, 0.375, 0.375] },
-                "firstperson_righthand": { "rotation": [0, 315, 0],  "translation": [0, 0, 0],   "scale": [0.4, 0.4, 0.4] },
-                "firstperson_lefthand":  { "rotation": [0, 315, 0],  "translation": [0, 0, 0],   "scale": [0.4, 0.4, 0.4] }
-              }
-            }
-            """;
-        pack.addRaw(itemModelLoc(id), itemModel.getBytes(StandardCharsets.UTF_8));
+        pack.addRaw(itemModelLoc(id), CONTAINER_ITEM_MODEL.getBytes(StandardCharsets.UTF_8));
+        ItemDefinitions.chest(pack, id, NAMESPACE + ":item/" + id,
+                ContainerTextures.spriteFor(data, ChestType.SINGLE, false).toString());
     }
+
+    /**
+     * Display transforms for a container held, dropped, worn or framed.
+     * <p>
+     * Shared by the chest and the shulker because vanilla uses the same numbers
+     * for both, and because a special-model item has nothing else in its model —
+     * duplicating the block would just be two copies of the same table.
+     */
+    private static final String CONTAINER_ITEM_MODEL = """
+        {
+          "gui_light": "side",
+          "textures": { "particle": "minecraft:block/oak_planks" },
+          "display": {
+            "gui":            { "rotation": [30, 45, 0],  "translation": [0, 0, 0],    "scale": [0.625, 0.625, 0.625] },
+            "ground":         { "rotation": [0, 0, 0],    "translation": [0, 3, 0],    "scale": [0.25, 0.25, 0.25] },
+            "head":           { "rotation": [0, 180, 0],  "translation": [0, 0, 0],    "scale": [1, 1, 1] },
+            "fixed":          { "rotation": [0, 180, 0],  "translation": [0, 0, 0],    "scale": [0.5, 0.5, 0.5] },
+            "thirdperson_righthand": { "rotation": [75, 315, 0], "translation": [0, 2.5, 0], "scale": [0.375, 0.375, 0.375] },
+            "firstperson_righthand": { "rotation": [0, 315, 0],  "translation": [0, 0, 0],   "scale": [0.4, 0.4, 0.4] },
+            "firstperson_lefthand":  { "rotation": [0, 315, 0],  "translation": [0, 0, 0],   "scale": [0.4, 0.4, 0.4] }
+          }
+        }
+        """;
 
     private static void loadBarrel(PackSink pack, ContainerContentData data) {
         String id = data.id;
@@ -521,27 +569,13 @@ public final class BlockModelGenerator {
 
         String model = """
             {
-              "parent": "minecraft:block/block",
               "textures": { "particle": "minecraft:block/shulker_box" }
             }
             """;
         pack.addRaw(blockModelLoc(id), model.getBytes(StandardCharsets.UTF_8));
-        // builtin/entity hands rendering over to the BEWLR. Parenting to the
-        // block model instead would draw the invisible placeholder above.
-        String itemModel = """
-            {
-              "parent": "builtin/entity",
-              "display": {
-                "gui":            { "rotation": [30, 45, 0],  "translation": [0, 0, 0],    "scale": [0.625, 0.625, 0.625] },
-                "ground":         { "rotation": [0, 0, 0],    "translation": [0, 3, 0],    "scale": [0.25, 0.25, 0.25] },
-                "head":           { "rotation": [0, 180, 0],  "translation": [0, 0, 0],    "scale": [1, 1, 1] },
-                "fixed":          { "rotation": [0, 180, 0],  "translation": [0, 0, 0],    "scale": [0.5, 0.5, 0.5] },
-                "thirdperson_righthand": { "rotation": [75, 315, 0], "translation": [0, 2.5, 0], "scale": [0.375, 0.375, 0.375] },
-                "firstperson_righthand": { "rotation": [0, 315, 0],  "translation": [0, 0, 0],   "scale": [0.4, 0.4, 0.4] },
-                "firstperson_lefthand":  { "rotation": [0, 315, 0],  "translation": [0, 0, 0],   "scale": [0.4, 0.4, 0.4] }
-              }
-            }
-            """;
-        pack.addRaw(itemModelLoc(id), itemModel.getBytes(StandardCharsets.UTF_8));
+
+        pack.addRaw(itemModelLoc(id), CONTAINER_ITEM_MODEL.getBytes(StandardCharsets.UTF_8));
+        ItemDefinitions.shulkerBox(pack, id, NAMESPACE + ":item/" + id,
+                ContainerTextures.spriteFor(data, ChestType.SINGLE, true).toString());
     }
 }

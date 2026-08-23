@@ -1,6 +1,7 @@
 package arrivedbog593.ultimatecustomgear.items.containers;
 
 import arrivedbog593.ultimatecustomgear.data.ContainerContentData;
+import arrivedbog593.ultimatecustomgear.items.blocks.CustomBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -13,7 +14,6 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
@@ -21,7 +21,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.ChestType;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -34,9 +34,9 @@ import java.util.List;
  * The vanilla chest shape: smaller than a full block, horizontal, with a lid
  * animated by a block entity renderer.
  * <p>
- * RENDERED BY CODE, NOT BY THE MODEL. getRenderShape returns
- * ENTITYBLOCK_ANIMATED, so the generated block model is never drawn — it exists
- * only so the block has something to point at. The geometry lives in
+ * RENDERED BY CODE, NOT BY THE MODEL. Its block model declares a particle
+ * texture and no elements, so nothing is baked and nothing is drawn from it —
+ * it exists only so the block has something to point at. The geometry lives in
  * ChestRenderer, and the texture is a 64x64 unwrap rather than six faces.
  * <p>
  * TYPE IS ALWAYS DECLARED, even for a chest whose definition forbids doubling.
@@ -47,7 +47,7 @@ import java.util.List;
  */
 public class CustomChestBlock extends CustomContainerBlock {
 
-    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final EnumProperty<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final EnumProperty<ChestType> TYPE = BlockStateProperties.CHEST_TYPE;
 
     /**
@@ -62,8 +62,8 @@ public class CustomChestBlock extends CustomContainerBlock {
     private static final VoxelShape SHAPE_WEST   = Block.box(0.0, 0.0, 1.0, 15.0, 14.0, 15.0);
     private static final VoxelShape SHAPE_EAST   = Block.box(1.0, 0.0, 1.0, 16.0, 14.0, 15.0);
 
-    public CustomChestBlock(ContainerContentData data) {
-        super(data);
+    public CustomChestBlock(ContainerContentData data, Properties props) {
+        super(data, CustomBlock.buildProperties(data, props));
         this.registerDefaultState(this.stateDefinition.any()
                 .setValue(FACING, Direction.NORTH)
                 .setValue(TYPE, ChestType.SINGLE));
@@ -137,14 +137,15 @@ public class CustomChestBlock extends CustomContainerBlock {
      * the chest that remains.
      */
     @Override
-    protected void onRemove(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos,
-                            @NotNull BlockState newState, boolean movedByPiston) {
-        if (!state.is(newState.getBlock())
-                && canDouble()
-                && state.getValue(TYPE) != ChestType.SINGLE) {
+    protected void affectNeighborsAfterRemoval(@NotNull BlockState state,
+                                               net.minecraft.server.level.@NotNull ServerLevel level,
+                                               @NotNull BlockPos pos, boolean movedByPiston) {
+        // The "did the block really change" guard is gone with onRemove: this only
+        // runs once the block is actually removed.
+        if (canDouble() && state.getValue(TYPE) != ChestType.SINGLE) {
             splitInventory(state, level, pos);
         }
-        super.onRemove(state, level, pos, newState, movedByPiston);
+        super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
     }
 
     private void splitInventory(BlockState state, Level level, BlockPos pos) {
@@ -239,9 +240,13 @@ public class CustomChestBlock extends CustomContainerBlock {
      * single chest instead of a state that claims to have a partner.
      */
     @Override
-    protected @NotNull BlockState updateShape(@NotNull BlockState state, @NotNull Direction direction,
-                                              @NotNull BlockState neighbourState, @NotNull LevelAccessor level,
-                                              @NotNull BlockPos pos, @NotNull BlockPos neighbourPos) {
+    protected @NotNull BlockState updateShape(@NotNull BlockState state,
+                                              net.minecraft.world.level.@NotNull LevelReader level,
+                                              net.minecraft.world.level.@NotNull ScheduledTickAccess ticks,
+                                              @NotNull BlockPos pos, @NotNull Direction direction,
+                                              @NotNull BlockPos neighbourPos,
+                                              @NotNull BlockState neighbourState,
+                                              net.minecraft.util.@NotNull RandomSource random) {
         if (!canDouble()) return state;
 
         if (neighbourState.is(this) && direction.getAxis().isHorizontal()) {
@@ -302,14 +307,12 @@ public class CustomChestBlock extends CustomContainerBlock {
         };
     }
 
-    /**
-     * Suppresses the baked model entirely. Without this the chest renders as a
-     * cube AND as the animated model on top of it.
-     */
-    @Override
-    protected @NotNull RenderShape getRenderShape(@NotNull BlockState state) {
-        return RenderShape.ENTITYBLOCK_ANIMATED;
-    }
+    // NO getRenderShape OVERRIDE. Up to 1.21.1 a block drawn by its block entity
+    // had to report ENTITYBLOCK_ANIMATED so the baked model was skipped. That
+    // constant is gone — RenderShape is now only INVISIBLE or MODEL — and the
+    // job moved to the model itself: the generated block model declares a
+    // particle texture and NO elements, so there is nothing to draw and the
+    // renderer is left to it. See BlockModelGenerator.
 
     /**
      * The lid animates on the CLIENT, so this ticker is the mirror image of the

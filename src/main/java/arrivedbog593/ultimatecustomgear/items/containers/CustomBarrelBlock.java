@@ -1,6 +1,7 @@
 package arrivedbog593.ultimatecustomgear.items.containers;
 
 import arrivedbog593.ultimatecustomgear.data.ContainerContentData;
+import arrivedbog593.ultimatecustomgear.items.blocks.CustomBlock;
 import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -10,7 +11,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,13 +26,13 @@ import org.jetbrains.annotations.Nullable;
 public class CustomBarrelBlock extends CustomContainerBlock {
 
     /** Six directions, unlike a horizontal block — a barrel goes on ceilings. */
-    public static final DirectionProperty FACING = BlockStateProperties.FACING;
+    public static final EnumProperty<Direction> FACING = BlockStateProperties.FACING;
 
     /** Driven by the opener count in the block entity, never by the player. */
     public static final BooleanProperty OPEN = BlockStateProperties.OPEN;
 
-    public CustomBarrelBlock(ContainerContentData data) {
-        super(data);
+    public CustomBarrelBlock(ContainerContentData data, Properties props) {
+        super(data, CustomBlock.buildProperties(data, props));
         this.registerDefaultState(this.stateDefinition.any()
                 .setValue(FACING, Direction.NORTH)
                 .setValue(OPEN, false));

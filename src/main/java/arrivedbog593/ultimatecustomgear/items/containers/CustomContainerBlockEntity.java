@@ -15,6 +15,7 @@ import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.ContainerUser;
 import net.minecraft.world.Containers;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -141,22 +142,16 @@ public abstract class CustomContainerBlockEntity extends BaseContainerBlockEntit
     }
 
     @Override
-    protected void loadAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
-        super.loadAdditional(tag, registries);
+    protected void loadAdditional(net.minecraft.world.level.storage.@NotNull ValueInput input) {
+        super.loadAdditional(input);
         this.orphaned = (size == 0);
 
         // NOT ContainerHelper: it writes the slot index as a BYTE, so anything
         // past slot 255 is lost. That is where a 300-slot container dropped to
         // ~256 slots' worth of items on world save while the ITEM kept all of
         // them — the item uses ContainerContents, the block entity did not.
-        ContainerContents stored = tag.contains("Contents")
-                ? ContainerContents.CODEC
-                .parse(registries.createSerializationContext(NbtOps.INSTANCE),
-                        tag.get("Contents"))
-                .resultOrPartial(err -> LOGGER.error(
-                        "[CustomGear] Could not read container contents: {}", err))
-                .orElse(ContainerContents.EMPTY)
-                : ContainerContents.EMPTY;
+        ContainerContents stored = input.read("Contents", ContainerContents.CODEC)
+                .orElse(ContainerContents.EMPTY);
 
         if (orphaned) {
             // No configured size to trim against: keep everything so the rescue
@@ -174,22 +169,17 @@ public abstract class CustomContainerBlockEntity extends BaseContainerBlockEntit
             this.pendingSpill = stored.overflow(target);
         }
 
-        this.sortCriterion = tag.getByte("SortCriterion");
-        this.sortDescending = tag.getBoolean("SortDescending");
+        this.sortCriterion = input.getByteOr("SortCriterion", (byte) 0);
+        this.sortDescending = input.getBooleanOr("SortDescending", false);
     }
 
     @Override
-    protected void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
-        super.saveAdditional(tag, registries);
-        ContainerContents.CODEC
-                .encodeStart(registries.createSerializationContext(NbtOps.INSTANCE),
-                        snapshot())
-                .resultOrPartial(err -> LOGGER.error(
-                        "[CustomGear] Could not write container contents: {}", err))
-                .ifPresent(t -> tag.put("Contents", t));
+    protected void saveAdditional(net.minecraft.world.level.storage.@NotNull ValueOutput output) {
+        super.saveAdditional(output);
+        output.store("Contents", ContainerContents.CODEC, snapshot());
 
-        tag.putByte("SortCriterion", sortCriterion);
-        tag.putBoolean("SortDescending", sortDescending);
+        output.putByte("SortCriterion", sortCriterion);
+        output.putBoolean("SortDescending", sortDescending);
     }
 
     @Override
@@ -454,23 +444,24 @@ public abstract class CustomContainerBlockEntity extends BaseContainerBlockEntit
         }
 
         @Override
-        protected boolean isOwnContainer(@NotNull Player player) {
+        public boolean isOwnContainer(@NotNull Player player) {
             return player.containerMenu instanceof CustomContainerMenu menu
                     && menu.getContainer() == CustomContainerBlockEntity.this;
         }
     };
 
     @Override
-    public void startOpen(@NotNull Player player) {
-        if (!isRemoved() && !player.isSpectator() && level != null) {
-            openersCounter.incrementOpeners(player, level, worldPosition, getBlockState());
+    public void startOpen(@NotNull ContainerUser user) {
+        if (!isRemoved() && !user.getLivingEntity().isSpectator() && level != null) {
+            openersCounter.incrementOpeners(user.getLivingEntity(), level, worldPosition,
+                    getBlockState(), user.getContainerInteractionRange());
         }
     }
 
     @Override
-    public void stopOpen(@NotNull Player player) {
-        if (!isRemoved() && !player.isSpectator() && level != null) {
-            openersCounter.decrementOpeners(player, level, worldPosition, getBlockState());
+    public void stopOpen(@NotNull ContainerUser user) {
+        if (!isRemoved() && !user.getLivingEntity().isSpectator() && level != null) {
+            openersCounter.decrementOpeners(user.getLivingEntity(), level, worldPosition, getBlockState());
         }
     }
 
@@ -497,7 +488,7 @@ public abstract class CustomContainerBlockEntity extends BaseContainerBlockEntit
     private void playOpenSound(BlockState state, SoundEvent sound) {
         if (level == null) return;
         Vec3i normal = state.hasProperty(BlockStateProperties.FACING)
-                ? state.getValue(BlockStateProperties.FACING).getNormal()
+                ? state.getValue(BlockStateProperties.FACING).getUnitVec3i()
                 : Vec3i.ZERO;
         level.playSound(null,
                 worldPosition.getX() + 0.5 + normal.getX() / 2.0,
@@ -561,10 +552,11 @@ public abstract class CustomContainerBlockEntity extends BaseContainerBlockEntit
      * them — and picking the shell would hand you an empty chest.
      */
     @Override
-    public void saveToItem(@NotNull ItemStack stack, HolderLookup.@NotNull Provider registries) {
+    protected void collectImplicitComponents(net.minecraft.core.component.DataComponentMap.@NotNull Builder components) {
+        super.collectImplicitComponents(components);
         ContainerContents half = halfForPick();
         if (half != null) {
-            stack.set(ComponentRegistry.CONTAINER_CONTENTS.get(), half);
+            components.set(ComponentRegistry.CONTAINER_CONTENTS.get(), half);
             return;
         }
 
@@ -573,7 +565,7 @@ public abstract class CustomContainerBlockEntity extends BaseContainerBlockEntit
         // and applying that on placement fights with what the mod reads. One way
         // in and one way out, whether the container is half of a pair or not.
         if (!isEmpty()) {
-            stack.set(ComponentRegistry.CONTAINER_CONTENTS.get(), snapshot());
+            components.set(ComponentRegistry.CONTAINER_CONTENTS.get(), snapshot());
         }
     }
 

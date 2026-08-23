@@ -2,15 +2,19 @@ package arrivedbog593.ultimatecustomgear.client;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
 import net.minecraft.network.chat.Component;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.NotNull;
 
-/** Draws the container grid — nine per row, count in the corner of each cell. */
-@OnlyIn(Dist.CLIENT)
+/**
+ * Draws the container grid — nine per row, count in the corner of each cell.
+ * <p>
+ * NO @OnlyIn. The annotation no longer strips anything at runtime, and NeoForge
+ * now logs an error for every class still carrying it. Nothing was relying on
+ * the stripping here anyway: this class is only ever named from ClientSetup,
+ * which the mod does not register on a server.
+ */
 public record ContainerTooltipRenderer(ContainerTooltip data) implements ClientTooltipComponent {
 
     private static final int PER_ROW = 9;
@@ -23,7 +27,7 @@ public record ContainerTooltipRenderer(ContainerTooltip data) implements ClientT
     }
 
     @Override
-    public int getHeight() {
+    public int getHeight(@NotNull Font font) {
         return HEADER + rows() * CELL + (data.hidden() > 0 ? 12 : 0) + 4;
     }
 
@@ -34,11 +38,12 @@ public record ContainerTooltipRenderer(ContainerTooltip data) implements ClientT
     }
 
     @Override
-    public void renderImage(@NotNull Font font, int x, int y, @NotNull GuiGraphics g) {
+    public void extractImage(@NotNull Font font, int x, int y, int width, int height,
+                             @NotNull GuiGraphicsExtractor g) {
         // Drawn here rather than as a tooltip line: vanilla inserts the image
         // immediately after the item's name, so any text line added from
         // appendHoverText lands BELOW it no matter what index it is given.
-        g.drawString(font, Component.translatable("tooltip.ultimatecustomgear.container.contents")
+        g.text(font, Component.translatable("tooltip.ultimatecustomgear.container.contents")
                 .withStyle(ChatFormatting.GOLD), x, y, -1, false);
 
         for (int i = 0; i < data.entries().size(); i++) {
@@ -47,12 +52,12 @@ public record ContainerTooltipRenderer(ContainerTooltip data) implements ClientT
             ContainerTooltip.Entry entry = data.entries().get(i);
             // The count is drawn separately because the stack is kept at one:
             // a real count above 99 would render as a truncated number.
-            g.renderItem(entry.stack(), cx, cy);
-            g.renderItemDecorations(font, entry.stack(), cx, cy, String.valueOf(entry.total()));
+            g.item(entry.stack(), cx, cy);
+            g.itemDecorations(font, entry.stack(), cx, cy, String.valueOf(entry.total()));
         }
 
         if (data.hidden() > 0) {
-            g.drawString(font,
+            g.text(font,
                     Component.translatable("tooltip.ultimatecustomgear.container.more", data.hidden()),
                     x, y + HEADER + rows() * CELL + 2, 0xAAAAAA, false);
         }

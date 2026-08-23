@@ -1,6 +1,6 @@
 package arrivedbog593.ultimatecustomgear.resources;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.nio.file.Path;
 
@@ -21,10 +21,10 @@ import java.nio.file.Path;
 public interface PackSink {
 
     /** Adds a generated file (model, recipe, tag, lang, loot table). */
-    void addRaw(ResourceLocation location, byte[] data);
+    void addRaw(Identifier location, byte[] data);
 
     /** Copies a file from disk into the pack, typically a user PNG. */
-    void addTexture(ResourceLocation location, Path texturePath);
+    void addTexture(Identifier location, Path texturePath);
 
     /**
      * Copies a texture AND its .mcmeta if one sits beside it.
@@ -39,14 +39,14 @@ public interface PackSink {
      * side is what someone does in an ordinary resource pack, so there is
      * nothing new to learn.
      */
-    default void addTextureWithMeta(ResourceLocation location, Path texturePath) {
+    default void addTextureWithMeta(Identifier location, Path texturePath) {
         addTexture(location, texturePath);
 
         Path meta = texturePath.resolveSibling(texturePath.getFileName() + ".mcmeta");
         if (!java.nio.file.Files.isRegularFile(meta)) return;
 
         try {
-            addRaw(ResourceLocation.fromNamespaceAndPath(
+            addRaw(Identifier.fromNamespaceAndPath(
                             location.getNamespace(), location.getPath() + ".mcmeta"),
                     java.nio.file.Files.readAllBytes(meta));
         } catch (java.io.IOException e) {

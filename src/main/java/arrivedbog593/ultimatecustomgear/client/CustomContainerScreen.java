@@ -6,15 +6,17 @@ import arrivedbog593.ultimatecustomgear.network.SortContainerPayload;
 import arrivedbog593.ultimatecustomgear.network.SortModePayload;
 import arrivedbog593.ultimatecustomgear.network.TransferItemsPayload;
 import com.mojang.blaze3d.platform.InputConstants;
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
@@ -22,6 +24,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -94,8 +97,8 @@ public class CustomContainerScreen extends AbstractContainerScreen<CustomContain
     private static final int SEARCH_ANIM_MS = 200;
 
 
-    private static final ResourceLocation ICONS =
-            ResourceLocation.fromNamespaceAndPath("customgear", "textures/gui/icons.png");
+    private static final Identifier ICONS =
+            Identifier.fromNamespaceAndPath("customgear", "textures/gui/icons.png");
     private static final int ICON = 12;
     private static final int SHEET_W = 48;
     private static final int SHEET_H = 12;
@@ -187,7 +190,10 @@ public class CustomContainerScreen extends AbstractContainerScreen<CustomContain
     private int[] fingerprint = new int[0];
 
     public CustomContainerScreen(CustomContainerMenu menu, Inventory inv, Component title) {
-        super(menu, inv, title);
+        // Placeholder size. The base class demands one in its constructor now, but
+        // the real frame depends on the window, which only init() can measure — it
+        // overwrites both fields there (see the access transformer).
+        super(menu, inv, title, 176, 166);
         if (CustomGearConfig.KEEP_SEARCH_PHRASE.get()) {
             this.query = lastQuery;
         } else {
@@ -524,18 +530,18 @@ public class CustomContainerScreen extends AbstractContainerScreen<CustomContain
         // is such a thing as a direction.
         if (sortDescending) types = types.reversed();
 
-        PacketDistributor.sendToServer(new SortContainerPayload(types));
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(new SortContainerPayload(types));
     }
 
     private void cycleSortCriterion() {
         sortCriterion = sortCriterion.next();
-        PacketDistributor.sendToServer(
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new SortModePayload((byte) sortCriterion.ordinal(), sortDescending));
     }
 
     private void toggleSortDirection() {
         sortDescending = !sortDescending;
-        PacketDistributor.sendToServer(
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
                 new SortModePayload((byte) sortCriterion.ordinal(), sortDescending));
     }
 
@@ -543,7 +549,8 @@ public class CustomContainerScreen extends AbstractContainerScreen<CustomContain
 
     /** Draw the background of the container screen. */
     @Override
-    protected void renderBg(@NotNull GuiGraphics g, float partialTick, int mouseX, int mouseY) {
+    public void extractBackground(@NotNull GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
+        super.extractBackground(g, mouseX, mouseY, partialTick);
         drawSilhouette(g);
         drawSortButtons(g, mouseX, mouseY);
 
@@ -578,7 +585,7 @@ public class CustomContainerScreen extends AbstractContainerScreen<CustomContain
     }
 
     /** Drawn from renderBg so the EditBox, which has no border of its own, sits on top. */
-    private void drawSearchWidgets(GuiGraphics g, int mouseX, int mouseY) {
+    private void drawSearchWidgets(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         // The width follows focus and content, so the widget is repositioned
         // every frame rather than rebuilt.
         tickSearchAnimation();
@@ -597,13 +604,13 @@ public class CustomContainerScreen extends AbstractContainerScreen<CustomContain
     }
 
     /** The icon changes with Shift so the modifier is discoverable, not documented. */
-    private void drawTransferButtons(GuiGraphics g, int mouseX, int mouseY) {
-        boolean all = hasShiftDown();
+    private void drawTransferButtons(GuiGraphicsExtractor g, int mouseX, int mouseY) {
+        boolean all = Minecraft.getInstance().hasShiftDown();
         drawButton(g, transferInX(),  transferY(), all ? 0 : 1, mouseX, mouseY);
         drawButton(g, transferOutX(), transferY(), all ? 2 : 3, mouseX, mouseY);
     }
 
-    private void drawButton(GuiGraphics g, int x, int y, int icon, int mouseX, int mouseY) {
+    private void drawButton(GuiGraphicsExtractor g, int x, int y, int icon, int mouseX, int mouseY) {
         buttonCell(g, x, y);
         // The 12px icon overhangs the 10px frame by a pixel on each side, so the
         // glyph reads bigger than the button that holds it.
@@ -614,14 +621,14 @@ public class CustomContainerScreen extends AbstractContainerScreen<CustomContain
     }
 
     /** Sort arrow plus the criterion letter, at the right end of the title bar. */
-    private void drawSortButtons(GuiGraphics g, int mouseX, int mouseY) {
+    private void drawSortButtons(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         // Cells 0 and 2 are the solid arrows: up for ascending, down for the
         // reversed order, so the direction is visible without a tooltip.
         drawButton(g, sortButtonX(), sortY(), sortDescending ? 2 : 0, mouseX, mouseY);
 
         buttonCell(g, sortCriterionX(), sortY());
         Component letter = sortCriterion.letter();
-        g.drawString(font, letter,
+        g.text(font, letter,
                 sortCriterionX() + (BUTTON - font.width(letter)) / 2,
                 sortY() + 2, LABEL_TEXT, false);
         if (over(mouseX, mouseY, sortCriterionX(), sortY())) {
@@ -645,7 +652,7 @@ public class CustomContainerScreen extends AbstractContainerScreen<CustomContain
      * narrow box is drawn over its last three rows. Only the two concave
      * corners where they meet need anything special.
      */
-    private void drawSilhouette(GuiGraphics g) {
+    private void drawSilhouette(GuiGraphicsExtractor g) {
         int x0 = leftPos;
         int x1 = leftPos + imageWidth;
         int y0 = topPos;
@@ -673,7 +680,7 @@ public class CustomContainerScreen extends AbstractContainerScreen<CustomContain
      * {@code outerBottom} marks the bottom corner as belonging to the outside of
      * the whole shape, which is the only place the dark bevel widens to three.
      */
-    private void drawBox(GuiGraphics g, int x0, int y0, int x1, int y1,
+    private void drawBox(GuiGraphicsExtractor g, int x0, int y0, int x1, int y1,
                          boolean roundTop, boolean outerBottom) {
         for (int y = y0; y < y1; y++) {
             int dTop = roundTop ? y - y0 : Integer.MAX_VALUE / 2;
@@ -722,7 +729,7 @@ public class CustomContainerScreen extends AbstractContainerScreen<CustomContain
      * per row down. On the light side the turn is softened with two pixels of
      * slot gray; on the dark side the bevel runs straight into the band.
      */
-    private void drawJunction(GuiGraphics g, int lx0, int lx1, int yStep) {
+    private void drawJunction(GuiGraphicsExtractor g, int lx0, int lx1, int yStep) {
         for (int i = 3; i >= 1; i--) {
             int inset = 4 - i;
             if (lx0 + inset < lx1 - inset) {
@@ -737,20 +744,18 @@ public class CustomContainerScreen extends AbstractContainerScreen<CustomContain
     }
 
     /** Icon cells: 0 up solid, 1 up split, 2 down solid, 3 down split. */
-    private void drawIcon(GuiGraphics g, int x, int y, int col) {
-        RenderSystem.enableBlend();
-        g.blit(ICONS, x, y, col * ICON, 0, ICON, ICON, SHEET_W, SHEET_H);
-        RenderSystem.disableBlend();
+    private void drawIcon(GuiGraphicsExtractor g, int x, int y, int col) {
+        g.blit(RenderPipelines.GUI_TEXTURED, ICONS, x, y, col * ICON, 0, ICON, ICON, SHEET_W, SHEET_H);
     }
 
     // ── Cell primitives ───────────────────────────────────────────────────────
 
-    private void slot(GuiGraphics g, int x, int y) {
+    private void slot(GuiGraphicsExtractor g, int x, int y) {
         bevelCell(g, x, y, SLOT, SLOT);
     }
 
     /** Sunken cell. Each bevel is a continuous L that owns its own corner. */
-    private void bevelCell(GuiGraphics g, int x, int y, int w, int h) {
+    private void bevelCell(GuiGraphicsExtractor g, int x, int y, int w, int h) {
         g.fill(x, y, x + w, y + h, SLOT_FILL);
         g.fill(x, y,     x + w - 1, y + 1,     SLOT_DARK);
         g.fill(x, y + 1, x + 1,     y + h - 1, SLOT_DARK);
@@ -762,7 +767,7 @@ public class CustomContainerScreen extends AbstractContainerScreen<CustomContain
      * The small square buttons in the label strip. Recessed like a slot but with
      * a softer highlight: white would make them louder than the frame they sit in.
      */
-    private void buttonCell(GuiGraphics g, int x, int y) {
+    private void buttonCell(GuiGraphicsExtractor g, int x, int y) {
         g.fill(x, y, x + BUTTON, y + BUTTON, SLOT_FILL);
         g.fill(x, y,              x + BUTTON - 1, y + 1,          BUTTON_LIGHT);
         g.fill(x, y + 1,          x + 1,          y + BUTTON - 1, BUTTON_LIGHT);
@@ -789,7 +794,7 @@ public class CustomContainerScreen extends AbstractContainerScreen<CustomContain
         return barY() + (range == 0 ? 0 : travel * rowOffset / range);
     }
 
-    private void drawScrollbar(GuiGraphics g) {
+    private void drawScrollbar(GuiGraphicsExtractor g) {
         int x = barX();
         int y = barY();
         int h = barHeight();
@@ -830,7 +835,10 @@ public class CustomContainerScreen extends AbstractContainerScreen<CustomContain
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(@NotNull MouseButtonEvent event, boolean doubleClick) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         // Mouse bindings never reach keyPressed, so the same shortcut has to be
         // checked here too — the player can move it between keyboard and mouse.
         //
@@ -838,12 +846,12 @@ public class CustomContainerScreen extends AbstractContainerScreen<CustomContain
         // "copy stack" in creative, and sorting the chest instead would take a
         // gesture the player already knows and do something else with it. Empty
         // space and the container's own grid are fair game.
-        if (CustomGearKeys.SORT.matchesMouse(button) && !overPlayerInventory()) {
+        if (CustomGearKeys.SORT.matchesMouse(event) && !overPlayerInventory()) {
             requestSort();
             playClick();
             return true;
         }
-        if (handleTransferKeys(-1, -1, button)) return true;
+        if (handleTransferKeys(null, event)) return true;
         if (overSearch(mouseX, mouseY)) {
             if (button == InputConstants.MOUSE_BUTTON_LEFT) {
                 focusSearch();
@@ -874,14 +882,14 @@ public class CustomContainerScreen extends AbstractContainerScreen<CustomContain
             }
         }
         if (button == InputConstants.MOUSE_BUTTON_LEFT) {
-            boolean all = hasShiftDown();
+            boolean all = Minecraft.getInstance().hasShiftDown();
             if (over(mouseX, mouseY, transferInX(), transferY())) {
-                PacketDistributor.sendToServer(new TransferItemsPayload(true, all));
+                net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(new TransferItemsPayload(true, all));
                 playClick();
                 return true;
             }
             if (over(mouseX, mouseY, transferOutX(), transferY())) {
-                PacketDistributor.sendToServer(new TransferItemsPayload(false, all));
+                net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(new TransferItemsPayload(false, all));
                 playClick();
                 return true;
             }
@@ -899,7 +907,7 @@ public class CustomContainerScreen extends AbstractContainerScreen<CustomContain
             searchBox.setFocused(false);
             setFocused(null);
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, doubleClick);
     }
 
     /** The vanilla UI click, so the buttons feel like the rest of the game's menus. */
@@ -909,18 +917,18 @@ public class CustomContainerScreen extends AbstractContainerScreen<CustomContain
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+    public boolean mouseDragged(@NotNull MouseButtonEvent event, double dragX, double dragY) {
         if (draggingBar) {
-            dragTo(mouseY);
+            dragTo(event.y());
             return true;
         }
-        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        return super.mouseDragged(event, dragX, dragY);
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+    public boolean mouseReleased(@NotNull MouseButtonEvent event) {
         draggingBar = false;
-        return super.mouseReleased(mouseX, mouseY, button);
+        return super.mouseReleased(event);
     }
 
     /**
@@ -930,24 +938,24 @@ public class CustomContainerScreen extends AbstractContainerScreen<CustomContain
      * NOT over the player's own inventory, same rule as sorting: those slots
      * belong to vanilla's gestures.
      */
-    private boolean handleTransferKeys(int keyCode, int scanCode, int mouseButton) {
+    private boolean handleTransferKeys(@Nullable KeyEvent keyEvent, @Nullable MouseButtonEvent mouseEvent) {
         if (overPlayerInventory()) return false;
 
-        boolean all = hasShiftDown();
-        boolean in  = mouseButton >= 0
-                ? CustomGearKeys.TRANSFER_IN.matchesMouse(mouseButton)
-                : CustomGearKeys.TRANSFER_IN.matches(keyCode, scanCode);
-        boolean out = mouseButton >= 0
-                ? CustomGearKeys.TRANSFER_OUT.matchesMouse(mouseButton)
-                : CustomGearKeys.TRANSFER_OUT.matches(keyCode, scanCode);
+        boolean all = Minecraft.getInstance().hasShiftDown();
+        boolean in  = mouseEvent != null
+                ? CustomGearKeys.TRANSFER_IN.matchesMouse(mouseEvent)
+                : CustomGearKeys.TRANSFER_IN.matches(keyEvent);
+        boolean out = mouseEvent != null
+                ? CustomGearKeys.TRANSFER_OUT.matchesMouse(mouseEvent)
+                : CustomGearKeys.TRANSFER_OUT.matches(keyEvent);
 
         if (in) {
-            PacketDistributor.sendToServer(new TransferItemsPayload(true, all));
+            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(new TransferItemsPayload(true, all));
             playClick();
             return true;
         }
         if (out) {
-            PacketDistributor.sendToServer(new TransferItemsPayload(false, all));
+            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(new TransferItemsPayload(false, all));
             playClick();
             return true;
         }
@@ -962,25 +970,25 @@ public class CustomContainerScreen extends AbstractContainerScreen<CustomContain
      * key, which would otherwise close the GUI on every "e".
      */
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (searchBox.isFocused() && keyCode == InputConstants.KEY_ESCAPE) {
+    public boolean keyPressed(@NotNull KeyEvent event) {
+        if (searchBox.isFocused() && event.key() == InputConstants.KEY_ESCAPE) {
             searchBox.setFocused(false);
             setFocused(null);
             return true;
         }
         // Not while typing: if the binding is a letter, a letter in the search
         // field is a letter.
-        if (!searchBox.isFocused() && CustomGearKeys.SORT.matches(keyCode, scanCode)) {
+        if (!searchBox.isFocused() && CustomGearKeys.SORT.matches(event)) {
             requestSort();
             playClick();
             return true;
         }
-        if (!searchBox.isFocused() && handleTransferKeys(keyCode, scanCode, -1)) return true;
+        if (!searchBox.isFocused() && handleTransferKeys(event, null)) return true;
         if (searchBox.isFocused()) {
-            if (searchBox.keyPressed(keyCode, scanCode, modifiers)) return true;
+            if (searchBox.keyPressed(event)) return true;
             if (searchBox.canConsumeInput()) return true;
         }
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(event);
     }
 
 
@@ -988,7 +996,7 @@ public class CustomContainerScreen extends AbstractContainerScreen<CustomContain
 
     /** A long container name is trimmed to the frame instead of spilling past it. */
     @Override
-    protected void renderLabels(@NotNull GuiGraphics g, int mouseX, int mouseY) {
+    protected void extractLabels(@NotNull GuiGraphicsExtractor g, int mouseX, int mouseY) {
         // While the field is expanded, it owns the whole strip, so the name steps
         // aside rather than being squeezed into an unreadable stub.
         if (!searchExpanded()) {
@@ -998,29 +1006,28 @@ public class CustomContainerScreen extends AbstractContainerScreen<CustomContain
                 shown = Component.literal(font.plainSubstrByWidth(
                         title.getString(), maxTitleWidth - font.width("...")) + "...");
             }
-            g.drawString(font, shown, titleLabelX, titleLabelY, LABEL_TEXT, false);
+            g.text(font, shown, titleLabelX, titleLabelY, LABEL_TEXT, false);
         }
-        g.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, LABEL_TEXT, false);
+        g.text(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, LABEL_TEXT, false);
 
         // Without this a query that matches nothing looks like an empty container
         // rather than a filtered one.
         if (filter != null && shownCount() == 0) {
-            g.drawString(font, Component.translatable("customgear.container.no_results"),
+            g.text(font, Component.translatable("customgear.container.no_results"),
                     containerGridX() - leftPos, TOP + 4, LABEL_TEXT, false);
         }
     }
 
     @Override
-    public void render(@NotNull GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        // No renderBackground here: AbstractContainerScreen.render already draws
-        // the dimming pass, and calling it twice stacks two layers of it, which
-        // is why everything outside the GUI looked almost black.
-        super.render(g, mouseX, mouseY, partialTick);
-        renderTooltip(g, mouseX, mouseY);
+    public void extractRenderState(@NotNull GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
+        // No background pass here: extractBackground already ran, and the hovered
+        // slot tooltip is part of super now — the explicit renderTooltip call this
+        // replaced would draw it a second time.
+        super.extractRenderState(g, mouseX, mouseY, partialTick);
 
         // Only over the collapsed magnifier: the help would cover the field itself.
         if (!searchOccupiesStrip() && overSearch(mouseX, mouseY)) {
-            g.renderComponentTooltip(font, List.of(
+            g.setComponentTooltipForNextFrame(font, List.of(
                             Component.translatable("customgear.container.search"),
                             hint("customgear.container.search.mod", ChatFormatting.GRAY),
                             hint("customgear.container.search.tag", ChatFormatting.GRAY),
@@ -1031,28 +1038,28 @@ public class CustomContainerScreen extends AbstractContainerScreen<CustomContain
         drawTransferTooltip(g, mouseX, mouseY, transferInX(),  "in");
         drawTransferTooltip(g, mouseX, mouseY, transferOutX(), "out");
         if (over(mouseX, mouseY, sortButtonX(), sortY())) {
-            g.renderComponentTooltip(font, List.of(
+            g.setComponentTooltipForNextFrame(font, List.of(
                             Component.translatable("customgear.container.sort"),
                             hint("customgear.container.sort.reverse", ChatFormatting.DARK_GRAY)),
                     mouseX, mouseY);
         }
         if (over(mouseX, mouseY, sortCriterionX(), sortY())) {
-            g.renderComponentTooltip(font, List.of(sortCriterion.label()), mouseX, mouseY);
+            g.setComponentTooltipForNextFrame(font, List.of(sortCriterion.label()), mouseX, mouseY);
         }
     }
 
     /** The Shift hint disappears once Shift is held: it would be describing the present. */
-    private void drawTransferTooltip(GuiGraphics g, int mouseX, int mouseY, int x, String key) {
+    private void drawTransferTooltip(GuiGraphicsExtractor g, int mouseX, int mouseY, int x, String key) {
         if (!over(mouseX, mouseY, x, transferY())) return;
 
-        boolean all = hasShiftDown();
+        boolean all = Minecraft.getInstance().hasShiftDown();
         List<Component> lines = new ArrayList<>(2);
         lines.add(Component.translatable(
                 "customgear.container.transfer_" + key + (all ? ".all" : "")));
         if (!all) {
             lines.add(hint("customgear.container.transfer.shift", ChatFormatting.DARK_GRAY));
         }
-        g.renderComponentTooltip(font, lines, mouseX, mouseY);
+        g.setComponentTooltipForNextFrame(font, lines, mouseX, mouseY);
     }
 
     /** Secondary tooltip line: dimmer than the title so the two read as a hierarchy. */

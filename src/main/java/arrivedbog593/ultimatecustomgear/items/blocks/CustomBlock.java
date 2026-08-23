@@ -23,8 +23,8 @@ import java.util.function.UnaryOperator;
  */
 public class CustomBlock extends Block {
 
-    public CustomBlock(BlockData data) {
-        super(buildProperties(data));
+    public CustomBlock(BlockData data, Properties props) {
+        super(buildProperties(data, props));
     }
 
     /** For subtypes that had to adjust the properties before construction. */
@@ -32,8 +32,15 @@ public class CustomBlock extends Block {
         super(properties);
     }
 
-    public static Properties buildProperties(BlockData data) {
-        Properties props = BlockBehaviour.Properties.of()
+    /**
+     * The base properties come FROM THE REGISTRY rather than from
+     * {@code Properties.of()}: a block now carries its own registry id, and the
+     * only place that knows it is the DeferredRegister that is about to name it.
+     * Building a fresh Properties here would produce a block that throws the
+     * moment it is constructed.
+     */
+    public static Properties buildProperties(BlockData data, Properties base) {
+        Properties props = base
                 .mapColor(MapColorResolver.resolve(data.mapColor))
                 .strength(data.destroyTime, data.explosionResistance)
                 .sound(BlockSoundResolver.resolve(data.sound));
@@ -63,8 +70,8 @@ public class CustomBlock extends Block {
      * occluding while the lid is out, and none of that can be set after
      * construction — Properties are frozen the moment the Block is built.
      */
-    public static Properties buildProperties(BlockData data,
+    public static Properties buildProperties(BlockData data, Properties base,
                                              UnaryOperator<Properties> extra) {
-        return extra.apply(buildProperties(data));
+        return extra.apply(buildProperties(data, base));
     }
 }

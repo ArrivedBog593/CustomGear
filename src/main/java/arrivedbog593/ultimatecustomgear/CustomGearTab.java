@@ -22,11 +22,11 @@ public class CustomGearTab {
      * an ItemStack, and every real item here comes from user JSON that may
      * legitimately be empty.
      */
-    public static final DeferredRegister<Item> ICON =
-            DeferredRegister.create(BuiltInRegistries.ITEM, "customgear");
+    public static final DeferredRegister.Items ICON =
+            DeferredRegister.createItems("customgear");
 
     public static final DeferredHolder<Item, Item> TAB_ICON =
-            ICON.register("tab_icon", () -> new Item(new Item.Properties()));
+            ICON.registerSimpleItem("tab_icon");
 
     public static void register(IEventBus modEventBus) {
         TABS.register("customgear_tab", () -> CreativeModeTab.builder()

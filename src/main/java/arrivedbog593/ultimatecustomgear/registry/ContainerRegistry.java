@@ -5,11 +5,12 @@ import arrivedbog593.ultimatecustomgear.data.ContainerData;
 import arrivedbog593.ultimatecustomgear.items.containers.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -43,11 +44,11 @@ public class ContainerRegistry {
 
     private static final Logger LOGGER = LogManager.getLogger("CustomGear");
 
-    public static final DeferredRegister<Block> BLOCKS =
-            DeferredRegister.create(BuiltInRegistries.BLOCK, "customgear");
+    public static final DeferredRegister.Blocks BLOCKS =
+            DeferredRegister.createBlocks("customgear");
 
-    public static final DeferredRegister<Item> ITEMS =
-            DeferredRegister.create(BuiltInRegistries.ITEM, "customgear");
+    public static final DeferredRegister.Items ITEMS =
+            DeferredRegister.createItems("customgear");
 
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
             DeferredRegister.create(BuiltInRegistries.BLOCK_ENTITY_TYPE, "customgear");
@@ -72,14 +73,19 @@ public class ContainerRegistry {
      */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CustomContainerBlockEntity>>
             CONTAINER_BE = BLOCK_ENTITIES.register("container", () ->
-            BlockEntityType.Builder.of(
+            // Built directly rather than through a Builder: that class is gone, and
+            // with it the trailing DFU-type argument that mods always passed null to.
+            //
+            // THE SET OVERLOAD, NOT THE VARARGS ONE, and that is not style. An
+            // empty varargs array now throws — "instantiated without valid
+            // blocks" — so an instance with no containers in its JSON crashed on
+            // startup, which is the most common instance there is. The Set form
+            // is the one vanilla points at for exactly this case.
+            new BlockEntityType<>(
                     ContainerRegistry::blockEntityFor,
                     BLOCK_HOLDERS.stream()
                             .map(DeferredHolder::get)
-                            .toArray(Block[]::new)
-                    // The DFU Type is always null for mods: only Mojang registers
-                    // data-fixer types, and vanilla passes null here too.
-            ).build(null));
+                            .collect(java.util.stream.Collectors.toUnmodifiableSet())));
 
 
     /** The block decides which block entity class backs it. */
@@ -101,7 +107,7 @@ public class ContainerRegistry {
      * container; here absence means exactly one thing — the definition is gone —
      * which is what orphan rescue keys off.
      */
-    public static final Map<ResourceLocation, ContainerContentData> CONTAINER_MAP = new HashMap<>();
+    public static final Map<Identifier, ContainerContentData> CONTAINER_MAP = new HashMap<>();
 
     public static void register(IEventBus modEventBus, List<ContainerContentData> containerList) {
         for (ContainerContentData data : containerList) {
@@ -120,10 +126,10 @@ public class ContainerRegistry {
 
     private static void registerBlockContainer(ContainerContentData data) {
         DeferredHolder<Block, CustomContainerBlock> blockHolder =
-                BLOCKS.register(data.id, () -> blockFor(data));
+                BLOCKS.registerBlock(data.id, props -> blockFor(data, props));
         BLOCK_HOLDERS.add(blockHolder);
-        ITEMS.register(data.id, () -> itemFor(data, blockHolder.get()));
-        CONTAINER_MAP.put(ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
+        ITEMS.registerItem(data.id, props -> itemFor(data, blockHolder.get(), props));
+        CONTAINER_MAP.put(Identifier.fromNamespaceAndPath("customgear", data.id), data);
         LOGGER.info("[CustomGear] Container registered: {} ({}, {} slots)",
                 data.id, data.container.kind(), data.container.slots);
     }
@@ -134,26 +140,24 @@ public class ContainerRegistry {
      * something the block entity type would choke on.
      */
     private static void registerCarriedContainer(ContainerContentData data) {
-        ITEMS.register(data.id, () -> new CustomBackpackItem(data, containerItemProps(data)));
-        CONTAINER_MAP.put(ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
+        ITEMS.registerItem(data.id, props -> new CustomBackpackItem(data, containerItemProps(data, props)));
+        CONTAINER_MAP.put(Identifier.fromNamespaceAndPath("customgear", data.id), data);
         LOGGER.info("[CustomGear] Container registered: {} (backpack, {} slots)",
                 data.id, data.container.slots);
     }
 
     /**
-     * Only the shapes drawn by a renderer need their own BlockItem. A barrel is
-     * a baked model like any block, so a plain BlockItem draws it correctly and
-     * a subclass would only add a redundant client extension.
+     * ONE BlockItem class for every container shape.
+     *
+     * Chests and shulkers used to need a subclass each, purely to hand rendering
+     * over to a BlockEntityWithoutLevelRenderer. That class is gone: a shape
+     * that cannot be baked is now declared in the item MODEL, as a
+     * "minecraft:special" entry naming the vanilla chest or shulker renderer —
+     * see BlockModelGenerator. With nothing left for them to override, the two
+     * subclasses were deleted rather than kept as empty shells.
      */
-    private static BlockItem itemFor(ContainerContentData data, Block block) {
-        Item.Properties props = containerItemProps(data);
-        if (ContainerData.KIND_CHEST.equals(data.container.kind())) {
-            return new CustomChestBlockItem(block, props);
-        }
-        if (ContainerData.KIND_SHULKER.equals(data.container.kind())) {
-            return new CustomShulkerBlockItem(block, props);
-        }
-        return new CustomContainerBlockItem(block, props);
+    private static BlockItem itemFor(ContainerContentData data, Block block, Item.Properties props) {
+        return new CustomContainerBlockItem(block, containerItemProps(data, props));
     }
 
     /**
@@ -161,15 +165,15 @@ public class ContainerRegistry {
      * rejected by the parser, so reaching the default means the two lists have
      * drifted apart — worth failing loudly rather than guessing a shape.
      */
-    private static CustomContainerBlock blockFor(ContainerContentData data) {
+    private static CustomContainerBlock blockFor(ContainerContentData data, BlockBehaviour.Properties props) {
         if (ContainerData.KIND_BARREL.equals(data.container.kind())) {
-            return new CustomBarrelBlock(data);
+            return new CustomBarrelBlock(data, props);
         }
         if (ContainerData.KIND_CHEST.equals(data.container.kind())) {
-            return new CustomChestBlock(data);
+            return new CustomChestBlock(data, props);
         }
         if (ContainerData.KIND_SHULKER.equals(data.container.kind())) {
-            return new CustomShulkerBlock(data);
+            return new CustomShulkerBlock(data, props);
         }
         throw new IllegalStateException(
                 "No block class for container type '" + data.container.kind()
@@ -184,8 +188,8 @@ public class ContainerRegistry {
      * cannot stack conditionally on its components, so vanilla's shulker box is
      * stacksTo(1) whether it holds anything or not, and so is this.
      */
-    private static Item.Properties containerItemProps(ContainerContentData data) {
-        Item.Properties p = new Item.Properties();
+    private static Item.Properties containerItemProps(ContainerContentData data, Item.Properties props) {
+        Item.Properties p = props;
         if (data.fireResistant) p = p.fireResistant();
         return data.container.keepsContents() ? p.stacksTo(1) : p;
     }
@@ -198,7 +202,7 @@ public class ContainerRegistry {
     public static void updateContainerData(List<ContainerContentData> containerList) {
         CONTAINER_MAP.clear();
         for (ContainerContentData data : containerList) {
-            CONTAINER_MAP.put(ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
+            CONTAINER_MAP.put(Identifier.fromNamespaceAndPath("customgear", data.id), data);
         }
         LOGGER.info("[CustomGear] Updated {} containers in registry", containerList.size());
     }

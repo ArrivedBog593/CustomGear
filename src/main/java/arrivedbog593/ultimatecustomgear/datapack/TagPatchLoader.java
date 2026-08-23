@@ -2,7 +2,7 @@ package arrivedbog593.ultimatecustomgear.datapack;
 
 import arrivedbog593.ultimatecustomgear.data.TagPatchData;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.neoforged.fml.ModList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -77,13 +77,13 @@ public class TagPatchLoader {
                         patch.tag, registry);
             }
 
-            ResourceLocation tagRl = parseTag(patch.tag);
+            Identifier tagRl = parseTag(patch.tag);
             if (tagRl == null) continue;
 
             int added = 0;
             if (patch.values != null) {
                 for (String raw : patch.values) {
-                    ResourceLocation valueRl = parseValue(raw, patch.tag);
+                    Identifier valueRl = parseValue(raw, patch.tag);
                     if (valueRl == null) continue;
 
                     warnIfLikelyTypo(registry, valueRl, patch.tag);
@@ -98,7 +98,7 @@ public class TagPatchLoader {
             if (patch.remove != null) {
                 warnIfRiskyRemoval(tagRl);
                 for (String raw : patch.remove) {
-                    ResourceLocation valueRl = parseValue(raw, patch.tag);
+                    Identifier valueRl = parseValue(raw, patch.tag);
                     if (valueRl == null) continue;
 
                     // No typo check here: removing an id that was never in the
@@ -114,10 +114,10 @@ public class TagPatchLoader {
         }
     }
 
-    private static ResourceLocation parseTag(String raw) {
+    private static Identifier parseTag(String raw) {
         // Tolerate a stray '#' the same way the tags field does
         String cleaned = raw.startsWith("#") ? raw.substring(1) : raw;
-        ResourceLocation rl = ResourceLocation.tryParse(cleaned);
+        Identifier rl = Identifier.tryParse(cleaned);
         if (rl == null) {
             LOGGER.error("[CustomGear] tag_patch: malformed 'tag' value '{}' — the whole patch "
                     + "is skipped. Expected 'namespace:path' with no '#'.", raw);
@@ -135,7 +135,7 @@ public class TagPatchLoader {
      * overwhelming majority of mods, and a false silence is cheap here — the
      * worst case is that a typo goes unwarned, which is the status quo.
      */
-    private static void warnIfLikelyTypo(String registry, ResourceLocation id, String tag) {
+    private static void warnIfLikelyTypo(String registry, Identifier id, String tag) {
         if (!VERIFIABLE.contains(registry)) return;
 
         String namespace = id.getNamespace();
@@ -162,9 +162,9 @@ public class TagPatchLoader {
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     /** Parses one values/remove entry, or null when malformed. */
-    private static ResourceLocation parseValue(String raw, String tag) {
+    private static Identifier parseValue(String raw, String tag) {
         if (raw == null || raw.isBlank()) return null;
-        ResourceLocation rl = ResourceLocation.tryParse(raw.trim());
+        Identifier rl = Identifier.tryParse(raw.trim());
         if (rl == null) {
             LOGGER.warn("[CustomGear] tag_patch '{}': malformed value '{}' — skipped. "
                     + "Expected 'namespace:path'.", tag, raw);
@@ -180,7 +180,7 @@ public class TagPatchLoader {
      * mod that consumes them, and the person who sees the breakage has no
      * reason to connect it to a tag_patch file they wrote weeks ago.
      */
-    private static void warnIfRiskyRemoval(ResourceLocation tag) {
+    private static void warnIfRiskyRemoval(Identifier tag) {
         String ns = tag.getNamespace();
         if (ns.equals("minecraft") || ns.equals("c")) {
             LOGGER.warn("[CustomGear] tag_patch removes entries from '{}', a tag this mod does "

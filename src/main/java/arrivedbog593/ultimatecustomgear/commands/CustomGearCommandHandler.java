@@ -18,7 +18,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.commands.ReloadCommand;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
@@ -49,7 +49,7 @@ public class CustomGearCommandHandler {
 
         dispatcher.register(Commands.literal("customgear")
                 .then(Commands.literal("reload")
-                        .requires(src -> src.hasPermission(2))
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .executes(context -> {
                             CommandSourceStack source = context.getSource();
 
@@ -173,7 +173,7 @@ public class CustomGearCommandHandler {
                         })
                 )
                 .then(Commands.literal("dump")
-                        .requires(src -> src.hasPermission(2))
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .executes(context -> {
                             CommandSourceStack source = context.getSource();
                             try {
@@ -253,8 +253,8 @@ public class CustomGearCommandHandler {
      * where the map was temporarily empty and could cause NPEs in server ticks.
      */
     private static void updateGearRegistryAtomic(List<GearData> gearList) {
-        Map<ResourceLocation, GearData> newGear     = new HashMap<>();
-        Map<ResourceLocation, String>   newToolType = new HashMap<>();
+        Map<Identifier, GearData> newGear     = new HashMap<>();
+        Map<Identifier, String>   newToolType = new HashMap<>();
 
         for (GearData data : gearList) {
             switch (data.type) {
@@ -274,7 +274,7 @@ public class CustomGearCommandHandler {
                         for (String toolType : new String[]{"pickaxe", "axe", "shovel", "hoe"}) {
                             if (!data.tools.containsKey(toolType)) continue;
                             GearData derived = GearRegistry.buildDerived(data, toolType, data.tools.get(toolType));
-                            ResourceLocation loc = rl(data.id + "_" + toolType);
+                            Identifier loc = rl(data.id + "_" + toolType);
                             newGear.put(loc, derived);
                             newToolType.put(loc, toolType);
                         }
@@ -295,7 +295,7 @@ public class CustomGearCommandHandler {
         GearRegistry.atomicSwap(newGear, newToolType);
     }
 
-    private static ResourceLocation rl(String id) {
-        return ResourceLocation.fromNamespaceAndPath("customgear", id);
+    private static Identifier rl(String id) {
+        return Identifier.fromNamespaceAndPath("customgear", id);
     }
 }

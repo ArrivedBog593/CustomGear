@@ -1,7 +1,7 @@
 package arrivedbog593.ultimatecustomgear.datapack;
 
 import arrivedbog593.ultimatecustomgear.data.GearData;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.List;
 
@@ -197,17 +197,17 @@ public class GearTagLoader {
 
     /** Vanilla tag: required:true, this is our own content and always exists. */
     private static void add(TagFileBuilder tags, String path, String contentId) {
-        tags.add("item", ResourceLocation.fromNamespaceAndPath("minecraft", path), contentId, true);
+        tags.add("item", Identifier.fromNamespaceAndPath("minecraft", path), contentId, true);
     }
 
     /** Removes from a vanilla tag — see TagFileBuilder.remove. */
     @SuppressWarnings("SameParameterValue")
     private static void remove(TagFileBuilder tags, String path, String contentId) {
-        tags.remove("item", ResourceLocation.fromNamespaceAndPath("minecraft", path), contentId);
+        tags.remove("item", Identifier.fromNamespaceAndPath("minecraft", path), contentId);
     }
 
     /** Convention (c:) tag — community namespace, not owned by any mod. */
     private static void addC(TagFileBuilder tags, String path, String contentId) {
-        tags.add("item", ResourceLocation.fromNamespaceAndPath("c", path), contentId, true);
+        tags.add("item", Identifier.fromNamespaceAndPath("c", path), contentId, true);
     }
 }

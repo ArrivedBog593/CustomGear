@@ -1,40 +1,32 @@
 package arrivedbog593.ultimatecustomgear.items.tools;
 
 import arrivedbog593.ultimatecustomgear.data.GearData;
-import arrivedbog593.ultimatecustomgear.items.gear.CustomTier;
 import arrivedbog593.ultimatecustomgear.items.weapons.CustomSwordItem;
 import arrivedbog593.ultimatecustomgear.util.GearLookup;
 import arrivedbog593.ultimatecustomgear.util.TooltipHelper;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.ShovelItem;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
+import java.util.function.Consumer;
 
-public class CustomShovelItem extends ShovelItem {
+/**
+ * A shovel built from JSON.
+ * <p>
+ * NOT a subclass of the vanilla shovel: those classes no longer exist. What made
+ * an item a shovel is now a set of data components, applied by
+ * {@code Item.Properties.shovel(...)} — see {@link CustomToolItem}.
+ */
+public class CustomShovelItem extends Item {
 
     private final GearData initialGearData;
 
-    public CustomShovelItem(GearData data) {
-        this(data, new CustomTier(data));
-    }
-
-    private CustomShovelItem(GearData data, CustomTier tier) {
-        super(tier, buildProps(data, tier));
+    public CustomShovelItem(GearData data, Item.Properties props) {
+        super(CustomToolItem.applyToolProperties(props, data, "shovel"));
         this.initialGearData = data;
-    }
-
-    private static Properties buildProps(GearData data, CustomTier tier) {
-        Properties p = new Properties()
-                .durability(data.durability)
-                .attributes(ShovelItem.createAttributes(
-                        tier,
-                        data.attackDamage - 1,
-                        data.attackSpeed - 4
-                ));
-        return data.fireResistant ? p.fireResistant() : p;
     }
 
     private GearData getGearData() {
@@ -56,13 +48,15 @@ public class CustomShovelItem extends ShovelItem {
     @Override
     public void appendHoverText(@NotNull ItemStack stack,
                                 @NotNull Item.TooltipContext context,
-                                @NotNull List<Component> tooltipComponents,
-                                @NotNull net.minecraft.world.item.TooltipFlag tooltipFlag) {
-        super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
-        TooltipHelper.addToolStatsTooltip(tooltipComponents, getGearData());
-        TooltipHelper.addHeldEffectsTooltip(tooltipComponents, getGearData());
-        if (!TooltipHelper.detailsShown() && TooltipHelper.hasDetails(getGearData())) {
-            TooltipHelper.addDetailsHint(tooltipComponents);
+                                @NotNull TooltipDisplay display,
+                                @NotNull Consumer<Component> builder,
+                                @NotNull TooltipFlag tooltipFlag) {
+        super.appendHoverText(stack, context, display, builder, tooltipFlag);
+        GearData data = getGearData();
+        TooltipHelper.addToolStatsTooltip(builder, data);
+        TooltipHelper.addHeldEffectsTooltip(builder, data);
+        if (!TooltipHelper.detailsShown() && TooltipHelper.hasDetails(data)) {
+            TooltipHelper.addDetailsHint(builder);
         }
     }
 }

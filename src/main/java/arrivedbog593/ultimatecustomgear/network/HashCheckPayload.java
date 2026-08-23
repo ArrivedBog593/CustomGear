@@ -4,7 +4,7 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -21,7 +21,7 @@ public record HashCheckPayload(String serverHash, boolean enforce) implements Cu
 
     public static final CustomPacketPayload.Type<HashCheckPayload> TYPE =
             new CustomPacketPayload.Type<>(
-                    ResourceLocation.fromNamespaceAndPath("ultimatecustomgear", "hash_check"));
+                    Identifier.fromNamespaceAndPath("ultimatecustomgear", "hash_check"));
 
     public static final StreamCodec<ByteBuf, HashCheckPayload> STREAM_CODEC =
             StreamCodec.composite(

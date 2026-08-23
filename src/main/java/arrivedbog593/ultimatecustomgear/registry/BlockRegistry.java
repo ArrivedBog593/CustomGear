@@ -3,7 +3,7 @@ package arrivedbog593.ultimatecustomgear.registry;
 import arrivedbog593.ultimatecustomgear.data.BlockData;
 import arrivedbog593.ultimatecustomgear.items.blocks.*;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
@@ -40,14 +40,14 @@ public class BlockRegistry {
 
     private static final Logger LOGGER = LogManager.getLogger("CustomGear");
 
-    public static final DeferredRegister<Block> BLOCKS =
-            DeferredRegister.create(BuiltInRegistries.BLOCK, "customgear");
+    public static final DeferredRegister.Blocks BLOCKS =
+            DeferredRegister.createBlocks("customgear");
 
-    public static final DeferredRegister<Item> BLOCK_ITEMS =
-            DeferredRegister.create(BuiltInRegistries.ITEM, "customgear");
+    public static final DeferredRegister.Items BLOCK_ITEMS =
+            DeferredRegister.createItems("customgear");
 
     /** blockId → BlockData for runtime lookups */
-    public static final Map<ResourceLocation, BlockData> BLOCK_MAP = new HashMap<>();
+    public static final Map<Identifier, BlockData> BLOCK_MAP = new HashMap<>();
 
     public static void register(IEventBus modEventBus, List<BlockData> blockList) {
         for (BlockData data : blockList) {
@@ -60,30 +60,29 @@ public class BlockRegistry {
     private static void registerBlock(BlockData data) {
         if (data.directional) {
             DeferredHolder<Block, CustomDirectionalBlock> blockHolder =
-                    BLOCKS.register(data.id, () -> new CustomDirectionalBlock(data));
-            BLOCK_ITEMS.register(data.id, () ->
-                    new BlockItem(blockHolder.get(), blockItemProps(data)));
+                    BLOCKS.registerBlock(data.id, props -> new CustomDirectionalBlock(data, props));
+            BLOCK_ITEMS.registerItem(data.id, props ->
+                    new BlockItem(blockHolder.get(), blockItemProps(data, props)));
             LOGGER.info("[CustomGear] Directional block registered: {}", data.id);
         } else if (data.gravity) {
             DeferredHolder<Block, CustomFallingBlock> blockHolder =
-                    BLOCKS.register(data.id, () -> new CustomFallingBlock(data));
-            BLOCK_ITEMS.register(data.id, () ->
-                    new BlockItem(blockHolder.get(), blockItemProps(data)));
+                    BLOCKS.registerBlock(data.id, props -> new CustomFallingBlock(data, props));
+            BLOCK_ITEMS.registerItem(data.id, props ->
+                    new BlockItem(blockHolder.get(), blockItemProps(data, props)));
             LOGGER.info("[CustomGear] Falling block registered: {}", data.id);
         } else {
             DeferredHolder<Block, CustomBlock> blockHolder =
-                    BLOCKS.register(data.id, () -> new CustomBlock(data));
-            BLOCK_ITEMS.register(data.id, () ->
-                    new BlockItem(blockHolder.get(), blockItemProps(data)));
+                    BLOCKS.registerBlock(data.id, props -> new CustomBlock(data, props));
+            BLOCK_ITEMS.registerItem(data.id, props ->
+                    new BlockItem(blockHolder.get(), blockItemProps(data, props)));
             LOGGER.info("[CustomGear] Block registered: {}", data.id);
         }
-        ResourceLocation loc = ResourceLocation.fromNamespaceAndPath("customgear", data.id);
+        Identifier loc = Identifier.fromNamespaceAndPath("customgear", data.id);
         BLOCK_MAP.put(loc, data);
     }
 
-    private static Item.Properties blockItemProps(BlockData data) {
-        Item.Properties p = new Item.Properties();
-        return data.fireResistant ? p.fireResistant() : p;
+    private static Item.Properties blockItemProps(BlockData data, Item.Properties props) {
+        return data.fireResistant ? props.fireResistant() : props;
     }
 
     /**
@@ -93,7 +92,7 @@ public class BlockRegistry {
     public static void updateBlockData(List<BlockData> blockList) {
         BLOCK_MAP.clear();
         for (BlockData data : blockList) {
-            BLOCK_MAP.put(ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
+            BLOCK_MAP.put(Identifier.fromNamespaceAndPath("customgear", data.id), data);
         }
         LOGGER.info("[CustomGear] Updated {} blocks in registry", blockList.size());
     }

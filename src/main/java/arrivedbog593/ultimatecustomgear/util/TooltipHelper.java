@@ -8,7 +8,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.entity.EntityType;
 import org.jetbrains.annotations.NotNull;
@@ -16,6 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 public class TooltipHelper {
 
@@ -23,51 +24,51 @@ public class TooltipHelper {
     private static final int MAX_RESIST_ENTRIES = 4;
 
     // Tooltip for held effects (weapons and tools)
-    public static void addHeldEffectsTooltip(List<Component> tooltipComponents,
+    public static void addHeldEffectsTooltip(Consumer<Component> tooltipComponents,
                                              GearData data) {
         if (!detailsShown()) return;
         if (data.heldEffects == null || data.heldEffects.isEmpty()) return;
 
-        tooltipComponents.add(Component.literal(""));
-        tooltipComponents.add(Component.translatable("tooltip.customgear.held_effects")
+        tooltipComponents.accept(Component.literal(""));
+        tooltipComponents.accept(Component.translatable("tooltip.customgear.held_effects")
                 .withStyle(ChatFormatting.GOLD));
 
         for (GearData.EffectData effectData : data.heldEffects) {
             String effectName = getEffectName(effectData.effect);
             String amplifier = toRoman(effectData.amplifier + 1);
-            tooltipComponents.add(Component.literal("• " + effectName + " " + amplifier)
+            tooltipComponents.accept(Component.literal("• " + effectName + " " + amplifier)
                     .withStyle(ChatFormatting.GRAY));
         }
     }
 
     // Tooltip for individual piece effects (armor)
-    public static void addPieceEffectsTooltip(List<Component> tooltipComponents,
+    public static void addPieceEffectsTooltip(Consumer<Component> tooltipComponents,
                                               GearData data, String piece) {
         if (!detailsShown()) return;
         if (data.pieceEffects == null) return;
         List<GearData.EffectData> effects = data.pieceEffects.get(piece);
         if (effects == null || effects.isEmpty()) return;
 
-        tooltipComponents.add(Component.literal(""));
-        tooltipComponents.add(Component.translatable("tooltip.customgear.piece_effects")
+        tooltipComponents.accept(Component.literal(""));
+        tooltipComponents.accept(Component.translatable("tooltip.customgear.piece_effects")
                 .withStyle(ChatFormatting.GOLD));
 
         for (GearData.EffectData effectData : effects) {
             String effectName = getEffectName(effectData.effect);
             String amplifier = toRoman(effectData.amplifier + 1);
-            tooltipComponents.add(Component.literal("• " + effectName + " " + amplifier)
+            tooltipComponents.accept(Component.literal("• " + effectName + " " + amplifier)
                     .withStyle(ChatFormatting.GRAY));
         }
     }
 
     // Tooltip for set bonus (armor)
-    public static void addSetBonusTooltip(List<Component> tooltipComponents,
+    public static void addSetBonusTooltip(Consumer<Component> tooltipComponents,
                                           GearData data) {
         if (!detailsShown()) return;
         if (data.setBonus == null || data.setBonus.effects == null) return;
 
-        tooltipComponents.add(Component.literal(""));
-        tooltipComponents.add(Component.translatable(
+        tooltipComponents.accept(Component.literal(""));
+        tooltipComponents.accept(Component.translatable(
                         "tooltip.customgear.set_bonus",
                         data.setBonus.requiredPieces)
                 .withStyle(ChatFormatting.GOLD));
@@ -75,7 +76,7 @@ public class TooltipHelper {
         for (GearData.EffectData effectData : data.setBonus.effects) {
             String effectName = getEffectName(effectData.effect);
             String amplifier = toRoman(effectData.amplifier + 1);
-            tooltipComponents.add(Component.literal("• " + effectName + " " + amplifier)
+            tooltipComponents.accept(Component.literal("• " + effectName + " " + amplifier)
                     .withStyle(ChatFormatting.GRAY));
         }
     }
@@ -83,9 +84,9 @@ public class TooltipHelper {
     // Obtains the effect name from the Minecraft registry
     private static String getEffectName(String effectId) {
         try {
-            ResourceLocation rl = ResourceLocation.parse(effectId);
+            Identifier rl = Identifier.parse(effectId);
             Holder<MobEffect> holder = BuiltInRegistries.MOB_EFFECT
-                    .getHolder(rl).orElse(null);
+                    .get(rl).orElse(null);
             if (holder != null) {
                 return Component.translatable(
                         holder.value().getDescriptionId()).getString();
@@ -112,32 +113,32 @@ public class TooltipHelper {
     }
 
     // Tooltip for till radius (hoes)
-    public static void addTillRadiusTooltip(List<Component> tooltipComponents,
+    public static void addTillRadiusTooltip(Consumer<Component> tooltipComponents,
                                             GearData data) {
         if (data.tillRadius <= 0) return;
 
         int diameter = 2 * data.tillRadius + 1;
 
-        tooltipComponents.add(Component.literal(""));
-        tooltipComponents.add(Component.translatable("tooltip.customgear.till_radius")
+        tooltipComponents.accept(Component.literal(""));
+        tooltipComponents.accept(Component.translatable("tooltip.customgear.till_radius")
                 .withStyle(ChatFormatting.GOLD));
 
-        tooltipComponents.add(Component.literal("• " + data.tillRadius + " (")
+        tooltipComponents.accept(Component.literal("• " + data.tillRadius + " (")
                 .append(Component.translatable("tooltip.customgear.till_area", diameter, diameter))
                 .append(Component.literal(")"))
                 .withStyle(ChatFormatting.GRAY));
     }
 
     // Tooltip for food on-eat effects
-    public static void addFoodEffectsTooltip(List<Component> tooltipComponents,
+    public static void addFoodEffectsTooltip(Consumer<Component> tooltipComponents,
                                              arrivedbog593.ultimatecustomgear.data.ItemData data) {
         // Eat duration line
         if (data.eatDuration == 0) {
-            tooltipComponents.add(Component.translatable("tooltip.ultimatecustomgear.instant")
+            tooltipComponents.accept(Component.translatable("tooltip.ultimatecustomgear.instant")
                     .withStyle(ChatFormatting.GRAY));
         } else if (data.eatDuration > 0) {
             float seconds = data.eatDuration;
-            tooltipComponents.add(Component.translatable("tooltip.ultimatecustomgear.eat_duration",
+            tooltipComponents.accept(Component.translatable("tooltip.ultimatecustomgear.eat_duration",
                             String.format("%.1f", seconds))
                     .withStyle(ChatFormatting.GRAY));
         }
@@ -145,8 +146,8 @@ public class TooltipHelper {
         // On eat effects
         if (data.onEatEffects == null || data.onEatEffects.isEmpty()) return;
 
-        tooltipComponents.add(Component.literal(""));
-        tooltipComponents.add(Component.translatable("tooltip.ultimatecustomgear.on_eat")
+        tooltipComponents.accept(Component.literal(""));
+        tooltipComponents.accept(Component.translatable("tooltip.ultimatecustomgear.on_eat")
                 .withStyle(ChatFormatting.GOLD));
 
         for (arrivedbog593.ultimatecustomgear.data.ItemData.FoodEffectData ed : data.onEatEffects) {
@@ -155,27 +156,27 @@ public class TooltipHelper {
             String duration   = ed.duration >= 60
                     ? (ed.duration / 60) + "m " + (ed.duration % 60) + "s"
                     : ed.duration + "s";
-            tooltipComponents.add(Component.literal("• " + effectName + level + " (" + duration + ")")
+            tooltipComponents.accept(Component.literal("• " + effectName + level + " (" + duration + ")")
                     .withStyle(ChatFormatting.BLUE));
         }
     }
 
     // Tooltip for bow/crossbow stats
-    public static void addBowTooltip(List<Component> tooltipComponents, GearData data) {
-        tooltipComponents.add(Component.literal(""));
+    public static void addBowTooltip(Consumer<Component> tooltipComponents, GearData data) {
+        tooltipComponents.accept(Component.literal(""));
 
         if (data.arrowDamage > 0) {
-            tooltipComponents.add(Component.translatable("tooltip.ultimatecustomgear.arrow_damage",
+            tooltipComponents.accept(Component.translatable("tooltip.ultimatecustomgear.arrow_damage",
                             String.format("%.1f", data.arrowDamage))
                     .withStyle(ChatFormatting.DARK_GREEN));
         }
         if (data.arrowDamageBonus > 0) {
-            tooltipComponents.add(Component.translatable("tooltip.ultimatecustomgear.arrow_damage_bonus",
+            tooltipComponents.accept(Component.translatable("tooltip.ultimatecustomgear.arrow_damage_bonus",
                             String.format("+%.1f", data.arrowDamageBonus))
                     .withStyle(ChatFormatting.DARK_GREEN));
         }
         if (data.arrowDamageMultiplier > 0 && data.arrowDamageMultiplier != 1.0f) {
-            tooltipComponents.add(Component.translatable("tooltip.ultimatecustomgear.arrow_damage_multiplier",
+            tooltipComponents.accept(Component.translatable("tooltip.ultimatecustomgear.arrow_damage_multiplier",
                             String.format("x%.2f", data.arrowDamageMultiplier))
                     .withStyle(ChatFormatting.DARK_GREEN));
         }
@@ -190,16 +191,16 @@ public class TooltipHelper {
     }
 
     // Tooltip for tool mining stats (harvest level and mining speed)
-    public static void addToolStatsTooltip(List<Component> tooltipComponents, GearData data) {
-        tooltipComponents.add(Component.literal(""));
+    public static void addToolStatsTooltip(Consumer<Component> tooltipComponents, GearData data) {
+        tooltipComponents.accept(Component.literal(""));
 
         Component harvestValue = getHarvestValue(data);
 
-        tooltipComponents.add(Component.translatable("tooltip.ultimatecustomgear.harvest_level")
+        tooltipComponents.accept(Component.translatable("tooltip.ultimatecustomgear.harvest_level")
                 .append(Component.literal(": "))
                 .append(harvestValue)
                 .withStyle(ChatFormatting.GRAY));
-        tooltipComponents.add(Component.translatable("tooltip.ultimatecustomgear.mining_speed",
+        tooltipComponents.accept(Component.translatable("tooltip.ultimatecustomgear.mining_speed",
                         String.format("%.1f", data.miningSpeed))
                 .withStyle(ChatFormatting.GRAY));
     }
@@ -220,7 +221,7 @@ public class TooltipHelper {
     }
 
     /** Appends the "Dropped by" section for items with mob_drops configured. */
-    public static void appendMobDrops(ItemData data, List<Component> tooltip) {
+    public static void appendMobDrops(ItemData data, Consumer<Component> tooltip) {
         if (!detailsShown()) return;
         if (data == null || data.mobDrops == null) return;
         ItemData.MobDropsData d = data.mobDrops;
@@ -236,7 +237,7 @@ public class TooltipHelper {
         if (visible.isEmpty()) return;
 
         String pct = formatChance(d.chance);
-        tooltip.add(Component.translatable("tooltip.ultimatecustomgear.dropped_by")
+        tooltip.accept(Component.translatable("tooltip.ultimatecustomgear.dropped_by")
                 .withStyle(ChatFormatting.GOLD));
 
         int shown = Math.min(3, visible.size());
@@ -251,32 +252,32 @@ public class TooltipHelper {
                 name = Component.translatable("tooltip.ultimatecustomgear.dropped_by.mod_mobs",
                         e.substring(0, e.length() - 2));
             } else {
-                ResourceLocation rl = ResourceLocation.tryParse(e);
+                Identifier rl = Identifier.tryParse(e);
                 name = (rl != null)
                         ? BuiltInRegistries.ENTITY_TYPE.getOptional(rl)
                         .map(EntityType::getDescription)
                         .orElse(Component.literal(e))
                         : Component.literal(e);
             }
-            tooltip.add(Component.literal("• ").append(name)
+            tooltip.accept(Component.literal("• ").append(name)
                     .append(Component.literal(" (" + pct + ")"))
                     .withStyle(ChatFormatting.GRAY));
         }
         if (visible.size() > shown) {
-            tooltip.add(Component.translatable("tooltip.ultimatecustomgear.dropped_by.more",
+            tooltip.accept(Component.translatable("tooltip.ultimatecustomgear.dropped_by.more",
                     visible.size() - shown).withStyle(ChatFormatting.DARK_GRAY));
             if (d.isLootingCount()) {
-                tooltip.add(Component.translatable("tooltip.ultimatecustomgear.dropped_by.looting_count")
+                tooltip.accept(Component.translatable("tooltip.ultimatecustomgear.dropped_by.looting_count")
                         .withStyle(ChatFormatting.DARK_GRAY));
             } else if (d.isLootingChance()) {
-                tooltip.add(Component.translatable("tooltip.ultimatecustomgear.dropped_by.looting_chance")
+                tooltip.accept(Component.translatable("tooltip.ultimatecustomgear.dropped_by.looting_chance")
                         .withStyle(ChatFormatting.DARK_GRAY));
             }
         }
     }
 
     /** "Resistances:" section for armor with damage_resistances. */
-    public static void addDamageResistancesTooltip(List<Component> tooltip, GearData data, String piece) {
+    public static void addDamageResistancesTooltip(Consumer<Component> tooltip, GearData data, String piece) {
         if (!detailsShown()) return;
         Map<String, Double> res = ResistanceResolver.damageMap(data, piece);
         if (res == null || res.isEmpty()) return;
@@ -290,20 +291,20 @@ public class TooltipHelper {
         // "Resistances:" line is left behind.
         if (visible.isEmpty()) return;
 
-        tooltip.add(Component.literal(""));
-        tooltip.add(Component.translatable("tooltip.ultimatecustomgear.resistances")
+        tooltip.accept(Component.literal(""));
+        tooltip.accept(Component.translatable("tooltip.ultimatecustomgear.resistances")
                 .withStyle(ChatFormatting.GOLD));
 
         int shown = Math.min(MAX_RESIST_ENTRIES, visible.size());
         for (int i = 0; i < shown; i++) {
             Map.Entry<String, Double> e = visible.get(i);
-            tooltip.add(Component.literal("• ")
+            tooltip.accept(Component.literal("• ")
                     .append(resistanceName(e.getKey()))
                     .append(Component.literal(" " + formatChance(e.getValue())))
                     .withStyle(ChatFormatting.GRAY));
         }
         if (visible.size() > shown) {
-            tooltip.add(Component.translatable("tooltip.ultimatecustomgear.resistances.more",
+            tooltip.accept(Component.translatable("tooltip.ultimatecustomgear.resistances.more",
                     visible.size() - shown).withStyle(ChatFormatting.DARK_GRAY));
         }
     }
@@ -311,7 +312,7 @@ public class TooltipHelper {
     private static Component resistanceName(String key) {
         boolean isTag = key.startsWith("#");
         String clean = isTag ? key.substring(1) : key;
-        ResourceLocation rl = ResourceLocation.tryParse(clean);
+        Identifier rl = Identifier.tryParse(clean);
         if (rl == null) return Component.literal(key);
 
         // Derived lang key: tooltip.ultimatecustomgear.resist.<namespace>.<path>
@@ -330,7 +331,7 @@ public class TooltipHelper {
     }
 
     /** "Resists attackers:" section — player: entries are hidden on purpose. */
-    public static void addAttackerResistancesTooltip(List<Component> tooltip,
+    public static void addAttackerResistancesTooltip(Consumer<Component> tooltip,
                                                      GearData data, String piece) {
         if (!detailsShown()) return;
         Map<String, Double> res = ResistanceResolver.attackerMap(data, piece);
@@ -347,20 +348,20 @@ public class TooltipHelper {
         }
         if (visible.isEmpty()) return;
 
-        tooltip.add(Component.literal(""));
-        tooltip.add(Component.translatable("tooltip.ultimatecustomgear.attacker_resistances")
+        tooltip.accept(Component.literal(""));
+        tooltip.accept(Component.translatable("tooltip.ultimatecustomgear.attacker_resistances")
                 .withStyle(ChatFormatting.GOLD));
 
         int shown = Math.min(MAX_RESIST_ENTRIES, visible.size());
         for (int i = 0; i < shown; i++) {
             Map.Entry<String, Double> e = visible.get(i);
-            tooltip.add(Component.literal("• ")
+            tooltip.accept(Component.literal("• ")
                     .append(attackerName(e.getKey()))
                     .append(Component.literal(" " + formatChance(e.getValue())))
                     .withStyle(ChatFormatting.GRAY));
         }
         if (visible.size() > shown) {
-            tooltip.add(Component.translatable("tooltip.ultimatecustomgear.resistances.more",
+            tooltip.accept(Component.translatable("tooltip.ultimatecustomgear.resistances.more",
                     visible.size() - shown).withStyle(ChatFormatting.DARK_GRAY));
         }
     }
@@ -378,7 +379,7 @@ public class TooltipHelper {
         if (key.startsWith("player:")) {
             return Component.literal(key.substring(7));
         }
-        ResourceLocation rl = ResourceLocation.tryParse(key);
+        Identifier rl = Identifier.tryParse(key);
         return rl != null
                 ? BuiltInRegistries.ENTITY_TYPE.getOptional(rl)
                 .map(EntityType::getDescription)
@@ -387,7 +388,7 @@ public class TooltipHelper {
     }
 
     /** "Conditional resistances:" section — one line per rule, capped like the rest. */
-    public static void addConditionalResistancesTooltip(List<Component> tooltip,
+    public static void addConditionalResistancesTooltip(Consumer<Component> tooltip,
                                                         GearData data, String piece) {
         if (!detailsShown()) return;
         List<GearData.ConditionalResistance> list = ResistanceResolver.conditionalList(data, piece);
@@ -405,8 +406,8 @@ public class TooltipHelper {
         }
         if (visible.isEmpty()) return;
 
-        tooltip.add(Component.literal(""));
-        tooltip.add(Component.translatable("tooltip.ultimatecustomgear.conditional_resistances")
+        tooltip.accept(Component.literal(""));
+        tooltip.accept(Component.translatable("tooltip.ultimatecustomgear.conditional_resistances")
                 .withStyle(ChatFormatting.GOLD));
 
         int shown = Math.min(MAX_RESIST_ENTRIES, visible.size());
@@ -426,11 +427,11 @@ public class TooltipHelper {
             } else if (who != null) {
                 line.append(who);
             }
-            tooltip.add(line.append(Component.literal(" " + formatChance(c.amount)))
+            tooltip.accept(line.append(Component.literal(" " + formatChance(c.amount)))
                     .withStyle(ChatFormatting.GRAY));
         }
         if (visible.size() > shown) {
-            tooltip.add(Component.translatable("tooltip.ultimatecustomgear.resistances.more",
+            tooltip.accept(Component.translatable("tooltip.ultimatecustomgear.resistances.more",
                     visible.size() - shown).withStyle(ChatFormatting.DARK_GRAY));
         }
     }
@@ -452,7 +453,7 @@ public class TooltipHelper {
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public static boolean detailsShown() {
-        return Screen.hasShiftDown();
+        return net.minecraft.client.Minecraft.getInstance().hasShiftDown();
     }
 
     /**
@@ -463,16 +464,16 @@ public class TooltipHelper {
      * does the same, and it is the reason to bother with the placeholder even
      * though the key is not configurable.
      */
-    public static void addDetailsHint(List<Component> tooltip) {
-        tooltip.add(Component.translatable("tooltip.ultimatecustomgear.hold_shift",
+    public static void addDetailsHint(Consumer<Component> tooltip) {
+        tooltip.accept(Component.translatable("tooltip.ultimatecustomgear.hold_shift",
                         Component.translatable("tooltip.ultimatecustomgear.key.shift")
                                 .withStyle(ChatFormatting.AQUA))
                 .withStyle(ChatFormatting.GRAY));
     }
 
     /** Same shape, but naming what is hidden: a container shows its contents. */
-    public static void addContentsHint(List<Component> tooltip) {
-        tooltip.add(Component.translatable("tooltip.ultimatecustomgear.container.press_for_contents",
+    public static void addContentsHint(Consumer<Component> tooltip) {
+        tooltip.accept(Component.translatable("tooltip.ultimatecustomgear.container.press_for_contents",
                         Component.translatable("tooltip.ultimatecustomgear.key.shift")
                                 .withStyle(ChatFormatting.AQUA))
                 .withStyle(ChatFormatting.GRAY));

@@ -1,6 +1,6 @@
 package arrivedbog593.ultimatecustomgear.resources;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * Shared constants and path helper methods used by all model generators.
@@ -13,10 +13,25 @@ public final class ModelConstants {
     public static final String NAMESPACE = "customgear";
 
     // ── Path constants ────────────────────────────────────────────────────────
-    public static final String ARMOR_TEXTURE_PATH = "textures/models/armor/";
+    /**
+     * Where a worn armour layer lives now. It used to be one folder with a
+     * _layer_1 / _layer_2 suffix; the renderer no longer builds that name, so
+     * the two layers are two folders, each holding a file named after the gear.
+     */
+    public static final String HUMANOID_LAYER_PATH          = "textures/entity/equipment/humanoid/";
+    public static final String HUMANOID_LEGGINGS_LAYER_PATH = "textures/entity/equipment/humanoid_leggings/";
     public static final String ITEM_TEXTURE_PATH  = "textures/item/";
     public static final String BLOCK_TEXTURE_PATH = "textures/block/";
     public static final String MODELS_ITEM_PATH   = "models/item/";
+    /**
+     * The item DEFINITION folder, which did not exist before 1.21.4. A model
+     * under models/item is still a model — geometry and textures — but what an
+     * item renders is now chosen a level above, here, and an item with no file
+     * in this folder renders as missing however good its model is.
+     */
+    public static final String ITEMS_PATH         = "items/";
+    /** Equipment assets: which textures a worn piece draws, per body layer. */
+    public static final String EQUIPMENT_PATH     = "equipment/";
     public static final String BLOCK_MODEL_PATH   = "models/block/";
     public static final String LANG_PATH          = "lang/";
 
@@ -60,38 +75,56 @@ public final class ModelConstants {
 
     // ── Path helper methods ───────────────────────────────────────────────────
 
-    public static ResourceLocation armorTextureLoc(String gearId, String layer) {
-        return ResourceLocation.fromNamespaceAndPath(
-                NAMESPACE, ARMOR_TEXTURE_PATH + gearId + "_" + layer + ".png");
+    /**
+     * Where one worn layer of a gear's armour goes.
+     *
+     * layer_1 is the humanoid body, layer_2 the leggings — the same split the
+     * old two suffixes meant, expressed as two folders because that is what the
+     * equipment asset addresses.
+     */
+    public static Identifier armorLayerLoc(String gearId, String layerKey) {
+        String folder = "layer_2".equals(layerKey)
+                ? HUMANOID_LEGGINGS_LAYER_PATH : HUMANOID_LAYER_PATH;
+        return Identifier.fromNamespaceAndPath(NAMESPACE, folder + gearId + ".png");
     }
 
-    public static ResourceLocation itemTextureLoc(String itemId) {
-        return ResourceLocation.fromNamespaceAndPath(
+    /** The item definition that decides what this item renders. */
+    public static Identifier itemDefinitionLoc(String itemId) {
+        return Identifier.fromNamespaceAndPath(NAMESPACE, ITEMS_PATH + itemId + ".json");
+    }
+
+    /** The equipment asset listing a gear's worn layers. */
+    public static Identifier equipmentLoc(String gearId) {
+        return Identifier.fromNamespaceAndPath(NAMESPACE, EQUIPMENT_PATH + gearId + ".json");
+    }
+
+    public static Identifier itemTextureLoc(String itemId) {
+        return Identifier.fromNamespaceAndPath(
                 NAMESPACE, ITEM_TEXTURE_PATH + itemId + ".png");
     }
 
-    public static ResourceLocation blockTextureLoc(String blockId) {
-        return ResourceLocation.fromNamespaceAndPath(
+    public static Identifier blockTextureLoc(String blockId) {
+        return Identifier.fromNamespaceAndPath(
                 NAMESPACE, BLOCK_TEXTURE_PATH + blockId + ".png");
     }
 
-    public static ResourceLocation itemModelLoc(String itemId) {
-        return ResourceLocation.fromNamespaceAndPath(
+    public static Identifier itemModelLoc(String itemId) {
+        return Identifier.fromNamespaceAndPath(
                 NAMESPACE, MODELS_ITEM_PATH + itemId + ".json");
     }
 
-    public static ResourceLocation blockModelLoc(String blockId) {
-        return ResourceLocation.fromNamespaceAndPath(
+    public static Identifier blockModelLoc(String blockId) {
+        return Identifier.fromNamespaceAndPath(
                 NAMESPACE, BLOCK_MODEL_PATH + blockId + ".json");
     }
 
-    public static ResourceLocation blockStateLoc(String blockId) {
-        return ResourceLocation.fromNamespaceAndPath(
+    public static Identifier blockStateLoc(String blockId) {
+        return Identifier.fromNamespaceAndPath(
                 NAMESPACE, "blockstates/" + blockId + ".json");
     }
 
-    public static ResourceLocation langLoc(String lang) {
-        return ResourceLocation.fromNamespaceAndPath(
+    public static Identifier langLoc(String lang) {
+        return Identifier.fromNamespaceAndPath(
                 NAMESPACE, LANG_PATH + lang + ".json");
     }
 

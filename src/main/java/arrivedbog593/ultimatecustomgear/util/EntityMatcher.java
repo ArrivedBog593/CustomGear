@@ -2,7 +2,7 @@ package arrivedbog593.ultimatecustomgear.util;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -41,16 +41,16 @@ public final class EntityMatcher {
             if (!(entity instanceof Player player)) return false;
             String name = key.substring(PLAYER_PREFIX.length());
             if (name.equals("*")) return true;              // ← any player
-            return player.getGameProfile().getName().equalsIgnoreCase(name);
+            return player.getGameProfile().name().equalsIgnoreCase(name);
         }
 
         if (key.startsWith("#")) {
-            ResourceLocation tagRl = ResourceLocation.tryParse(key.substring(1));
+            Identifier tagRl = Identifier.tryParse(key.substring(1));
             return tagRl != null
-                    && entity.getType().is(TagKey.create(Registries.ENTITY_TYPE, tagRl));
+                    && entity.getType().builtInRegistryHolder().is(TagKey.create(Registries.ENTITY_TYPE, tagRl));
         }
 
-        ResourceLocation entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+        Identifier entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
 
         if (key.endsWith(":*")) {
             return entityId.getNamespace().equals(key.substring(0, key.length() - 2));

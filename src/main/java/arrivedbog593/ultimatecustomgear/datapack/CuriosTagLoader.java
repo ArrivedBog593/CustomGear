@@ -6,7 +6,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -62,7 +62,7 @@ public class CuriosTagLoader {
             for (String slot : data.container.curiosSlots()) {
                 if (slot == null || slot.isBlank()) continue;
                 declared.add(slot);
-                tags.add("item", ResourceLocation.fromNamespaceAndPath("curios", slot),
+                tags.add("item", Identifier.fromNamespaceAndPath("curios", slot),
                         "customgear:" + data.id, true);
             }
         }
@@ -97,7 +97,7 @@ public class CuriosTagLoader {
 
         // Under OUR namespace, not curios' — the file assigns slots, it does not
         // define them, and Curios scans every namespace for these.
-        ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(
+        Identifier loc = Identifier.fromNamespaceAndPath(
                 "customgear", "curios/entities/entities.json");
         pack.addRaw(loc, GSON.toJson(root).getBytes(StandardCharsets.UTF_8));
 

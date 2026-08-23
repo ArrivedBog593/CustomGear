@@ -4,7 +4,7 @@ import arrivedbog593.ultimatecustomgear.data.ItemData;
 import arrivedbog593.ultimatecustomgear.items.items.CustomFoodItem;
 import arrivedbog593.ultimatecustomgear.items.items.CustomItem;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -23,23 +23,23 @@ public class ItemRegistry {
 
     private static final Logger LOGGER = LogManager.getLogger("CustomGear");
 
-    public static final DeferredRegister<Item> ITEMS =
-            DeferredRegister.create(BuiltInRegistries.ITEM, "customgear");
+    public static final DeferredRegister.Items ITEMS =
+            DeferredRegister.createItems("customgear");
 
     /** itemId → ItemData for runtime lookups */
-    public static final Map<ResourceLocation, ItemData> ITEM_MAP = new HashMap<>();
+    public static final Map<Identifier, ItemData> ITEM_MAP = new HashMap<>();
 
     public static void register(IEventBus modEventBus, List<ItemData> itemList) {
         for (ItemData data : itemList) {
             if ("food".equals(data.type)) {
-                ITEMS.register(data.id, () -> new CustomFoodItem(data));
+                ITEMS.registerItem(data.id, props -> new CustomFoodItem(data, props));
                 LOGGER.info("[CustomGear] Food item registered: {}", data.id);
             } else {
-                ITEMS.register(data.id, () -> new CustomItem(data));
+                ITEMS.registerItem(data.id, props -> new CustomItem(data, props));
                 LOGGER.info("[CustomGear] Item registered: {}", data.id);
             }
             ITEM_MAP.put(
-                    ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
+                    Identifier.fromNamespaceAndPath("customgear", data.id), data);
         }
         ITEMS.register(modEventBus);
     }
@@ -51,7 +51,7 @@ public class ItemRegistry {
     public static void updateItemData(List<ItemData> itemList) {
         ITEM_MAP.clear();
         for (ItemData data : itemList) {
-            ITEM_MAP.put(ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
+            ITEM_MAP.put(Identifier.fromNamespaceAndPath("customgear", data.id), data);
         }
         LOGGER.info("[CustomGear] Updated {} items in registry", itemList.size());
     }

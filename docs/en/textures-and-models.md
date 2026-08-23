@@ -47,11 +47,11 @@ this is the part worth reading twice:
 |---------------------|--------------------|---------------------------------------------|
 | Block faces         | a texture          | `minecraft:block/stone`                     |
 | Armor pieces        | a texture          | `minecraft:item/diamond_helmet`             |
-| Armor layers        | a texture          | `othermod:models/armor/their_armor_layer_1` |
+| Armor layers        | an equipment asset | `othermod:their_armor`                      |
 | Items and food      | a texture          | `minecraft:item/apple`                      |
 | Fluids              | an atlas sprite    | `minecraft:block/lava_still`                |
 | **Tools & weapons** | **a model**        | `minecraft:item/diamond_pickaxe`            |
-| Chests & shulkers   | a texture          | `minecraft:entity/chest/christmas`          |
+| Chests & shulkers   | an atlas sprite    | `minecraft:christmas`                       |
 | GeckoLib 3D armor   | a file, in full    | `othermod:geo/armor/their_armor.geo.json`   |
 
 Tools and weapons are the odd one out on purpose: inheriting a model brings that

@@ -4,9 +4,44 @@ Solo cambios incompatibles — cosas que hacen que un JSON que funcionaba en una
 versión se comporte distinto o deje de cargar en la siguiente. Todo lo aditivo
 está en el [CHANGELOG](../../CHANGELOG_ES.md).
 
-> Esta página está incompleta. Por ahora cubre 1.7.0, 1.6.0, y el cambio de protocolo de
-> red de 1.3.0. Los cambios incompatibles anteriores hay que sacarlos del
-> CHANGELOG.
+> Esta página está incompleta. Por ahora cubre 3.0.0, 1.7.0, 1.6.0, y el cambio de
+> protocolo de red de 1.3.0. Los cambios incompatibles anteriores hay que sacarlos
+> del CHANGELOG.
+
+## 3.0.0
+
+**Tu JSON no cambia en nada.** No se añadió, quitó ni renombró ningún campo en el
+port a Minecraft 26.2. Copia tu carpeta de contenido y carga.
+
+Lo que sí cambia es el jar, y nada de esto es opcional:
+
+- **La 3.0.0 corre solo en Minecraft 26.2.** La 1.7.0 no carga ahí, y esta no
+  carga en 1.21.1. Quédate con la versión que corresponda a tu juego
+- **Java 25**, antes Java 21. Un servidor anclado a un JDK más viejo no arranca
+- **GeckoLib 5.5.3**, **JEI 30.25.0.177**, **Curios 16.0.0**. Las versiones que
+  usabas junto a la 1.7.0 no cargan en 26.2
+
+### Dos formas de textura se acortaron, y las dos siguen funcionando
+
+Las referencias de cofre, shulker y capas de armadura ya se pueden escribir como
+el juego las direcciona:
+
+```diff
+  "refs": {
+-   "single": "minecraft:textures/entity/chest/normal.png"
++   "single": "minecraft:normal"
+  }
+```
+
+```diff
+  "armor_layers": {
+-   "layer_1": "othermod:models/armor/diamond_layer_1"
++   "layer_1": "othermod:diamond"
+  }
+```
+
+Se leen las dos formas, y la larga resuelve exactamente al mismo recurso, así que
+esto es limpieza, no un arreglo. No se rompe nada si lo dejas como está.
 
 ## 1.7.0
 

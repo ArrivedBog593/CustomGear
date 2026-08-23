@@ -6,7 +6,7 @@ import arrivedbog593.ultimatecustomgear.util.EntityMatcher;
 import arrivedbog593.ultimatecustomgear.util.ResistanceResolver;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
@@ -68,7 +68,7 @@ public class DamageResistanceHandler {
         // on one piece would silence the other three.
         float totalReduction = 0f;
 
-        for (ItemStack stack : entity.getArmorSlots()) {
+        for (ItemStack stack : arrivedbog593.ultimatecustomgear.util.ArmorSlots.of(entity)) {
             if (!(stack.getItem() instanceof CustomArmorItem armor)) continue;
 
             GearData data = armor.getGearDataDirect();
@@ -145,15 +145,15 @@ public class DamageResistanceHandler {
         if (key == null || key.isBlank()) return false;
 
         if (key.startsWith("#")) {
-            ResourceLocation tagRl = ResourceLocation.tryParse(key.substring(1));
+            Identifier tagRl = Identifier.tryParse(key.substring(1));
             if (tagRl == null) return false;
             return source.is(TagKey.create(Registries.DAMAGE_TYPE, tagRl));
         }
 
-        ResourceLocation rl = ResourceLocation.tryParse(key);
+        Identifier rl = Identifier.tryParse(key);
         if (rl == null) return false;
         return source.typeHolder().unwrapKey()
-                .map(ResourceKey::location)
+                .map(ResourceKey::identifier)
                 .map(rl::equals)
                 .orElse(false);
     }

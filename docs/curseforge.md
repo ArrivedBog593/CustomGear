@@ -2,7 +2,7 @@
 
 ## Add custom gear to Minecraft without writing a line of Java
 
-UltimateCustomGear is a data-driven NeoForge mod for Minecraft 1.21.1. Drop a
+UltimateCustomGear is a data-driven NeoForge mod for Minecraft 26.2. Drop a
 JSON file into a folder, restart, and your item exists — registered, textured,
 craftable, and visible in JEI. It is built for server owners and modpack
 creators who need custom content but do not want to maintain a mod for it.
@@ -95,7 +95,7 @@ to the **Field Reference** if you know what you are looking for.
 
 ## Compatibility
 
-- Minecraft 1.21.1 · NeoForge 21.1.x
+- Minecraft 26.2 · NeoForge 26.2.x · Java 25
 - **JEI** — optional, recommended. Recipes show up fully
 - **GeckoLib** — optional, only needed for 3D armor models
 - Works with content from any installed mod: reference their models, use their

@@ -5,7 +5,7 @@ import arrivedbog593.ultimatecustomgear.items.gear.CustomArmorItem;
 import arrivedbog593.ultimatecustomgear.items.tools.CustomToolItem;
 import arrivedbog593.ultimatecustomgear.items.weapons.*;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModList;
@@ -21,19 +21,19 @@ public class GearRegistry {
 
     private static final Logger LOGGER = LogManager.getLogger("CustomGear");
 
-    public static final DeferredRegister<Item> ITEMS =
-            DeferredRegister.create(BuiltInRegistries.ITEM, "customgear");
+    public static final DeferredRegister.Items ITEMS =
+            DeferredRegister.createItems("customgear");
 
     // FIX: ConcurrentHashMap para lectura segura en múltiples hilos.
     // Se expone como mapa inmutable mediante getters para que otros mods no lo modifiquen directamente.
-    private static volatile Map<ResourceLocation, GearData> gearMap = new ConcurrentHashMap<>();
-    private static volatile Map<ResourceLocation, String>   toolTypeMap = new ConcurrentHashMap<>();
+    private static volatile Map<Identifier, GearData> gearMap = new ConcurrentHashMap<>();
+    private static volatile Map<Identifier, String>   toolTypeMap = new ConcurrentHashMap<>();
 
     /**
      * Acceso directo (paquete interno) para lookups de alto rendimiento en tick events.
      * No expuesto como public para evitar modificaciones externas.
      */
-    public static GearData lookupGear(ResourceLocation loc) {
+    public static GearData lookupGear(Identifier loc) {
         return gearMap.get(loc);
     }
 
@@ -42,8 +42,8 @@ public class GearRegistry {
      * Los items que estén leyendo el mapa antiguo lo terminan de leer sin NPE;
      * las lecturas posteriores ya usan el mapa nuevo.
      */
-    public static void atomicSwap(Map<ResourceLocation, GearData> newGearMap,
-                                  Map<ResourceLocation, String>   newToolTypeMap) {
+    public static void atomicSwap(Map<Identifier, GearData> newGearMap,
+                                  Map<Identifier, String>   newToolTypeMap) {
         gearMap     = new ConcurrentHashMap<>(newGearMap);
         toolTypeMap = new ConcurrentHashMap<>(newToolTypeMap);
         LOGGER.info("[CustomGear] Registry updated atomically: {} gear entries, {} tool-type entries",
@@ -86,24 +86,24 @@ public class GearRegistry {
             String itemId = data.id + "_" + piece;
 
             if (useGeckoModel) {
-                ITEMS.register(itemId, () ->
-                        new arrivedbog593.ultimatecustomgear.items.gear.geo.GeckoArmorItem(data, piece));
+                ITEMS.registerItem(itemId, props ->
+                        new arrivedbog593.ultimatecustomgear.items.gear.geo.GeckoArmorItem(data, piece, props));
             } else {
-                ITEMS.register(itemId, () -> new CustomArmorItem(data, piece));
+                ITEMS.registerItem(itemId, props -> new CustomArmorItem(data, piece, props));
             }
 
-            gearMap.put(ResourceLocation.fromNamespaceAndPath("customgear", itemId), data);
+            gearMap.put(Identifier.fromNamespaceAndPath("customgear", itemId), data);
         }
     }
 
     private static void registerSword(GearData data) {
-        ITEMS.register(data.id, () -> new CustomSwordItem(data));
-        gearMap.put(ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
+        ITEMS.registerItem(data.id, props -> new CustomSwordItem(data, props));
+        gearMap.put(Identifier.fromNamespaceAndPath("customgear", data.id), data);
     }
 
     private static void registerTool(GearData data) {
-        ITEMS.register(data.id, () -> CustomToolItem.create(data));
-        gearMap.put(ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
+        ITEMS.registerItem(data.id, props -> CustomToolItem.create(data, props));
+        gearMap.put(Identifier.fromNamespaceAndPath("customgear", data.id), data);
     }
 
     private static void registerToolSet(GearData data) {
@@ -114,26 +114,26 @@ public class GearRegistry {
             GearData.ToolData toolData = data.tools.get(toolType);
             String itemId = data.id + "_" + toolType;
             GearData derived = buildDerived(data, toolType, toolData);
-            ITEMS.register(itemId, () -> CustomToolItem.create(derived));
-            ResourceLocation loc = ResourceLocation.fromNamespaceAndPath("customgear", itemId);
+            ITEMS.registerItem(itemId, props -> CustomToolItem.create(derived, props));
+            Identifier loc = Identifier.fromNamespaceAndPath("customgear", itemId);
             gearMap.put(loc, derived);
             toolTypeMap.put(loc, toolType);
         }
     }
 
     private static void registerBow(GearData data) {
-        ITEMS.register(data.id, () -> new CustomBowItem(data));
-        gearMap.put(ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
+        ITEMS.registerItem(data.id, props -> new CustomBowItem(data, props));
+        gearMap.put(Identifier.fromNamespaceAndPath("customgear", data.id), data);
     }
 
     private static void registerCrossbow(GearData data) {
-        ITEMS.register(data.id, () -> new CustomCrossbowItem(data));
-        gearMap.put(ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
+        ITEMS.registerItem(data.id, props -> new CustomCrossbowItem(data, props));
+        gearMap.put(Identifier.fromNamespaceAndPath("customgear", data.id), data);
     }
 
     private static void registerShield(GearData data) {
-        ITEMS.register(data.id, () -> new CustomShieldItem(data));
-        gearMap.put(ResourceLocation.fromNamespaceAndPath("customgear", data.id), data);
+        ITEMS.registerItem(data.id, props -> new CustomShieldItem(data, props));
+        gearMap.put(Identifier.fromNamespaceAndPath("customgear", data.id), data);
     }
 
     private static void registerWeaponSet(GearData data) {
@@ -144,14 +144,14 @@ public class GearRegistry {
             GearData.WeaponData weaponData = data.weapons.get(weaponType);
             String itemId = data.id + "_" + weaponType;
             GearData derived = buildWeaponDerived(data, weaponType, weaponData);
-            ITEMS.register(itemId, () -> switch (weaponType) {
-                case "sword"    -> new CustomSwordItem(derived);
-                case "bow"      -> new CustomBowItem(derived);
-                case "crossbow" -> new CustomCrossbowItem(derived);
-                case "shield"   -> new CustomShieldItem(derived);
+            ITEMS.registerItem(itemId, props -> switch (weaponType) {
+                case "sword"    -> new CustomSwordItem(derived, props);
+                case "bow"      -> new CustomBowItem(derived, props);
+                case "crossbow" -> new CustomCrossbowItem(derived, props);
+                case "shield"   -> new CustomShieldItem(derived, props);
                 default -> throw new IllegalArgumentException("Invalid weapon type: " + weaponType);
             });
-            gearMap.put(ResourceLocation.fromNamespaceAndPath("customgear", itemId), derived);
+            gearMap.put(Identifier.fromNamespaceAndPath("customgear", itemId), derived);
         }
     }
 

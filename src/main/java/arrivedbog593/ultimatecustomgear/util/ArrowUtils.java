@@ -1,7 +1,7 @@
 package arrivedbog593.ultimatecustomgear.util;
 
 import arrivedbog593.ultimatecustomgear.data.GearData;
-import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 
 public class ArrowUtils {
 
@@ -11,7 +11,7 @@ public class ArrowUtils {
      * Then apply the multiplier and the bonus.
      */
     public static void applyArrowDamage(AbstractArrow arrow, GearData data) {
-        double vanillaBase = arrow.getBaseDamage();
+        double vanillaBase = arrow.baseDamage;
 
         double finalDamage;
         if (data.arrowDamage > 0) {

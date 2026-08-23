@@ -23,8 +23,8 @@ import org.jetbrains.annotations.Nullable;
  */
 public class CustomDirectionalBlock extends HorizontalDirectionalBlock {
 
-    public CustomDirectionalBlock(BlockData data) {
-        super(CustomBlock.buildProperties(data));
+    public CustomDirectionalBlock(BlockData data, Properties props) {
+        super(CustomBlock.buildProperties(data, props));
         // Register the default state with facing=north
         this.registerDefaultState(
                 this.stateDefinition.any().setValue(FACING, Direction.NORTH));

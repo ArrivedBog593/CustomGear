@@ -40,7 +40,6 @@ import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddPackFindersEvent;
-import net.neoforged.neoforge.items.wrapper.InvWrapper;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
@@ -159,13 +158,12 @@ public class CustomGearMod {
         modEventBus.addListener(CustomGearNetworking::registerPayloads);
         modEventBus.addListener(CustomGearNetworking::registerConfigurationTasks);
         modEventBus.addListener(this::onRegisterCapabilities);
-        if (FMLEnvironment.dist.isClient()) {
+        if (FMLEnvironment.getDist().isClient()) {
             modContainer.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
             modEventBus.addListener(CustomGearKeys::register);
-            modEventBus.addListener(ClientSetup::onRegisterLayerDefinitions);
             modEventBus.addListener(ClientSetup::onRegisterRenderers);
             modEventBus.addListener(ClientSetup::onRegisterTooltipComponents);
-            modEventBus.addListener(ClientSetup::onClientSetup);
+            modEventBus.addListener(ClientSetup::onRegisterFluidModels);
             NeoForge.EVENT_BUS.register(ClientSetup.class);
         }
         NeoForge.EVENT_BUS.register(CustomGearCommandHandler.class);
@@ -187,12 +185,12 @@ public class CustomGearMod {
      */
     private void onRegisterCapabilities(RegisterCapabilitiesEvent event) {
         for (var holder : ContainerRegistry.BLOCKS.getEntries()) {
-            event.registerBlock(Capabilities.ItemHandler.BLOCK, (level, pos, state, be, side) -> {
+            event.registerBlock(Capabilities.Item.BLOCK, (level, pos, state, be, side) -> {
                 BlockPos target = state.getBlock() instanceof CustomContainerBlock block
                         ? block.inventoryPos(state, pos)
                         : pos;
                 return level.getBlockEntity(target) instanceof CustomContainerBlockEntity c
-                        ? new InvWrapper(c)
+                        ? net.neoforged.neoforge.transfer.item.VanillaContainerWrapper.of(c)
                         : null;
             }, holder.get());
         }

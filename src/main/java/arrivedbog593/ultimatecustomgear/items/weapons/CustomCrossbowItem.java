@@ -6,7 +6,7 @@ import arrivedbog593.ultimatecustomgear.util.GearLookup;
 import arrivedbog593.ultimatecustomgear.util.TooltipHelper;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.Item;
@@ -20,13 +20,13 @@ public class CustomCrossbowItem extends CrossbowItem {
 
     private final GearData initialGearData;
 
-    public CustomCrossbowItem(GearData data) {
-        super(buildProps(data));
+    public CustomCrossbowItem(GearData data, Item.Properties props) {
+        super(buildProps(props, data));
         this.initialGearData = data;
     }
 
-    private static Properties buildProps(GearData data) {
-        Properties p = new Properties().durability(data.durability);
+    private static Item.Properties buildProps(Item.Properties props, GearData data) {
+        Item.Properties p = props.durability(data.durability);
         return data.fireResistant ? p.fireResistant() : p;
     }
 
@@ -56,9 +56,10 @@ public class CustomCrossbowItem extends CrossbowItem {
     @Override
     public void appendHoverText(@NotNull ItemStack stack,
                                 @NotNull Item.TooltipContext context,
-                                @NotNull List<Component> tooltipComponents,
+                                @NotNull net.minecraft.world.item.component.TooltipDisplay display,
+                                @NotNull java.util.function.Consumer<Component> tooltipComponents,
                                 @NotNull net.minecraft.world.item.TooltipFlag flag) {
-        super.appendHoverText(stack, context, tooltipComponents, flag);
+        super.appendHoverText(stack, context, display, tooltipComponents, flag);
         TooltipHelper.addBowTooltip(tooltipComponents, getGearData());
         TooltipHelper.addHeldEffectsTooltip(tooltipComponents, getGearData());
         if (!TooltipHelper.detailsShown() && TooltipHelper.hasDetails(getGearData())) {

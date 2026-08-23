@@ -5,35 +5,59 @@ import arrivedbog593.ultimatecustomgear.resources.TextureRef;
 import arrivedbog593.ultimatecustomgear.util.GearLookup;
 import arrivedbog593.ultimatecustomgear.util.TooltipHelper;
 import net.minecraft.core.Holder;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.world.item.ArmorItem;
-import net.minecraft.world.item.ArmorMaterial;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
+import net.minecraft.world.item.equipment.ArmorMaterial;
+import net.minecraft.world.item.equipment.ArmorType;
+import net.minecraft.world.item.equipment.EquipmentAsset;
+import net.minecraft.world.item.equipment.EquipmentAssets;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
-public class CustomArmorItem extends ArmorItem {
+/**
+ * An armour piece built from JSON.
+ * <p>
+ * NOT a subclass of the vanilla armour item: that class no longer exists. An
+ * armour piece is now an {@code Item} carrying an EQUIPPABLE component, applied
+ * by {@code Item.Properties.humanoidArmor(material, type)}.
+ * <p>
+ * WHAT CHANGED FOR THE WORN TEXTURE. Up to 1.21.1 the material named a texture
+ * prefix directly and the renderer appended {@code _layer_1} / {@code _layer_2}.
+ * Now the material names an EQUIPMENT ASSET — a JSON under
+ * {@code assets/<ns>/equipment/<name>.json} that lists one texture per body
+ * layer. The two old layers map onto the {@code humanoid} and
+ * {@code humanoid_leggings} entries of that file, which GearModelGenerator
+ * writes; this class only has to decide WHICH asset key the item points at.
+ */
+public class CustomArmorItem extends Item {
+
+    /** Repair material is not part of the JSON schema, so nothing repairs it. */
+    private static final TagKey<Item> NO_REPAIR_ITEMS = ItemTags.create(
+            Identifier.fromNamespaceAndPath("customgear", "never_repairs"));
 
     private final GearData initialGearData;
     private final String   piece;
 
-    public CustomArmorItem(GearData data, String piece) {
-        super(
-                buildMaterial(data, piece),
-                pieceToType(piece),
-                buildProps(data, piece)
-        );
+    public CustomArmorItem(GearData data, String piece, Item.Properties props) {
+        super(buildProps(props, data, piece));
         this.initialGearData = data;
         this.piece = piece;
     }
 
-    private static Properties buildProps(GearData data, String piece) {
-        Properties p = new Properties().durability(data.pieces.get(piece).durability);
+    private static Item.Properties buildProps(Item.Properties props, GearData data, String piece) {
+        Item.Properties p = props.humanoidArmor(buildMaterial(data, piece), pieceToType(piece));
+        int durability = data.pieces.get(piece).durability;
+        if (durability > 0) p = p.durability(durability);
         return data.fireResistant ? p.fireResistant() : p;
     }
 
@@ -60,53 +84,59 @@ public class CustomArmorItem extends ArmorItem {
         return super.getMaxDamage(stack);
     }
 
-    private static Holder<ArmorMaterial> buildMaterial(GearData data, String piece) {
+    /**
+     * Defense is declared for THIS piece only. The map still has to carry every
+     * slot, because one material is built per piece rather than one per set —
+     * the JSON allows a set whose pieces disagree on toughness, which a shared
+     * material could not express.
+     */
+    private static ArmorMaterial buildMaterial(GearData data, String piece) {
         GearData.PieceData pieceData = data.pieces.get(piece);
-        List<ArmorMaterial.Layer> layers = buildLayers(data);
-
-        ArmorMaterial material = new ArmorMaterial(
+        return new ArmorMaterial(
+                Math.max(pieceData.durability, 1),
                 Map.of(
-                        Type.HELMET,     piece.equals("helmet")     ? pieceData.defense : 0,
-                        Type.CHESTPLATE, piece.equals("chestplate") ? pieceData.defense : 0,
-                        Type.LEGGINGS,   piece.equals("leggings")   ? pieceData.defense : 0,
-                        Type.BOOTS,      piece.equals("boots")      ? pieceData.defense : 0
+                        ArmorType.HELMET,     piece.equals("helmet")     ? pieceData.defense : 0,
+                        ArmorType.CHESTPLATE, piece.equals("chestplate") ? pieceData.defense : 0,
+                        ArmorType.LEGGINGS,   piece.equals("leggings")   ? pieceData.defense : 0,
+                        ArmorType.BOOTS,      piece.equals("boots")      ? pieceData.defense : 0,
+                        ArmorType.BODY,       0
                 ),
                 data.enchantability,
                 SoundEvents.ARMOR_EQUIP_IRON,
-                () -> Ingredient.EMPTY,
-                layers,
                 (float) pieceData.toughness,
-                (float) pieceData.knockback_resistance
-        );
-
-        return Holder.direct(material);
+                (float) pieceData.knockback_resistance,
+                NO_REPAIR_ITEMS,
+                buildAssetId(data));
     }
 
-    private static List<ArmorMaterial.Layer> buildLayers(GearData data) {
+    /**
+     * Which equipment asset the worn armour reads.
+     * <p>
+     * A REFERENCE names another mod's asset. Authors paste the path they see in
+     * that mod's jar, which is still written the old way — {@code models/armor/}
+     * prefix, {@code _layer_1} suffix — so both are trimmed here, exactly as
+     * before. What is left is the asset name, which is what the equipment
+     * registry is keyed by.
+     */
+    private static ResourceKey<EquipmentAsset> buildAssetId(GearData data) {
         if (data.texture == null || data.texture.armorLayers == null) {
-            return List.of(new ArmorMaterial.Layer(ResourceLocation.withDefaultNamespace("iron")));
+            return EquipmentAssets.IRON;
         }
 
         String layer1 = data.texture.armorLayers.get("layer_1");
         if (layer1 == null || layer1.isBlank()) {
-            return List.of(new ArmorMaterial.Layer(ResourceLocation.withDefaultNamespace("iron")));
+            return EquipmentAssets.IRON;
         }
 
-        // "transparent" points at the customgear location, where the generator
-        // injected a fully transparent PNG.
+        // "transparent" points at the customgear asset, whose generated JSON
+        // names the fully transparent PNG the generator injected.
         if ("transparent".equals(layer1)) {
-            return List.of(new ArmorMaterial.Layer(
-                    ResourceLocation.fromNamespaceAndPath("customgear", data.id)));
+            return customAsset(data.id);
         }
 
         return switch (TextureRef.kindOf(layer1)) {
-            // A reference names another mod's layer, and vanilla wants it in a
-            // shape neither of the two written forms uses: no 'models/armor/'
-            // prefix and no '_layer_1' suffix, because the renderer rebuilds
-            // both itself. Trimming them is what makes an author able to paste
-            // the path they see in the other mod's jar.
             case REFERENCE -> {
-                ResourceLocation rl = ResourceLocation.parse(layer1);
+                Identifier rl = Identifier.parse(layer1);
                 String path = rl.getPath();
                 if (path.startsWith("models/armor/")) {
                     path = path.substring("models/armor/".length());
@@ -114,37 +144,39 @@ public class CustomArmorItem extends ArmorItem {
                 if (path.endsWith("_layer_1")) {
                     path = path.substring(0, path.length() - "_layer_1".length());
                 }
-                yield List.of(new ArmorMaterial.Layer(
-                        ResourceLocation.fromNamespaceAndPath(rl.getNamespace(), path)));
+                yield ResourceKey.create(EquipmentAssets.ROOT_ID,
+                        Identifier.fromNamespaceAndPath(rl.getNamespace(), path));
             }
-            // A file was copied into the pack under this gear's id, and the
-            // renderer appends the '_layer_N' itself.
-            case FILE -> List.of(new ArmorMaterial.Layer(
-                    ResourceLocation.fromNamespaceAndPath("customgear", data.id)));
-            case INVALID -> List.of(new ArmorMaterial.Layer(
-                    ResourceLocation.withDefaultNamespace("iron")));
+            case FILE    -> customAsset(data.id);
+            case INVALID -> EquipmentAssets.IRON;
         };
     }
 
-    private static Type pieceToType(String piece) {
+    /** The asset GearModelGenerator writes for this gear's own layers. */
+    public static ResourceKey<EquipmentAsset> customAsset(String gearId) {
+        return ResourceKey.create(EquipmentAssets.ROOT_ID,
+                Identifier.fromNamespaceAndPath("customgear", gearId));
+    }
+
+    private static ArmorType pieceToType(String piece) {
         return switch (piece) {
-            case "helmet"     -> Type.HELMET;
-            case "chestplate" -> Type.CHESTPLATE;
-            case "leggings"   -> Type.LEGGINGS;
-            case "boots"      -> Type.BOOTS;
+            case "helmet"     -> ArmorType.HELMET;
+            case "chestplate" -> ArmorType.CHESTPLATE;
+            case "leggings"   -> ArmorType.LEGGINGS;
+            case "boots"      -> ArmorType.BOOTS;
             default -> throw new IllegalArgumentException("Invalid piece: " + piece);
         };
     }
 
     @Override
-    public @NotNull net.minecraft.network.chat.Component getName(@NotNull ItemStack stack) {
+    public @NotNull Component getName(@NotNull ItemStack stack) {
         GearData data = getGearData();
         if (data.pieceNames == null) return super.getName(stack);
 
         String lang = GearLookup.getCurrentLang();
         Map<String, String> namesForLang = data.pieceNames.getOrDefault(lang, data.pieceNames.get("en_us"));
         if (namesForLang != null && namesForLang.containsKey(piece)) {
-            return net.minecraft.network.chat.Component.literal(namesForLang.get(piece));
+            return Component.literal(namesForLang.get(piece));
         }
         return super.getName(stack);
     }
@@ -152,17 +184,18 @@ public class CustomArmorItem extends ArmorItem {
     @Override
     public void appendHoverText(@NotNull ItemStack stack,
                                 @NotNull Item.TooltipContext context,
-                                @NotNull List<net.minecraft.network.chat.Component> tooltipComponents,
-                                @NotNull net.minecraft.world.item.TooltipFlag tooltipFlag) {
-        super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
+                                @NotNull TooltipDisplay display,
+                                @NotNull Consumer<Component> builder,
+                                @NotNull TooltipFlag tooltipFlag) {
+        super.appendHoverText(stack, context, display, builder, tooltipFlag);
         GearData data = getGearData();
-        TooltipHelper.addPieceEffectsTooltip(tooltipComponents, data, piece);
-        TooltipHelper.addSetBonusTooltip(tooltipComponents, data);
-        TooltipHelper.addDamageResistancesTooltip(tooltipComponents, data, piece);
-        TooltipHelper.addAttackerResistancesTooltip(tooltipComponents, data, piece);
-        TooltipHelper.addConditionalResistancesTooltip(tooltipComponents, data, piece);
+        TooltipHelper.addPieceEffectsTooltip(builder, data, piece);
+        TooltipHelper.addSetBonusTooltip(builder, data);
+        TooltipHelper.addDamageResistancesTooltip(builder, data, piece);
+        TooltipHelper.addAttackerResistancesTooltip(builder, data, piece);
+        TooltipHelper.addConditionalResistancesTooltip(builder, data, piece);
         if (!TooltipHelper.detailsShown() && TooltipHelper.hasDetails(data, piece)) {
-            TooltipHelper.addDetailsHint(tooltipComponents);
+            TooltipHelper.addDetailsHint(builder);
         }
     }
 }

@@ -5,7 +5,7 @@ import arrivedbog593.ultimatecustomgear.registry.FluidRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
@@ -49,23 +49,25 @@ public class CustomLiquidBlock extends LiquidBlock {
     private static final Logger LOGGER = LogManager.getLogger("CustomGear");
 
     /** FLUID_MAP key for this fluid ("customgear:<id>"), fixed at registration. */
-    private final ResourceLocation fluidId;
+    private final Identifier fluidId;
 
     public CustomLiquidBlock(FlowingFluid fluid, Properties properties, String dataId) {
         super(fluid, properties);
-        this.fluidId = ResourceLocation.fromNamespaceAndPath("customgear", dataId);
+        this.fluidId = Identifier.fromNamespaceAndPath("customgear", dataId);
     }
 
     @Override
-    public void entityInside(@NotNull BlockState state, @NotNull Level level,
-                             @NotNull BlockPos pos, @NotNull Entity entity) {
+    protected void entityInside(@NotNull BlockState state, @NotNull Level level,
+                                @NotNull BlockPos pos, @NotNull Entity entity,
+                                net.minecraft.world.entity.@NotNull InsideBlockEffectApplier effectApplier,
+                                boolean isPrecise) {
         if (!level.isClientSide()) {
             FluidData data = FluidRegistry.FLUID_MAP.get(fluidId);
             if (data != null) {
                 applyContactBehavior(data, entity);
             }
         }
-        super.entityInside(state, level, pos, entity);
+        super.entityInside(state, level, pos, entity, effectApplier, isPrecise);
     }
 
     private static void applyContactBehavior(FluidData data, Entity entity) {
@@ -95,9 +97,9 @@ public class CustomLiquidBlock extends LiquidBlock {
                                     int intervalTicks) {
         if (effectData.effect == null || effectData.effect.isBlank()) return;
         try {
-            ResourceLocation rl = ResourceLocation.parse(effectData.effect);
+            Identifier rl = Identifier.parse(effectData.effect);
             Optional<Holder.Reference<MobEffect>> holder =
-                    BuiltInRegistries.MOB_EFFECT.getHolder(rl);
+                    BuiltInRegistries.MOB_EFFECT.get(rl);
             if (holder.isEmpty()) {
                 LOGGER.warn("[CustomGear] Contact effect not found: '{}'", effectData.effect);
                 return;

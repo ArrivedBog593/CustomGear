@@ -2,7 +2,7 @@
 
 ## Installation
 
-1. Download and install [NeoForge 1.21.1](https://neoforged.net/)
+1. Download and install [NeoForge 26.2](https://neoforged.net/)
 2. Place `ultimatecustomgear-1.x.x.jar` in your `mods/` folder
 3. Launch the game once to generate the `ultimatecustomgear/` folder inside `.minecraft/`
 4. Add your JSON files to `.minecraft/ultimatecustomgear/` — or drop a content `.zip` into `.minecraft/ultimatecustomgear/packs/` (see [Content Packs](content-packs.md))

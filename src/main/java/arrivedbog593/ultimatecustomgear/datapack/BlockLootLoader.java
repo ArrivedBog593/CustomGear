@@ -7,7 +7,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -80,7 +80,7 @@ public class BlockLootLoader {
         table.add("pools", pools);
 
         // 1.21 renamed the data directory to singular: loot_table/
-        ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(
+        Identifier loc = Identifier.fromNamespaceAndPath(
                 "customgear", "loot_table/blocks/" + blockId + ".json");
         pack.addRaw(loc, GSON.toJson(table).getBytes(StandardCharsets.UTF_8));
         LOGGER.debug("[CustomGear] Injected loot table: {}", loc);
@@ -127,7 +127,7 @@ public class BlockLootLoader {
         table.addProperty("type", "minecraft:block");
         table.add("pools", new JsonArray());
 
-        ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(
+        Identifier loc = Identifier.fromNamespaceAndPath(
                 "customgear", "loot_table/blocks/" + blockId + ".json");
         pack.addRaw(loc, GSON.toJson(table).getBytes(StandardCharsets.UTF_8));
         LOGGER.debug("[CustomGear] Injected empty loot table (drop handled in code): {}", loc);

@@ -194,7 +194,7 @@ public final class CustomGearNetworking {
         context.enqueueWork(() -> {
             Player player = context.player();
 
-            int selected = player.getInventory().selected;
+            int selected = player.getInventory().getSelectedSlot();
             if (tryOpen(player, new BackpackAnchor.InventorySlot(selected))) return;
             if (tryOpen(player, new BackpackAnchor.Offhand())) return;
 
