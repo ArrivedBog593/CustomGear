@@ -3,7 +3,7 @@ name: Mirror docs to wiki
 on:
   push:
     branches:
-      - "Neo/1.21.1"
+      - "Neo/**"
     paths:
       - "docs/**"
       - ".github/workflows/wiki.yml"
@@ -12,12 +12,30 @@ on:
 permissions:
   contents: read
 
+# The wiki is one repository shared by every branch. Two branches pushing at the
+# same time would race, and the second push would be rejected as non-fast-forward.
+concurrency:
+  group: wiki
+  cancel-in-progress: false
+
 jobs:
   mirror:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
         uses: actions/checkout@v7.0.1
+
+      # The Minecraft version decides both the wiki folder and the page prefix,
+      # so this file is identical on every branch and a future port needs no edit.
+      - name: Read the Minecraft version
+        run: |
+          set -euo pipefail
+          MC=$(grep '^minecraft_version=' gradle.properties | cut -d'=' -f2 | tr -d '[:space:]')
+          if [ -z "$MC" ]; then
+            echo "::error::No minecraft_version in gradle.properties."
+            exit 1
+          fi
+          echo "MC=$MC" >> "$GITHUB_ENV"
 
       # The wiki is a separate git repository. The built-in GITHUB_TOKEN can NOT
       # write to it: returns 403 "denied to github-actions[bot]". A classic PAT
@@ -31,52 +49,84 @@ jobs:
       - name: Build wiki pages from docs/
         env:
           REPO: ${{ github.repository }}
-          BRANCH: Neo/1.21.1
+          BRANCH: ${{ github.ref_name }}
         run: |
           set -euo pipefail
 
-          # Clean previous pages, keeping the wiki history.
-          find wiki -maxdepth 1 -name '*.md' -delete
+          # Wiki page names are GLOBAL: a folder does not create a namespace, so
+          # every page carries the version in its own file name. The folder only
+          # exists so each version gets its own _Sidebar. Home.md and the root
+          # _Sidebar.md are hand-written and never touched from here.
+          DIR="wiki/$MC"
+          rm -rf "$DIR"
+          mkdir -p "$DIR"
 
           SLUGS=$(ls docs/en/*.md | xargs -n1 basename | sed 's/\.md$//')
 
-          # --- English: docs/en/x.md -> x.md, index.md -> Home.md ---
+          # --- English: docs/en/x.md -> <mc>-x.md, index.md -> <mc>-Home.md ---
           for f in docs/en/*.md; do
             name=$(basename "$f" .md)
-            [ "$name" = "index" ] && out="Home.md" || out="$name.md"
-            cp "$f" "wiki/$out"
+            [ "$name" = "index" ] && name="Home"
+            cp "$f" "$DIR/$MC-$name.md"
           done
 
-          # --- Spanish: docs/es/x.md -> es-x.md, index.md -> es-Home.md ---
+          # --- Spanish: docs/es/x.md -> <mc>-es-x.md ---
           for f in docs/es/*.md; do
             name=$(basename "$f" .md)
-            [ "$name" = "index" ] && out="es-Home.md" || out="es-$name.md"
-            cp "$f" "wiki/$out"
+            [ "$name" = "index" ] && name="Home"
+            cp "$f" "$DIR/$MC-es-$name.md"
           done
 
-          cp docs/_Sidebar.md wiki/_Sidebar.md
+          # docs/_Sidebar.md keeps plain slugs so CheckDocsParity can verify it
+          # unchanged. The version prefix is added below, not in the source.
+          cp docs/_Sidebar.md "$DIR/_Sidebar.md"
 
           # --- Link rewriting ---
-          # The wiki references pages by name, without extension.
-          for f in wiki/*.md; do
+          for f in "$DIR"/*.md; do
             # x.md -> x  |  x.md#anchor -> x#anchor
             sed -i -E 's/\]\(([A-Za-z0-9_-]+)\.md([)#])/](\1\2/g' "$f"
 
-            # The .md files in the root of the repo don't exist in the wiki: absolute link.
-            sed -i -E "s#\]\(\.\./\.\./([A-Za-z0-9_.-]+)\)#](https://github.com/${REPO}/blob/${BRANCH}/\1)#g" "$f"
-
-            # index -> Home
-            sed -i -E 's/\]\(index([)#])/](Home\1/g' "$f"
+            # Files in the repo root and in changelogs/ don't exist in the wiki:
+            # absolute link, pinned to the branch this run came from.
+            sed -i -E "s#\]\(\.\./\.\./([A-Za-z0-9_./-]+)\)#](https://github.com/${REPO}/blob/${BRANCH}/\1)#g" "$f"
           done
 
-          # In the es- pages, internal links point to their es- sisters.
-          for f in wiki/es-*.md; do
+          # Every page name gets the version prefix; Spanish pages link to their
+          # Spanish sisters. Order matters: once a link reads (<mc>-es-x), the
+          # plain pass can no longer match it.
+          prefix_links() {
+            file="$1"; infix="$2"
+            sed -i -E "s/\]\(index([)#])/](Home\1/g" "$file"
             for s in $SLUGS; do
               [ "$s" = "index" ] && continue
-              sed -i -E "s/\]\($s([)#])/](es-$s\1/g" "$f"
+              sed -i -E "s/\]\($s([)#])/](${MC}-${infix}$s\1/g" "$file"
             done
-            sed -i -E 's/\]\(Home([)#])/](es-Home\1/g' "$f"
+            sed -i -E "s/\]\(Home([)#])/](${MC}-${infix}Home\1/g" "$file"
+          }
+
+          for f in "$DIR/$MC"-es-*.md; do prefix_links "$f" "es-"; done
+          for f in "$DIR/$MC"-*.md; do
+            case "$f" in *"/$MC-es-"*) continue ;; esac
+            prefix_links "$f" ""
           done
+
+          # The shared sidebar carries both languages: es- entries first.
+          SB="$DIR/_Sidebar.md"
+          for s in $SLUGS; do
+            [ "$s" = "index" ] && continue
+            sed -i -E "s/\]\(es-$s([)#])/](${MC}-es-$s\1/g" "$SB"
+          done
+          sed -i -E "s/\]\(es-Home([)#])/](${MC}-es-Home\1/g" "$SB"
+          for s in $SLUGS; do
+            [ "$s" = "index" ] && continue
+            sed -i -E "s/\]\($s([)#])/](${MC}-$s\1/g" "$SB"
+          done
+          sed -i -E "s/\]\(Home([)#])/](${MC}-Home\1/g" "$SB"
+
+          # A way out of the version, added last so the rewriting above can't
+          # turn this Home into a version page.
+          { printf '[← All versions](Home)\n\n**Minecraft %s**\n\n' "$MC"; cat "$SB"; } > "$SB.tmp"
+          mv "$SB.tmp" "$SB"
 
       - name: Push
         run: |
@@ -88,5 +138,5 @@ jobs:
             echo "The wiki is already up to date."
             exit 0
           fi
-          git commit -m "docs: sync from ${GITHUB_SHA::7}"
+          git commit -m "docs: sync ${MC} from ${GITHUB_SHA::7}"
           git push

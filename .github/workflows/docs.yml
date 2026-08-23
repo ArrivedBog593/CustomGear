@@ -3,7 +3,7 @@ name: Check docs
 on:
   push:
     branches:
-      - "Neo/1.21.1"
+      - "Neo/**"
     paths:
       - "docs/**"
       - "tools/CheckDocsParity.java"
@@ -22,6 +22,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # The checker is plain Java with no Minecraft on the classpath, so 21 is
+      # enough here even on the branches that build with 25.
       - uses: actions/setup-java@v5.7.0
         with:
           java-version: "21"
