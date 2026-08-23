@@ -17,34 +17,62 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v5.7.0
         with:
-          java-version: "21"
+          java-version: "25"
           distribution: "temurin"
 
       # Both pre-flight checks run BEFORE the build: a wrong version or a
       # missing changelog should fail in twenty seconds, not in four minutes.
 
-      # The tag rules, but gradle.properties is what ends up inside the jar.
-      # If they don't match, you'd publish a v1.6.1 containing a 1.6.0.
-      - name: Verify tag matches mod_version
+      # The tag carries both numbers: v2.0.0+mc26.1.2. The mod version is what
+      # ends up inside the jar, and the Minecraft version is what tells the
+      # branches apart — tagging from the wrong branch is otherwise invisible
+      # until someone downloads it.
+      - name: Verify tag matches this branch
         run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          set -euo pipefail
+          REF="${GITHUB_REF_NAME#v}"
+
+          case "$REF" in
+            *+mc*) ;;
+            *) echo "::error::The tag must look like v<mod_version>+mc<minecraft_version>, e.g. v2.0.0+mc26.1.2."; exit 1 ;;
+          esac
+
+          TAG_MOD="${REF%%+*}"
+          TAG_MC="${REF#*+mc}"
+
           MOD_VERSION=$(grep '^mod_version=' gradle.properties | cut -d'=' -f2 | tr -d '[:space:]')
-          echo "tag: $TAG_VERSION | gradle.properties: $MOD_VERSION"
-          if [ "$TAG_VERSION" != "$MOD_VERSION" ]; then
-            echo "::error::The tag ($TAG_VERSION) does not match mod_version ($MOD_VERSION). Fix gradle.properties or delete and recreate the tag."
+          MC_VERSION=$(grep '^minecraft_version=' gradle.properties | cut -d'=' -f2 | tr -d '[:space:]')
+
+          echo "tag: $TAG_MOD / mc $TAG_MC | gradle.properties: $MOD_VERSION / mc $MC_VERSION"
+
+          if [ "$TAG_MOD" != "$MOD_VERSION" ]; then
+            echo "::error::The tag says mod $TAG_MOD but gradle.properties says $MOD_VERSION."
+            exit 1
+          fi
+          if [ "$TAG_MC" != "$MC_VERSION" ]; then
+            echo "::error::The tag says Minecraft $TAG_MC but this branch builds for $MC_VERSION. Wrong branch?"
             exit 1
           fi
 
-      # One changelog file per version means the whole file IS the release
-      # body — nothing to slice out of a growing document.
+          # A hyphen in the MOD version marks a prerelease. The '+mc' suffix
+          # must not be read as one.
+          case "$TAG_MOD" in
+            *-*) echo "PRERELEASE=true"  >> "$GITHUB_ENV" ;;
+            *)   echo "PRERELEASE=false" >> "$GITHUB_ENV" ;;
+          esac
+
+          echo "MOD_VERSION=$TAG_MOD" >> "$GITHUB_ENV"
+          echo "MC_VERSION=$TAG_MC"   >> "$GITHUB_ENV"
+
+      # One changelog file per version means the whole file IS the release body
+      # — nothing to slice out of a growing document.
       - name: Locate this version's changelog
         run: |
           set -euo pipefail
-          VERSION="${GITHUB_REF_NAME#v}"
-          NOTES="changelogs/changelog-${VERSION}.md"
+          NOTES="changelogs/changelog-${MOD_VERSION}.md"
           if [ ! -s "$NOTES" ]; then
             echo "::error::$NOTES is missing or empty. Write the changelog for this version before tagging it."
             exit 1
@@ -63,11 +91,9 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          name: UltimateCustomGear ${{ github.ref_name }}
+          name: UltimateCustomGear v${{ env.MOD_VERSION }} — Minecraft ${{ env.MC_VERSION }}
           body_path: ${{ env.NOTES_PATH }}
-          # A tag with a hyphen (v1.8.0-beta1) is a prerelease and does not
-          # become the "Latest" one people download by default.
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          prerelease: ${{ env.PRERELEASE }}
           # Named rather than build/libs/*.jar: that glob would also pick up a
           # sources or javadoc jar the day the build starts producing one.
           files: build/libs/ultimatecustomgear-*-NeoForge.jar
