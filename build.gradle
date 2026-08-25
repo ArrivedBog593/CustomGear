@@ -77,13 +77,16 @@ neoForge {
     runs {
         client {
             client()
-            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // Per version and per run type: three branches share one checkout
+            // directory tree, and a 26.x world in a 1.21.1 client is a corrupt
+            // world, not an error message.
+            gameDirectory = file("run/${minecraft_version}/client")
         }
 
         server {
             server()
-            programArgument '--nogui'
-            gameDirectory = file('runServer')
+            programArguments.addAll '--nogui'
+            gameDirectory = file("run/${minecraft_version}/server")
         }
 
         gameTestServer {
@@ -111,6 +114,7 @@ neoForge {
 
 configurations {
     runtimeClasspath.extendsFrom localRuntime
+    devRuntime
 }
 
 dependencies {
@@ -120,11 +124,15 @@ dependencies {
     localRuntime "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
 
     // Geckolib
-    implementation "com.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
+    compileOnly  "com.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
+    localRuntime "com.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
 
     // Curios
     compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}+${minecraft_version}:api"
     runtimeOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}+${minecraft_version}"
+
+    // Jade
+    runtimeOnly "curse.maven:jade-324717:8651070"
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {

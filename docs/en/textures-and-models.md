@@ -156,10 +156,14 @@ files in `texture.armor_3d`:
 | `texture`   | Yes      | PNG painted for that model's UV layout (not the item icon, not a layer) |
 | `animation` | No       | `.animation.json`; without it the model is static                       |
 
-These three take **full paths**, unlike everything else on this page. A file is
-written as it sits in your folder, and a reference to another mod's model is
-written out in full — `"othermod:geo/armor/their_armor.geo.json"`. GeckoLib
-loads them exactly as written, so nothing is added for you.
+**Your own files** are written as they sit in your folder, extension and all —
+that extension is what marks them as files rather than references.
+
+**A reference to another mod's model or animation** is written as the id
+GeckoLib caches it under, which is neither the file path nor the pack path: no
+`geo/` prefix, no `.geo.json` extension. `"othermod:armor/their_armor"`, not
+`"othermod:geo/armor/their_armor.geo.json"`. The `texture` field is the
+exception on both counts — it is a real path and keeps its `.png`.
 
 Referencing another mod's model copies nothing, which is the point: it avoids
 redistributing assets that are not yours. The cost is that the mod becomes

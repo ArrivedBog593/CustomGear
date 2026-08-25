@@ -2,7 +2,6 @@ package arrivedbog593.ultimatecustomgear.registry;
 
 import arrivedbog593.ultimatecustomgear.data.BlockData;
 import arrivedbog593.ultimatecustomgear.items.blocks.*;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -82,7 +81,10 @@ public class BlockRegistry {
     }
 
     private static Item.Properties blockItemProps(BlockData data, Item.Properties props) {
-        return data.fireResistant ? props.fireResistant() : props;
+        // Same as in ContainerRegistry: without the block prefix the BlockItem
+        // asks for item.customgear.<id> and the lang file only has block.*.
+        Item.Properties p = props.useBlockDescriptionPrefix();
+        return data.fireResistant ? p.fireResistant() : p;
     }
 
     /**

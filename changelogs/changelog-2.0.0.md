@@ -68,9 +68,9 @@ Everything listed under 1.7.0 still applies. On top of it:
 
 ## 📦 Dependencies
 
-- **Minecraft 26.1.2** · **NeoForge 26.1.2.x** · **Java 25**
+- **Minecraft 26.1.2** · **NeoForge 26.1.2** · **Java 25**
 - **JEI 29.29.0.77** — optional, recommended
-- **GeckoLib 5.5.2** — optional, required only for 3D armour models
+- **GeckoLib 5.5.2** — optional, required only for 3D armor models
 - **Curios 15.0.0** — optional, only needed for `curios_slots`
 
 ---

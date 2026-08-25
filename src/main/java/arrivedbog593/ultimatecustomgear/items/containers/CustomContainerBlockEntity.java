@@ -6,12 +6,10 @@ import arrivedbog593.ultimatecustomgear.registry.ComponentRegistry;
 import arrivedbog593.ultimatecustomgear.registry.ContainerRegistry;
 import arrivedbog593.ultimatecustomgear.menu.CustomContainerMenu;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.Vec3i;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
@@ -21,11 +19,13 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemContainerContents;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.*;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.ChestType;
+import net.minecraft.world.level.storage.ValueOutput;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -171,6 +171,7 @@ public abstract class CustomContainerBlockEntity extends BaseContainerBlockEntit
 
         this.sortCriterion = input.getByteOr("SortCriterion", (byte) 0);
         this.sortDescending = input.getBooleanOr("SortDescending", false);
+        this.joined = input.getBooleanOr("Joined", false);
     }
 
     @Override
@@ -180,6 +181,12 @@ public abstract class CustomContainerBlockEntity extends BaseContainerBlockEntit
 
         output.putByte("SortCriterion", sortCriterion);
         output.putBoolean("SortDescending", sortDescending);
+
+        // Without this the merge tick runs again on every world load, because
+        // isJoined() comes back false. It then pushes an ALREADY merged
+        // inventory into the high half a second time: what does not fit gets
+        // re-inserted from slot 0, and the contents end up split in two.
+        output.putBoolean("Joined", joined);
     }
 
     @Override
@@ -551,9 +558,16 @@ public abstract class CustomContainerBlockEntity extends BaseContainerBlockEntit
      * would hand you BOTH halves — duplicating them, since the original keeps
      * them — and picking the shell would hand you an empty chest.
      */
-    @Override
     protected void collectImplicitComponents(net.minecraft.core.component.DataComponentMap.@NotNull Builder components) {
         super.collectImplicitComponents(components);
+
+        // super attaches minecraft:container from THIS block entity's real
+        // inventory. On the main half of a pair that is all 2N stacks, which
+        // then arrive on placement alongside the half this mod wrote — the same
+        // contents twice, by two different routes. One way in and one way out:
+        // vanilla's copy goes, ours stays.
+        components.set(DataComponents.CONTAINER, ItemContainerContents.EMPTY);
+
         ContainerContents half = halfForPick();
         if (half != null) {
             components.set(ComponentRegistry.CONTAINER_CONTENTS.get(), half);
@@ -567,6 +581,21 @@ public abstract class CustomContainerBlockEntity extends BaseContainerBlockEntit
         if (!isEmpty()) {
             components.set(ComponentRegistry.CONTAINER_CONTENTS.get(), snapshot());
         }
+    }
+
+    /**
+     * Strips from block_entity_data what already travels as a component.
+     * <p>
+     * saveToItem attaches the whole block entity NBT, which on the main half of
+     * a pair is all 2N slots — not the half collectImplicitComponents wrote.
+     * On placement that arrives first, does not fit the single chest being
+     * placed, and the excess is dropped on the ground while the component's
+     * half goes inside. The same contents, twice, by two routes.
+     */
+    @Override
+    public void removeComponentsFromTag(@NotNull ValueOutput output) {
+        super.removeComponentsFromTag(output);
+        output.discard("Contents");
     }
 
     /**
@@ -602,4 +631,5 @@ public abstract class CustomContainerBlockEntity extends BaseContainerBlockEntit
         }
         return new ContainerContents(half, entries);
     }
+
 }

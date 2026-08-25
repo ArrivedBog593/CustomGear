@@ -67,7 +67,7 @@ That is the whole file. Undead mobs now drop it, it is craftable, and JEI knows 
 
 ## Compatibility
 
-- Minecraft 26.1.2 · NeoForge 26.1.2.x · Java 25
+- Minecraft 26.1.2 · NeoForge 26.1.2 · Java 25
 - **JEI** — optional, recommended. Recipes are fully visible
 - **GeckoLib** — optional, required only for 3D armor models
 - Reference models, use ingredients, and tag content from any installed mod

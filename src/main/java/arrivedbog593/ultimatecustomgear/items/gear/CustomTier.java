@@ -41,7 +41,12 @@ public final class CustomTier {
                 data.durability > 0 ? data.durability : 64,
                 data.miningSpeed > 0 ? data.miningSpeed : 1.0f,
                 Math.max(data.attackDamageBonus, 0),
-                data.enchantability,
+                // 0 is what an omitted field parses to, and the material now
+                // rejects it outright. Whether the gear can be enchanted at all
+                // is decided by the 'enchantable' boolean through the
+                // #minecraft:enchantable/* tags, not here — this value only
+                // grades the offers once the item already qualifies.
+                Math.max(data.enchantability, 1),
                 NO_REPAIR_ITEMS);
     }
 

@@ -4,7 +4,6 @@ import arrivedbog593.ultimatecustomgear.data.GearData;
 import arrivedbog593.ultimatecustomgear.resources.TextureRef;
 import arrivedbog593.ultimatecustomgear.util.GearLookup;
 import arrivedbog593.ultimatecustomgear.util.TooltipHelper;
-import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
@@ -101,7 +100,10 @@ public class CustomArmorItem extends Item {
                         ArmorType.BOOTS,      piece.equals("boots")      ? pieceData.defense : 0,
                         ArmorType.BODY,       0
                 ),
-                data.enchantability,
+                // Same reason as in CustomTier: an omitted field parses to 0,
+                // which the material rejects. The 'enchantable' boolean is what
+                // decides whether the piece is offered enchantments at all.
+                Math.max(data.enchantability, 1),
                 SoundEvents.ARMOR_EQUIP_IRON,
                 (float) pieceData.toughness,
                 (float) pieceData.knockback_resistance,

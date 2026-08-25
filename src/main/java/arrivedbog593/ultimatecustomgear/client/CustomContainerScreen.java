@@ -22,7 +22,6 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -129,14 +128,16 @@ public class CustomContainerScreen extends AbstractContainerScreen<CustomContain
     private static final int SLOT_DARK   = 0xFF373737;
     private static final int BAR_THUMB   = 0xFFC0C0C0;
     private static final int BAR_BEVEL   = 0xFF808080;
-    private static final int LABEL_TEXT  = 0x404040;
+    // 26.x takes the colour as strict ARGB. Alpha 0 draws perfectly invisible
+    // text instead of falling back to opaque the way drawString used to.
+    private static final int LABEL_TEXT  = 0xFF404040;
     /** Translucent whitewash over the search button while hovered. */
     private static final int HOVER_WASH  = 0x30FFFFFF;
 
     /** Search text while typing. White reads well over the sunken cell's gray. */
-    private static final int SEARCH_TEXT      = 0xFFFFFF;
+    private static final int SEARCH_TEXT      = 0xFFFFFFFF;
     /** Search text once focus is elsewhere: still legible, clearly inactive. */
-    private static final int SEARCH_TEXT_IDLE = 0xE0E0E0;
+    private static final int SEARCH_TEXT_IDLE = 0xFFE0E0E0;
 
     /** Softer than BEVEL_LIGHT: the small buttons are recessed, not raised. */
     private static final int BUTTON_LIGHT = 0xFFAAAAAA;

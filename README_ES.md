@@ -67,7 +67,7 @@ Ese es el archivo entero. Los no muertos ya lo sueltan, es fabricable, y JEI lo 
 
 ## Compatibilidad
 
-- Minecraft 26.1.2 · NeoForge 26.1.2.x · Java 25
+- Minecraft 26.1.2 · NeoForge 26.1.2 · Java 25
 - **JEI** — opcional, recomendado. Las recetas son completamente visibles
 - **GeckoLib** — opcional, requerido solo para modelos de armadura en 3D
 - Referencia modelos, usa ingredientes y etiqueta contenido de cualquier mod instalado
