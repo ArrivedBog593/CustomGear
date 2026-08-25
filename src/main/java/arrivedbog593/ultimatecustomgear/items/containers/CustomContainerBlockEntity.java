@@ -176,6 +176,7 @@ public abstract class CustomContainerBlockEntity extends BaseContainerBlockEntit
 
         this.sortCriterion = tag.getByte("SortCriterion");
         this.sortDescending = tag.getBoolean("SortDescending");
+        this.joined = tag.getBoolean("Joined");
     }
 
     @Override
@@ -190,6 +191,7 @@ public abstract class CustomContainerBlockEntity extends BaseContainerBlockEntit
 
         tag.putByte("SortCriterion", sortCriterion);
         tag.putBoolean("SortDescending", sortDescending);
+        tag.putBoolean("Joined", joined);
     }
 
     @Override
