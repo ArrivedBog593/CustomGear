@@ -24,7 +24,7 @@ public class CheckDocsParity {
     static final Path ES   = DOCS.resolve("es");
 
     /** Files inside docs/ that are not one half of an en/es pair. */
-    static final Set<String> NOT_A_PAGE = Set.of("_Sidebar.md", "curseforge.md");
+    static final Set<String> NOT_A_PAGE = Set.of("_Sidebar.md", "_Home.md", "curseforge.md");
 
     /**
      * Pure reference pages: the first column of every table is a list of

@@ -64,7 +64,7 @@ jobs:
           # Wiki page names are GLOBAL: a folder does not create a namespace, so
           # every page carries the version in its own file name. The folder only
           # exists so each version gets its own _Sidebar. Home.md and the root
-          # _Sidebar.md are hand-written and never touched from here.
+          # _Sidebar.md are shared by every version and rebuilt at the end.
           DIR="wiki/$MC"
           rm -rf "$DIR"
           mkdir -p "$DIR"
@@ -135,6 +135,36 @@ jobs:
           # turn this Home into a version page.
           { printf '[← All versions](Home)\n\n**Minecraft %s**\n\n' "$MC"; cat "$SB"; } > "$SB.tmp"
           mv "$SB.tmp" "$SB"
+
+          # --- Root Home and _Sidebar, shared by every version ---
+          # Rebuilt from the version folders the wiki holds now, newest first,
+          # so each branch's run lists the others too. The text around the
+          # table is docs/_Home.md: keep it the same on every branch, since
+          # whichever branch runs last writes it.
+          VERSIONS=$(for d in wiki/*/; do
+            v=$(basename "$d")
+            [ -f "$d$v-Home.md" ] && echo "$v"
+          done | sort -rV)
+
+          TABLE=$(mktemp)
+          {
+            echo "| Minecraft | English | Español |"
+            echo "|-----------|---------|---------|"
+            for v in $VERSIONS; do
+              echo "| $v | [Documentation]($v-Home) · [Migration]($v-migration) | [Documentación]($v-es-Home) · [Migración]($v-es-migration) |"
+            done
+          } > "$TABLE"
+          awk -v table="$TABLE" '
+            $0 == "<!-- versions -->" { while ((getline line < table) > 0) print line; next }
+            { print }
+          ' docs/_Home.md > wiki/Home.md
+
+          {
+            echo "**[Home](Home)**"
+            for v in $VERSIONS; do
+              printf '\n**Minecraft %s**\n- [English](%s-Home)\n- [Español](%s-es-Home)\n' "$v" "$v" "$v"
+            done
+          } > wiki/_Sidebar.md
 
       - name: Push
         run: |
