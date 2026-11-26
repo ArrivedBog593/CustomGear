@@ -6,9 +6,9 @@ import arrivedbog593.customgear.items.fluids.CustomFluid;
 import arrivedbog593.customgear.platform.services.IFluidHelper;
 import arrivedbog593.customgear.registry.FluidRegistry;
 import net.minecraft.network.chat.Component;
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.fluids.FluidType;
-import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import org.jetbrains.annotations.NotNull;
@@ -25,9 +25,7 @@ public class NeoForgeFluidHelper implements IFluidHelper {
     @Override
     public void prepare(CustomFluid.Properties properties) {
         FluidData data = properties.data;
-        DeferredHolder<FluidType, FluidType> type =
-                fluidTypes().register(data.id, () -> buildFluidType(data));
-        properties.platformData = type;
+        properties.platformData = fluidTypes().register(data.id, () -> buildFluidType(data));
     }
 
     @Override
@@ -57,9 +55,12 @@ public class NeoForgeFluidHelper implements IFluidHelper {
     /** Created on first use, while the mod is being constructed. */
     private DeferredRegister<FluidType> fluidTypes() {
         if (fluidTypes == null) {
+            IEventBus bus = ModList.get().getModContainerById(Constants.MOD_ID).orElseThrow().getEventBus();
+            if (bus == null) {
+                throw new IllegalStateException("Mod " + Constants.MOD_ID + " has no event bus");
+            }
             fluidTypes = DeferredRegister.create(NeoForgeRegistries.FLUID_TYPES, Constants.MOD_ID);
-            fluidTypes.register(ModList.get().getModContainerById(Constants.MOD_ID)
-                    .orElseThrow().getEventBus());
+            fluidTypes.register(bus);
         }
         return fluidTypes;
     }

@@ -543,7 +543,7 @@ public class UniversalParser {
                             data.id);
                     return false;
                 }
-                if (!AccessorySlots.isWellFormed(slot)) {
+                if (AccessorySlots.isMalformed(slot)) {
                     LOGGER.error("[CustomGear] Container '{}': '{}' in 'accessory_slots' must be "
                             + "one word (Curios, 'back') or group/slot (Trinkets, 'chest/back').",
                             data.id, slot);

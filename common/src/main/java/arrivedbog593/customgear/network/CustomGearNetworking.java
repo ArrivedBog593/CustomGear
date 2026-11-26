@@ -192,7 +192,7 @@ public final class CustomGearNetworking {
      * means by the key, and it is the only way to choose between two backpacks
      * without inventing a rule.
      */
-    public static void handleOpenBackpack(OpenBackpackPayload payload, Player player) {
+    public static void handleOpenBackpack(Player player) {
         int selected = player.getInventory().selected;
         if (tryOpen(player, new BackpackAnchor.InventorySlot(selected))) return;
         if (tryOpen(player, new BackpackAnchor.Offhand())) return;

@@ -74,6 +74,8 @@ public class ContainerRegistry {
      */
     public static RegistryEntry<BlockEntityType<CustomContainerBlockEntity>> CONTAINER_BE;
 
+    // build(null): the data-fixer type is null for every mod, and for vanilla too.
+    @SuppressWarnings("DataFlowIssue")
     private static BlockEntityType<CustomContainerBlockEntity> buildBlockEntityType() {
         return BlockEntityType.Builder.of(
                 ContainerRegistry::blockEntityFor,

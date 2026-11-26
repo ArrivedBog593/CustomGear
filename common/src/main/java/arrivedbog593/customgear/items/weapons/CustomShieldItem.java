@@ -33,7 +33,7 @@ public class CustomShieldItem extends ShieldItem implements DynamicDurability {
     @Override
     public int dynamicMaxDamage(@NotNull ItemStack stack) {
         GearData data = getGearData();
-        return data.durability > 0 ? data.durability : 0;
+        return Math.max(data.durability, 0);
     }
 
     @Override

@@ -23,6 +23,9 @@ neoForge {
         configureEach {
             // Named as Fabric's runs are, so the IDE lists them together.
             ideName = "NeoForge ${it.name.capitalize()}"
+            // The noinspection comments in this block: IntelliJ cannot infer
+            // ModDevGradle's types and flags calls Gradle runs fine.
+            //noinspection GroovyAssignabilityCheck
             systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
             systemProperty 'forge.logging.markers', 'REGISTRIES'
             logLevel = org.slf4j.event.Level.DEBUG
@@ -40,6 +43,7 @@ neoForge {
         // server.properties: the client run has no account.
         server {
             server()
+            //noinspection GroovyAssignabilityCheck
             programArgument '--nogui'
             gameDirectory = rootProject.file("run/${minecraft_version}/neoforge/server")
         }
@@ -61,6 +65,7 @@ neoForge {
         // CI (./gradlew :neoforge:runGameTestServer). It crashes when the mod
         // registers no game tests. In the other runs, /test runs them too.
         gameTestServer {
+            //noinspection GroovyAssignabilityCheck
             type = 'gameTestServer'
             gameDirectory = rootProject.file("run/${minecraft_version}/neoforge/gametest")
         }

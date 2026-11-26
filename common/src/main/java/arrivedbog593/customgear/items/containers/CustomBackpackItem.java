@@ -29,7 +29,6 @@ import java.util.Optional;
  * place. Its inventory lives in the ItemStack's component, so keeps_contents is
  * not a choice here — the parser refuses to turn it off.
  */
-@SuppressWarnings("deprecation")
 public class CustomBackpackItem extends Item {
 
     private final ContainerContentData data;

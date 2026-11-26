@@ -37,6 +37,8 @@ public class SetBonusHandler {
     }
 
     /** Called by each loader at the end of every player tick, on both sides. */
+    // level() is the entity's own Level, borrowed, never this code's to close.
+    @SuppressWarnings("resource")
     public static void onPlayerTick(Player player) {
 
         if (player.level().isClientSide()) return;

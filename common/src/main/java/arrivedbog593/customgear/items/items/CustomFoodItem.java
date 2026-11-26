@@ -64,7 +64,6 @@ public class CustomFoodItem extends Item {
     }
 
     // ── Food properties builder ───────────────────────────────────────────────
-    @SuppressWarnings("deprecation")
     private static FoodProperties buildFoodProperties(ItemData data) {
         FoodProperties.Builder builder = new FoodProperties.Builder()
                 .nutrition(data.nutrition)

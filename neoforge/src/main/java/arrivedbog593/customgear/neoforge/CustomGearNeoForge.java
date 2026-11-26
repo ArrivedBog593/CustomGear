@@ -15,7 +15,6 @@ import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.block.Block;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.capabilities.Capabilities;
@@ -42,7 +41,7 @@ public class CustomGearNeoForge {
     /** RecipeManager of the datapack load in progress, until its tags are bound. */
     private static volatile RecipeManager loadingRecipes;
 
-    public CustomGearNeoForge(IEventBus modBus, ModContainer container) {
+    public CustomGearNeoForge(IEventBus modBus) {
         CustomGear.init();
 
         modBus.addListener(AddPackFindersEvent.class, CustomGearNeoForge::onAddPackFinders);

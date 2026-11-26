@@ -121,6 +121,8 @@ public final class TextureLoader {
      * that used to do GEAR_FOLDER.resolve(path) + Files.exists should go
      * through here instead.
      */
+    // The session is borrowed: whoever opened it closes it.
+    @SuppressWarnings("resource")
     public static Optional<Path> resolveUserResource(String relativePath) {
         ContentRoots session = ContentRoots.current();
         if (session == null) {
@@ -178,6 +180,8 @@ public final class TextureLoader {
      * to the whole dynamic pack, which merges every root, so picking one zip's
      * icon over another's would be arbitrary.
      */
+    // The session is borrowed: whoever opened it closes it.
+    @SuppressWarnings("resource")
     public static void loadPackIcon(PackSink pack) {
         // 1. User override
         ContentRoots session = ContentRoots.current();

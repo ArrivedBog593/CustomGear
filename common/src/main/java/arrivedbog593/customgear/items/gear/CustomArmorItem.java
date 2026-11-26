@@ -56,7 +56,7 @@ public class CustomArmorItem extends ArmorItem implements DynamicDurability {
         GearData data = getGearData();
         if (data.pieces != null && data.pieces.containsKey(piece)) {
             int dur = data.pieces.get(piece).durability;
-            return dur > 0 ? dur : 0;
+            return Math.max(dur, 0);
         }
         return 0;
     }

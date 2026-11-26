@@ -68,7 +68,7 @@ public final class AccessorySlotLoader {
         for (ContainerContentData data : containers) {
             if (data.container == null) continue;
             for (String slot : data.container.accessorySlots()) {
-                if (slot == null || slot.isBlank() || !AccessorySlots.isWellFormed(slot)) continue;
+                if (slot == null || slot.isBlank() || AccessorySlots.isMalformed(slot)) continue;
                 declared.add(slot);
 
                 String curios = AccessorySlots.toCurios(slot);

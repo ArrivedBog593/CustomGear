@@ -10,13 +10,7 @@ import java.util.Optional;
  */
 public interface IPlatformHelper {
 
-    /** "NeoForge" or "Fabric". */
-    String getPlatformName();
-
     boolean isModLoaded(String modId);
-
-    /** Whether the game runs from the IDE. */
-    boolean isDevelopmentEnvironment();
 
     /** True on the physical client, even while it hosts a singleplayer world. */
     boolean isClient();
@@ -38,8 +32,4 @@ public interface IPlatformHelper {
      * column; each loader places mod tabs on its own pages.
      */
     CreativeModeTab.Builder creativeTabBuilder();
-
-    default String getEnvironmentName() {
-        return isDevelopmentEnvironment() ? "development" : "production";
-    }
 }

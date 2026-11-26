@@ -28,9 +28,11 @@ neoForge {
 dependencies {
     // Each loader brings its own Mixin and MixinExtras at runtime; common/
     // only needs their annotations to compile (see gradle.properties for why
-    // these versions).
-    compileOnly "net.fabricmc:sponge-mixin:${mixin_version}"
-    compileOnly "io.github.llamalad7:mixinextras-common:${mixin_extras_version}"
+    // these versions). Not transitive: their own dependencies (ASM, Guava)
+    // are not needed to compile against the annotations, and Minecraft brings
+    // its own Guava.
+    compileOnly("net.fabricmc:sponge-mixin:${mixin_version}") { transitive = false }
+    compileOnly("io.github.llamalad7:mixinextras-common:${mixin_extras_version}") { transitive = false }
 
     // A mod with an API for both loaders can be compiled against here. Use
     // the NeoForge variant (same Mojang names as common/), not transitive,

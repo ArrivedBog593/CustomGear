@@ -52,12 +52,14 @@ public class MobDropHandler {
     /**
      * Called by each loader when a mob dies and drops its loot.
      *
-     * @param recentlyHit whether a player hurt it recently, as vanilla tracks
-     *                    for player-only drops
+     * @param playerInvolved whether a player hurt it recently, as vanilla
+     *                       tracks for player-only drops
      * @param drops       receives every extra drop
      */
+    // level() is the entity's own Level, borrowed, never this code's to close.
+    @SuppressWarnings("resource")
     public static void onLivingDrops(LivingEntity entity, DamageSource source,
-                                     boolean recentlyHit, Consumer<ItemEntity> drops) {
+                                     boolean playerInvolved, Consumer<ItemEntity> drops) {
         if (entity.level().isClientSide()) return;
         if (entity instanceof Player) return; // players never drop economy items
         if (entity instanceof ArmorStand) return; // crafteable → drop exploit
@@ -68,7 +70,6 @@ public class MobDropHandler {
         //     creeper finished still counts as yours.
         //  2. Whose weapon do we read Looting from? That one IS the killing
         //     blow — no killer, no looting.
-        boolean playerInvolved = recentlyHit;
         Player killer = source.getEntity() instanceof Player p ? p : null;
 
         RandomSource random = entity.getRandom();
@@ -121,6 +122,8 @@ public class MobDropHandler {
      * Holder has to be pulled from the dynamic registry every time — there is no
      * cacheable constant, and caching across a datapack reload would go stale.
      */
+    // level() is the entity's own Level, borrowed, never this code's to close.
+    @SuppressWarnings("resource")
     private static int lootingLevel(Player killer) {
         try {
             Holder<Enchantment> looting = killer.level().registryAccess()

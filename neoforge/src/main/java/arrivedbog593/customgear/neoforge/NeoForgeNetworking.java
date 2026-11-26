@@ -57,7 +57,7 @@ final class NeoForgeNetworking {
 
         registrar.playToServer(OpenBackpackPayload.TYPE, OpenBackpackPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() ->
-                        CustomGearNetworking.handleOpenBackpack(payload, context.player())));
+                        CustomGearNetworking.handleOpenBackpack(context.player())));
     }
 
     static void registerConfigurationTasks(RegisterConfigurationTasksEvent event) {

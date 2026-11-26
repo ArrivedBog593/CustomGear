@@ -250,7 +250,7 @@ public class CustomContainerScreen extends AbstractContainerScreen<CustomContain
 
         searchBox = new EditBox(font, searchX() + 2, searchY() + 1, searchWidth() - 4, 8,
                 Component.translatable("customgear.container.search"));
-        searchBox.setBordered(false);          // the frame is drawn by bevelCell
+        searchBox.setBordered(false);          // its background is drawn in renderBg
         searchBox.setMaxLength(64);
         searchBox.setTextColor(SEARCH_TEXT_IDLE);
         searchBox.setHint(Component.literal("\uD83D\uDD0D"));
@@ -745,17 +745,13 @@ public class CustomContainerScreen extends AbstractContainerScreen<CustomContain
 
     // ── Cell primitives ───────────────────────────────────────────────────────
 
+    /** Sunken slot cell. Each bevel is a continuous L that owns its own corner. */
     private void slot(GuiGraphics g, int x, int y) {
-        bevelCell(g, x, y, SLOT, SLOT);
-    }
-
-    /** Sunken cell. Each bevel is a continuous L that owns its own corner. */
-    private void bevelCell(GuiGraphics g, int x, int y, int w, int h) {
-        g.fill(x, y, x + w, y + h, SLOT_FILL);
-        g.fill(x, y,     x + w - 1, y + 1,     SLOT_DARK);
-        g.fill(x, y + 1, x + 1,     y + h - 1, SLOT_DARK);
-        g.fill(x + 1,     y + h - 1, x + w, y + h,     BEVEL_LIGHT);
-        g.fill(x + w - 1, y + 1,     x + w, y + h - 1, BEVEL_LIGHT);
+        g.fill(x, y, x + SLOT, y + SLOT, SLOT_FILL);
+        g.fill(x, y,     x + SLOT - 1, y + 1,        SLOT_DARK);
+        g.fill(x, y + 1, x + 1,        y + SLOT - 1, SLOT_DARK);
+        g.fill(x + 1,        y + SLOT - 1, x + SLOT, y + SLOT,     BEVEL_LIGHT);
+        g.fill(x + SLOT - 1, y + 1,        x + SLOT, y + SLOT - 1, BEVEL_LIGHT);
     }
 
     /**

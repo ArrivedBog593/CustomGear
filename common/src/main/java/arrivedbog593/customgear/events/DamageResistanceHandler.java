@@ -53,6 +53,8 @@ public class DamageResistanceHandler {
      * The damage this entity takes after its armor's resistances: called by
      * each loader right before the damage is applied.
      */
+    // level() is the entity's own Level, borrowed, never this code's to close.
+    @SuppressWarnings("resource")
     public static float modifyIncomingDamage(LivingEntity entity, DamageSource source, float amount) {
         if (entity.level().isClientSide()) return amount;
 

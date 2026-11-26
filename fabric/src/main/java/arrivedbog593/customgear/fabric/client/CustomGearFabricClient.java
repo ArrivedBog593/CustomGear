@@ -1,6 +1,5 @@
 package arrivedbog593.customgear.fabric.client;
 
-import arrivedbog593.customgear.Constants;
 import arrivedbog593.customgear.client.ClientSetup;
 import arrivedbog593.customgear.client.ContainerTooltip;
 import arrivedbog593.customgear.client.ContainerTooltipRenderer;
@@ -30,7 +29,6 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 
@@ -85,9 +83,7 @@ public class CustomGearFabricClient implements ClientModInitializer {
      * render, not here: the renderers need a running client to be built.
      */
     private static void registerItemRenderers() {
-        for (Item item : BuiltInRegistries.ITEM) {
-            if (!Constants.MOD_ID.equals(BuiltInRegistries.ITEM.getKey(item).getNamespace())) continue;
-            if (!ItemRenderers.hasRenderer(item)) continue;
+        for (Item item : ItemRenderers.itemsWithRenderers()) {
             BuiltinItemRendererRegistry.INSTANCE.register(item,
                     (stack, mode, pose, buffers, light, overlay) ->
                             ItemRenderers.forItem(item).renderByItem(stack, mode, pose, buffers, light, overlay));

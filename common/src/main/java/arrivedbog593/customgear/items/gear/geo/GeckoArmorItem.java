@@ -43,7 +43,6 @@ import java.util.function.Consumer;
  *       copied. NOTE: this makes that mod REQUIRED for the armor to render.</li>
  * </ul>
  */
-@SuppressWarnings("deprecation")
 public class GeckoArmorItem extends CustomArmorItem implements GeoItem {
 
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);

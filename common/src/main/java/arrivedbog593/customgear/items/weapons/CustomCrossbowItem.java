@@ -39,7 +39,7 @@ public class CustomCrossbowItem extends CrossbowItem implements DynamicDurabilit
     @Override
     public int dynamicMaxDamage(@NotNull ItemStack stack) {
         GearData data = getGearData();
-        return data.durability > 0 ? data.durability : 0;
+        return Math.max(data.durability, 0);
     }
 
     @Override

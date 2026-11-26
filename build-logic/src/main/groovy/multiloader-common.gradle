@@ -194,6 +194,8 @@ tasks.named('jar', Jar) {
 // Never in this repository's gradle.properties.
 publishing {
     publications {
+        // IntelliJ cannot infer this overload; Gradle resolves it fine.
+        //noinspection GroovyAssignabilityCheck
         register('mavenJava', MavenPublication) {
             artifactId = base.archivesName.get()
             from components.java

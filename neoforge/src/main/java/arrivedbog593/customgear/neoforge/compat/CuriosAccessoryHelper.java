@@ -23,16 +23,16 @@ import java.util.List;
  */
 public final class CuriosAccessoryHelper implements IAccessoryHelper {
 
-    private Boolean loaded;
+    private Boolean missing;
 
-    private boolean isLoaded() {
-        if (loaded == null) loaded = ModList.get().isLoaded("curios");
-        return loaded;
+    private boolean isMissing() {
+        if (missing == null) missing = !ModList.get().isLoaded("curios");
+        return missing;
     }
 
     @Override
     public ItemStack stackIn(Player player, String slot, int index) {
-        if (!isLoaded()) return ItemStack.EMPTY;
+        if (isMissing()) return ItemStack.EMPTY;
         return CuriosApi.getCuriosInventory(player)
                 .flatMap(inv -> inv.findCurio(slot, index))
                 .map(SlotResult::stack)
@@ -46,7 +46,7 @@ public final class CuriosAccessoryHelper implements IAccessoryHelper {
      */
     @Override
     public List<BackpackAnchor> equippedBackpacks(Player player) {
-        if (!isLoaded()) return List.of();
+        if (isMissing()) return List.of();
 
         List<BackpackAnchor> found = new ArrayList<>();
         CuriosApi.getCuriosInventory(player).ifPresent(inv -> {

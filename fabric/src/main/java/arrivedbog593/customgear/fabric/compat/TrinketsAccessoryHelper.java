@@ -30,16 +30,16 @@ import java.util.Optional;
  */
 public final class TrinketsAccessoryHelper implements IAccessoryHelper {
 
-    private Boolean loaded;
+    private Boolean missing;
 
-    private boolean isLoaded() {
-        if (loaded == null) loaded = FabricLoader.getInstance().isModLoaded("trinkets");
-        return loaded;
+    private boolean isMissing() {
+        if (missing == null) missing = !FabricLoader.getInstance().isModLoaded("trinkets");
+        return missing;
     }
 
     @Override
     public ItemStack stackIn(Player player, String slot, int index) {
-        if (!isLoaded()) return ItemStack.EMPTY;
+        if (isMissing()) return ItemStack.EMPTY;
         String[] parts = slot.split("/", 2);
         if (parts.length != 2) return ItemStack.EMPTY;
 
@@ -61,7 +61,7 @@ public final class TrinketsAccessoryHelper implements IAccessoryHelper {
      */
     @Override
     public List<BackpackAnchor> equippedBackpacks(Player player) {
-        if (!isLoaded()) return List.of();
+        if (isMissing()) return List.of();
 
         List<BackpackAnchor> found = new ArrayList<>();
         TrinketsApi.getTrinketComponent(player).ifPresent(component -> {

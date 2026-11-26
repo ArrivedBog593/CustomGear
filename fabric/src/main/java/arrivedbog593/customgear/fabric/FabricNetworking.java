@@ -36,7 +36,7 @@ final class FabricNetworking {
         ServerPlayNetworking.registerGlobalReceiver(SortModePayload.TYPE, (payload, context) ->
                 CustomGearNetworking.handleSortMode(payload, context.player()));
         ServerPlayNetworking.registerGlobalReceiver(OpenBackpackPayload.TYPE, (payload, context) ->
-                CustomGearNetworking.handleOpenBackpack(payload, context.player()));
+                CustomGearNetworking.handleOpenBackpack(context.player()));
 
         // The handshake. A client that cannot receive it does not have the mod
         // at all, and Fabric's registry sync refuses it for the missing items.

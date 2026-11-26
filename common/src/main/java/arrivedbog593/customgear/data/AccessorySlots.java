@@ -55,11 +55,11 @@ public final class AccessorySlots {
         return slot.contains("/");
     }
 
-    /** Whether a group/slot entry has exactly one slash and both halves. */
-    public static boolean isWellFormed(String slot) {
-        if (!isTrinketsForm(slot)) return true;
+    /** Whether a group/slot entry lacks its single slash or one of its halves. */
+    public static boolean isMalformed(String slot) {
+        if (!isTrinketsForm(slot)) return false;
         String[] parts = slot.split("/", -1);
-        return parts.length == 2 && !parts[0].isBlank() && !parts[1].isBlank();
+        return parts.length != 2 || parts[0].isBlank() || parts[1].isBlank();
     }
 
     /** The Curios slot for this entry, or null when Curios has nothing that matches. */

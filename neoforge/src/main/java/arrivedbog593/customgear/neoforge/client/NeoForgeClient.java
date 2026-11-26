@@ -1,6 +1,5 @@
 package arrivedbog593.customgear.neoforge.client;
 
-import arrivedbog593.customgear.Constants;
 import arrivedbog593.customgear.client.ClientSetup;
 import arrivedbog593.customgear.client.ContainerTooltip;
 import arrivedbog593.customgear.client.ContainerTooltipRenderer;
@@ -17,7 +16,6 @@ import arrivedbog593.customgear.registry.MenuRegistry;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
@@ -90,9 +88,7 @@ public final class NeoForgeClient {
     private static void registerExtensions(RegisterClientExtensionsEvent event) {
         // Chests, shulkers and shields draw through a BEWLR. Resolved on first
         // render, not here: the renderers need a running client to be built.
-        for (Item item : BuiltInRegistries.ITEM) {
-            if (!Constants.MOD_ID.equals(BuiltInRegistries.ITEM.getKey(item).getNamespace())) continue;
-            if (!ItemRenderers.hasRenderer(item)) continue;
+        for (Item item : ItemRenderers.itemsWithRenderers()) {
             event.registerItem(new IClientItemExtensions() {
                 @Override
                 public @NotNull BlockEntityWithoutLevelRenderer getCustomRenderer() {
