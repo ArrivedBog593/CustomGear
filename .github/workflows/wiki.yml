@@ -39,12 +39,20 @@ jobs:
 
       # The wiki is a separate git repository. The built-in GITHUB_TOKEN can NOT
       # write to it: returns 403 "denied to github-actions[bot]". A classic PAT
-      # with scope 'repo' is required, saved as a WIKI_TOKEN secret.
+      # with scope 'repo' is required, saved as a WIKI_TOKEN secret. The wiki
+      # repository only exists once the wiki has a page: create one by hand
+      # first (Wiki tab > Create the first page).
       - name: Checkout wiki
+        env:
+          WIKI_TOKEN: ${{ secrets.WIKI_TOKEN }}
+          REPO: ${{ github.repository }}
         run: |
-          git clone \
-            "https://x-access-token:${{ secrets.WIKI_TOKEN }}@github.com/${{ github.repository }}.wiki.git" \
-            wiki
+          set -euo pipefail
+          : "${WIKI_TOKEN:?Add the WIKI_TOKEN secret to the repository: a classic PAT with the repo scope}"
+          if ! git clone "https://x-access-token:${WIKI_TOKEN}@github.com/${REPO}.wiki.git" wiki; then
+            echo "::error::Could not clone the wiki. Check that WIKI_TOKEN is a valid classic PAT with the repo scope, and that the wiki has at least one page (Wiki tab > Create the first page)."
+            exit 1
+          fi
 
       - name: Build wiki pages from docs/
         env:
