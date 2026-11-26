@@ -27,15 +27,17 @@ jobs:
 
       # The Minecraft version decides both the wiki folder and the page prefix,
       # so this file is identical on every branch and a future port needs no edit.
-      - name: Read the Minecraft version
+      - name: Read the Minecraft and mod versions
         run: |
           set -euo pipefail
           MC=$(grep '^minecraft_version=' gradle.properties | cut -d'=' -f2 | tr -d '[:space:]')
-          if [ -z "$MC" ]; then
-            echo "::error::No minecraft_version in gradle.properties."
+          MOD_VERSION=$(grep '^mod_version=' gradle.properties | cut -d'=' -f2 | tr -d '[:space:]')
+          if [ -z "$MC" ] || [ -z "$MOD_VERSION" ]; then
+            echo "::error::No minecraft_version or mod_version in gradle.properties."
             exit 1
           fi
           echo "MC=$MC" >> "$GITHUB_ENV"
+          echo "MOD_VERSION=$MOD_VERSION" >> "$GITHUB_ENV"
 
       # The wiki is a separate git repository. The built-in GITHUB_TOKEN can NOT
       # write to it: returns 403 "denied to github-actions[bot]". A classic PAT
@@ -138,9 +140,11 @@ jobs:
 
           # --- Root Home and _Sidebar, shared by every version ---
           # Rebuilt from the version folders the wiki holds now, newest first,
-          # so each branch's run lists the others too. The text around the
-          # table is docs/_Home.md: keep it the same on every branch, since
-          # whichever branch runs last writes it.
+          # so each branch's run lists the others too. Each folder keeps the
+          # mod version its branch last published, for the table. The text
+          # around the table is docs/_Home.md: keep it the same on every
+          # branch, since whichever branch runs last writes it.
+          echo "$MOD_VERSION" > "$DIR/mod-version.txt"
           VERSIONS=$(for d in wiki/*/; do
             v=$(basename "$d")
             [ -f "$d$v-Home.md" ] && echo "$v"
@@ -148,10 +152,11 @@ jobs:
 
           TABLE=$(mktemp)
           {
-            echo "| Minecraft | English | Español |"
-            echo "|-----------|---------|---------|"
+            echo "| Minecraft | Mod version | Documentation |"
+            echo "|-----------|-------------|---------------|"
             for v in $VERSIONS; do
-              echo "| $v | [Documentation]($v-Home) · [Migration]($v-migration) | [Documentación]($v-es-Home) · [Migración]($v-es-migration) |"
+              mod=$(cat "wiki/$v/mod-version.txt" 2>/dev/null || echo "—")
+              echo "| $v | $mod | [English]($v-Home) · [Español]($v-es-Home) |"
             done
           } > "$TABLE"
           awk -v table="$TABLE" '

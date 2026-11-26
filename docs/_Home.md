@@ -1,15 +1,24 @@
 # Custom Gear
 
-Data-driven custom gear for NeoForge and Fabric: armor, weapons, tools, food, blocks, fluids and storage from JSON files. No coding required.
+Define custom items, armor, weapons, tools, food, blocks, fluids and storage
+containers with JSON files, on NeoForge and Fabric. No coding required.
 
-*Contenido personalizado para NeoForge y Fabric: armaduras, armas, herramientas, comida, bloques, fluidos y almacenamiento desde archivos JSON, sin programar.*
-
-## Documentation · Documentación
-
-Pick your Minecraft version. · Elige tu versión de Minecraft.
+Pick the version you play on:
 
 <!-- versions -->
 
-**Coming from Ultimate Custom Gear?** Your content works unchanged: see Migration for your version.
+Each jar is built for one Minecraft version and one loader, and says which in
+its name: `customgear-fabric-1.0.0+mc1.21.1.jar` is Custom Gear 1.0.0 for
+Fabric on Minecraft 1.21.1. They are not interchangeable.
 
-**¿Vienes de Ultimate Custom Gear?** Tu contenido funciona sin cambios: ver Migración para tu versión.
+Coming from Ultimate Custom Gear? Your content works unchanged — see
+**Migration** in the documentation for your version.
+
+**Downloads:** [Releases](https://github.com/ArrivedBog593/CustomGear/releases)
+
+---
+
+**Español** — Elige arriba la versión de Minecraft en la que juegas. Cada jar es
+para una versión de Minecraft y un loader, y lo indica en su nombre; no son
+intercambiables. ¿Vienes de Ultimate Custom Gear? Tu contenido funciona sin
+cambios: mira **Migración** en la documentación de tu versión.
