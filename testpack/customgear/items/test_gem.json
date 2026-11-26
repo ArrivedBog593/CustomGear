@@ -1,0 +1,41 @@
+{
+  "id": "test_gem",
+  "type": "item",
+  "names": {
+    "en_us": "Test Gem",
+    "es_es": "Gema de Prueba",
+    "es_mx": "Gema de Prueba"
+  },
+  "tags": ["c:gems", "c:gems/test"],
+  "fire_resistant": true,
+  "mob_drops": {
+    "entities": ["#minecraft:undead"],
+    "chance": 0.5,
+    "min": 1,
+    "max": 2,
+    "requires_player_kill": true,
+    "looting_mode": "count"
+  },
+  "texture": {
+    "refs": { "item": "textures/test_gem.png" }
+  },
+  "recipe": [
+    {
+      "type": "shapeless",
+      "ingredients": ["minecraft:diamond", "minecraft:emerald"],
+      "result_count": 2
+    },
+    {
+      "type": "smelting",
+      "ingredient": "customgear:test_ore",
+      "experience": 1.0,
+      "cooking_time": 10
+    },
+    {
+      "type": "blasting",
+      "ingredient": "customgear:test_ore",
+      "experience": 1.0,
+      "cooking_time": 5
+    }
+  ]
+}

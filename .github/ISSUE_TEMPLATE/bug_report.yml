@@ -1,0 +1,108 @@
+# GitHub only reads issue templates from the default branch. Add every newly
+# supported Minecraft version to the dropdown below.
+name: Bug or crash report
+description: Something doesn't work as it should, or the game crashes.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this!
+
+        Before opening, please check that you're on the latest version of the mod for your Minecraft version, and that the problem still happens with only this mod (and its dependencies) installed.
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      options:
+        - Bug (something doesn't work as expected)
+        - Crash (the game closes or won't start)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: minecraft
+    attributes:
+      label: Minecraft version
+      options:
+        - "1.21.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: loader
+    attributes:
+      label: Loader
+      options:
+        - NeoForge
+        - Fabric
+    validations:
+      required: true
+
+  - type: input
+    id: mod-version
+    attributes:
+      label: Mod version
+      description: Shown in the mod list, or in the jar's name.
+      placeholder: "1.0.0"
+    validations:
+      required: true
+
+  - type: input
+    id: loader-version
+    attributes:
+      label: Loader version
+      description: The NeoForge version, or the Fabric Loader and Fabric API versions.
+      placeholder: "NeoForge 21.1.235 / Fabric Loader 0.19.5 + Fabric API 0.116.17"
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: What you saw, and what you expected to happen instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. …
+        2. …
+        3. …
+    validations:
+      required: true
+
+  - type: textarea
+    id: mods
+    attributes:
+      label: Other mods
+      description: A full mod list is welcome, especially anything related to the problem.
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        For a crash, the crash report from `.minecraft/crash-reports/`. For anything else, `.minecraft/logs/latest.log`.
+        Upload it to [mclo.gs](https://mclo.gs) and paste the link, or drag the file into this box.
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots or anything else
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I'm using the latest version of the mod for my Minecraft version.
+          required: true
+        - label: I searched the existing issues and this hasn't been reported yet.
+          required: true

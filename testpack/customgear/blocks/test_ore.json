@@ -1,0 +1,20 @@
+{
+  "id": "test_ore",
+  "type": "block",
+  "names": {
+    "en_us": "Test Ore",
+    "es_es": "Mena de Prueba",
+    "es_mx": "Mineral de Prueba"
+  },
+  "tags": ["c:ores", "c:ores/test"],
+  "light_level": 5,
+  "destroy_time": 3.0,
+  "explosion_resistance": 3.0,
+  "map_color": "deepslate",
+  "required_tool": "pickaxe",
+  "harvest_level": 2,
+  "sound": "deepslate",
+  "texture": {
+    "refs": { "all": "minecraft:block/deepslate_emerald_ore" }
+  }
+}

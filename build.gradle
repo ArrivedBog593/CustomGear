@@ -1,0 +1,30 @@
+// Plugin versions live here once; the modules apply them without one.
+plugins {
+    // The Loom for the obfuscated versions (up to 1.21.11): it maps
+    // Minecraft and remaps the jar to intermediary. The unobfuscated
+    // versions use net.fabricmc.fabric-loom. Since 1.19 Loom runs only on
+    // Java 25, so Gradle's daemon does too (gradle/gradle-daemon-jvm.properties),
+    // while the mod is still compiled for java_version. Kept current: Loom
+    // refuses dependencies built with a newer Loom than itself.
+    // Versions: https://maven.fabricmc.net/net/fabricmc/fabric-loom-remap/net.fabricmc.fabric-loom-remap.gradle.plugin/maven-metadata.xml
+    id 'net.fabricmc.fabric-loom-remap' version '1.19.4' apply false
+    // Versions: https://projects.neoforged.net/neoforged/moddevgradle
+    id 'net.neoforged.moddev' version '2.0.148' apply false
+}
+
+// ./gradlew installTestPack: replaces the content folder of every client dev
+// run with testpack/customgear, so each loader starts from the same known
+// content (one example of everything the mod does; see testpack/README.md).
+['neoforge', 'fabric'].each { loader ->
+    tasks.register("installTestPack${loader.capitalize()}", Sync) {
+        group = 'customgear'
+        description = "Replaces the ${loader} client run's customgear/ folder with testpack/customgear."
+        from 'testpack/customgear'
+        into "run/${minecraft_version}/${loader}/client/customgear"
+    }
+}
+tasks.register('installTestPack') {
+    group = 'customgear'
+    description = 'Replaces every client run\'s customgear/ folder with testpack/customgear.'
+    dependsOn 'installTestPackNeoforge', 'installTestPackFabric'
+}

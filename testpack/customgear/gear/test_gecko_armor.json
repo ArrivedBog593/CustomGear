@@ -1,0 +1,48 @@
+{
+  "id": "test_gecko_armor",
+  "type": "armor_set",
+  "piece_names": {
+    "en_us": {
+      "helmet": "Test 3D Helmet",
+      "chestplate": "Test 3D Chestplate",
+      "leggings": "Test 3D Leggings",
+      "boots": "Test 3D Boots"
+    },
+    "es_es": {
+      "helmet": "Casco 3D de Prueba",
+      "chestplate": "Peto 3D de Prueba",
+      "leggings": "Grebas 3D de Prueba",
+      "boots": "Botas 3D de Prueba"
+    },
+    "es_mx": {
+      "helmet": "Casco 3D de Prueba",
+      "chestplate": "Pechera 3D de Prueba",
+      "leggings": "Pantalones 3D de Prueba",
+      "boots": "Botas 3D de Prueba"
+    }
+  },
+  "pieces": {
+    "helmet": { "durability": 400, "defense": 3, "toughness": 3.0, "knockback_resistance": 0.1 },
+    "chestplate": { "durability": 580, "defense": 8, "toughness": 3.0, "knockback_resistance": 0.1 },
+    "leggings": { "durability": 540, "defense": 6, "toughness": 3.0, "knockback_resistance": 0.1 },
+    "boots": { "durability": 470, "defense": 3, "toughness": 3.0, "knockback_resistance": 0.1 }
+  },
+  "enchantable": true,
+  "enchantability": 15,
+  "texture": {
+    "refs": {
+      "helmet": "minecraft:item/netherite_helmet",
+      "chestplate": "minecraft:item/netherite_chestplate",
+      "leggings": "minecraft:item/netherite_leggings",
+      "boots": "minecraft:item/netherite_boots"
+    },
+    "armor_layers": {
+      "layer_1": "minecraft:models/armor/netherite_layer_1",
+      "layer_2": "minecraft:models/armor/netherite_layer_2"
+    },
+    "armor_3d": {
+      "model": "gear/geo/test_gecko_armor.geo.json",
+      "texture": "minecraft:textures/block/diamond_block.png"
+    }
+  }
+}

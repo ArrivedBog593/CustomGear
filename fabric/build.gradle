@@ -1,0 +1,100 @@
+plugins {
+    id 'multiloader-loader'
+    id 'net.fabricmc.fabric-loom-remap'
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    mappings loom.layered {
+        officialMojangMappings()
+        parchment("org.parchmentmc.data:parchment-${parchment_minecraft_version}:${parchment_mappings_version}@zip")
+    }
+    modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
+
+    // Optional integrations: compile against them only, and test them by
+    // dropping the regular jars into the run's mods/ folder (Fabric Loader
+    // remaps them on the fly in the dev environment):
+    // modCompileOnly "maven.modrinth:modmenu:11.0.5"
+    //
+    // Without full Fabric API, single modules can be bundled jar-in-jar, as
+    // Sodium does; players then install nothing extra, and with Fabric API
+    // present the loader picks the newer copy of each module:
+    // include(modImplementation(fabricApi.module('fabric-api-base', fabric_api_version)))
+
+    // GeckoLib: 3D armor (GeckoArmorItem, compiled here as part of common/).
+    modCompileOnly "software.bernie.geckolib:geckolib-fabric-${minecraft_version}:${geckolib_version}"
+    modLocalRuntime "software.bernie.geckolib:geckolib-fabric-${minecraft_version}:${geckolib_version}"
+
+    // Trinkets: the slots a backpack can be worn in (TrinketsAccessoryHelper).
+    modCompileOnly "dev.emi:trinkets:${trinkets_version}"
+    modLocalRuntime "dev.emi:trinkets:${trinkets_version}"
+
+    // JEI: shows the generated recipes. Never compiled against.
+    modLocalRuntime "mezz.jei:jei-${minecraft_version}-fabric:${jei_version}"
+}
+
+loom {
+    // Applied automatically if the file exists; also list it in
+    // fabric.mod.json ("accessWidener": "customgear.accesswidener"). It is
+    // the Fabric twin of common/'s META-INF/accesstransformer.cfg.
+    def aw = project(':common').file("src/main/resources/${mod_id}.accesswidener")
+    if (aw.exists()) {
+        accessWidenerPath = aw
+    }
+
+    runs {
+        // run/<minecraft>/<loader>/<side> at the root: run/ is not in git,
+        // so every branch shares it, and versions and loaders must never mix
+        // mods or worlds.
+        client {
+            client()
+            displayName = 'Fabric Client'
+            generateRunConfig = true
+            runDirectory = file("../run/${minecraft_version}/fabric/client")
+            // A fixed name, as NeoForge's run has. Without it vanilla makes
+            // one up on every launch ("Player" + 3 digits of the clock), so
+            // each run is a different player in the same world.
+            programArguments.addAll('--username', 'Dev')
+        }
+        server {
+            server()
+            displayName = 'Fabric Server'
+            generateRunConfig = true
+            runDirectory = file("../run/${minecraft_version}/fabric/server")
+            programArguments.add('--nogui')
+        }
+    }
+}
+
+// No refmap: Fabric runs on intermediary names outside the dev environment,
+// and Loom 1.13+ rewrites the mixin targets (common/'s too, compiled here)
+// straight into the remapped classes instead.
+
+// The mcgradleconventions loader attribute (see common/build.gradle). Loom's
+// remap configurations (modImplementation, modCompileOnly...) get it too:
+// they resolve dependencies of their own.
+def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
+['apiElements', 'runtimeElements', 'sourcesElements', 'javadocElements', 'includeInternal', 'modCompileClasspath'].each { variant ->
+    configurations.named(variant) {
+        attributes {
+            attribute(loaderAttribute, 'fabric')
+        }
+    }
+}
+sourceSets.configureEach {
+    [it.compileClasspathConfigurationName, it.runtimeClasspathConfigurationName].each { variant ->
+        configurations.named(variant) {
+            attributes {
+                attribute(loaderAttribute, 'fabric')
+            }
+        }
+    }
+}
+loom.remapConfigurations.configureEach {
+    configurations.named(it.name) {
+        attributes {
+            attribute(loaderAttribute, 'fabric')
+        }
+    }
+}

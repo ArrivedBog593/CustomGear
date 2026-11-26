@@ -1,0 +1,121 @@
+plugins {
+    id 'multiloader-loader'
+    id 'net.neoforged.moddev'
+}
+
+neoForge {
+    version = neo_version
+
+    // The same file common/ compiles with (see common/build.gradle).
+    def at = project(':common').file('src/main/resources/META-INF/accesstransformer.cfg')
+    if (at.exists()) {
+        accessTransformers.from(at.absolutePath)
+    }
+
+    if (project.hasProperty('parchment_mappings_version')) {
+        parchment {
+            mappingsVersion = parchment_mappings_version
+            minecraftVersion = parchment_minecraft_version
+        }
+    }
+
+    runs {
+        configureEach {
+            // Named as Fabric's runs are, so the IDE lists them together.
+            ideName = "NeoForge ${it.name.capitalize()}"
+            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            logLevel = org.slf4j.event.Level.DEBUG
+        }
+
+        // run/<minecraft>/<loader>/<side> at the root, as in fabric/: run/
+        // is not in git, so every branch shares it, and versions and loaders
+        // must never mix mods or worlds.
+        client {
+            client()
+            gameDirectory = rootProject.file("run/${minecraft_version}/neoforge/client")
+        }
+
+        // To join from the client run, set online-mode=false in its
+        // server.properties: the client run has no account.
+        server {
+            server()
+            programArgument '--nogui'
+            gameDirectory = rootProject.file("run/${minecraft_version}/neoforge/server")
+        }
+
+        // ./gradlew :neoforge:runData writes into src/generated/resources,
+        // which ships with the NeoForge jar only.
+        data {
+            data()
+            gameDirectory = rootProject.file("run/${minecraft_version}/neoforge/data")
+            programArguments.addAll('--mod', mod_id, '--all',
+                    '--output', file('src/generated/resources/').absolutePath,
+                    // rootProject: inside a run, project() means a run
+                    // dependency, not a Gradle project.
+                    '--existing', rootProject.file('common/src/main/resources/').absolutePath)
+        }
+
+        // Starts a GameTestServer, runs every registered game test of the
+        // namespaces in neoforge.enabledGameTestNamespaces, then exits: for
+        // CI (./gradlew :neoforge:runGameTestServer). It crashes when the mod
+        // registers no game tests. In the other runs, /test runs them too.
+        gameTestServer {
+            type = 'gameTestServer'
+            gameDirectory = rootProject.file("run/${minecraft_version}/neoforge/gametest")
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet(sourceSets.main)
+        }
+    }
+}
+
+sourceSets.main.resources.srcDir('src/generated/resources')
+
+// For mods the dev runs need but the published jar must not depend on (a
+// recipe viewer, a mod to test compatibility with), as in the MDK. Unlike
+// runtimeOnly, nothing here ends up in the published metadata. Loom has the
+// same built in on Fabric (localRuntime, and modLocalRuntime on 1.21.x).
+// localRuntime "maven.modrinth:jei:<version>"
+configurations {
+    localRuntime
+    runtimeClasspath.extendsFrom localRuntime
+}
+
+dependencies {
+    // Curios: the slots a backpack can be worn in (CuriosAccessoryHelper).
+    compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}+${minecraft_version}:api"
+    localRuntime "top.theillusivec4.curios:curios-neoforge:${curios_version}+${minecraft_version}"
+
+    // GeckoLib: 3D armor (GeckoArmorItem, compiled here as part of common/).
+    compileOnly "software.bernie.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
+    localRuntime "software.bernie.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
+
+    // JEI: shows the generated recipes. Never compiled against.
+    localRuntime "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
+}
+
+// Regenerates neoforge.mods.toml on every IDE sync, as the MDK does.
+neoForge.ideSyncTask tasks.named('generateModMetadata')
+
+// The mcgradleconventions loader attribute (see common/build.gradle).
+def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
+['apiElements', 'runtimeElements', 'sourcesElements', 'javadocElements'].each { variant ->
+    configurations.named(variant) {
+        attributes {
+            attribute(loaderAttribute, 'neoforge')
+        }
+    }
+}
+sourceSets.configureEach {
+    [it.compileClasspathConfigurationName, it.runtimeClasspathConfigurationName, it.getTaskName(null, 'jarJar')].each { variant ->
+        configurations.named(variant) {
+            attributes {
+                attribute(loaderAttribute, 'neoforge')
+            }
+        }
+    }
+}

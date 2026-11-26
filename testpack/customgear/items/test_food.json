@@ -1,0 +1,41 @@
+{
+  "id": "test_food",
+  "type": "food",
+  "names": {
+    "en_us": "Test Stew",
+    "es_es": "Guiso de Prueba",
+    "es_mx": "Guiso de Prueba"
+  },
+  "nutrition": 6,
+  "saturation": 0.8,
+  "always_edible": true,
+  "eat_duration": 3,
+  "on_eat_effects": [
+    { "effect": "minecraft:regeneration", "amplifier": 1, "duration": 10, "probability": 1.0 },
+    { "effect": "minecraft:speed", "amplifier": 0, "duration": 30, "probability": 0.5 }
+  ],
+  "mob_drops": {
+    "entities": ["minecraft:cow", "minecraft:pig"],
+    "chance": 0.25,
+    "min": 0,
+    "max": 1,
+    "requires_player_kill": false,
+    "looting_mode": "chance",
+    "looting_chance_bonus": 0.1
+  },
+  "texture": {
+    "refs": { "item": "minecraft:item/rabbit_stew" }
+  },
+  "recipe": [
+    {
+      "type": "smoking",
+      "ingredient": "minecraft:baked_potato",
+      "experience": 0.5
+    },
+    {
+      "type": "campfire_cooking",
+      "ingredient": "minecraft:baked_potato",
+      "experience": 0.5
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+# Gradle
+.gradle/
+build/
+
+# IntelliJ IDEA
+.idea/
+out/
+*.iml
+*.ipr
+*.iws
+
+# Eclipse / VS Code
+.classpath
+.project
+.settings/
+bin/
+.vscode/
+
+# macOS
+.DS_Store
+
+# Game directories of the dev runs (run/<minecraft>/<loader>/<side>),
+# shared by every branch
+run/
+runs/
+
+# JVM crash logs
+hs_err_pid*
+replay_pid*
+
+# Private notes and reference jars, never committed
+.lib/

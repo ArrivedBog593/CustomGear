@@ -1,0 +1,29 @@
+{
+  "id": "test_barrel",
+  "type": "container",
+  "names": {
+    "en_us": "Test Barrel",
+    "es_es": "Barril de Prueba",
+    "es_mx": "Barril de Prueba"
+  },
+  "container": {
+    "type": "barrel",
+    "slots": 45
+  },
+  "required_tool": "axe",
+  "sound": "wood",
+  "map_color": "wood",
+  "texture": {
+    "refs": {
+      "top": "minecraft:block/barrel_top",
+      "top_open": "minecraft:block/barrel_top_open",
+      "bottom": "minecraft:block/barrel_bottom",
+      "side": "minecraft:block/stripped_dark_oak_log"
+    }
+  },
+  "recipe": {
+    "type": "shaped",
+    "pattern": ["PGP", "P P", "PGP"],
+    "key": { "P": "#minecraft:planks", "G": "customgear:test_gem" }
+  }
+}

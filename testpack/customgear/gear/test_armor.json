@@ -1,0 +1,72 @@
+{
+  "id": "test_armor",
+  "type": "armor_set",
+  "piece_names": {
+    "en_us": {
+      "helmet": "Test Helmet",
+      "chestplate": "Test Chestplate",
+      "leggings": "Test Leggings",
+      "boots": "Test Boots"
+    },
+    "es_es": {
+      "helmet": "Casco de Prueba",
+      "chestplate": "Peto de Prueba",
+      "leggings": "Grebas de Prueba",
+      "boots": "Botas de Prueba"
+    },
+    "es_mx": {
+      "helmet": "Casco de Prueba",
+      "chestplate": "Pechera de Prueba",
+      "leggings": "Pantalones de Prueba",
+      "boots": "Botas de Prueba"
+    }
+  },
+  "pieces": {
+    "helmet": { "durability": 400, "defense": 3, "toughness": 2.0, "knockback_resistance": 0.0 },
+    "chestplate": { "durability": 580, "defense": 8, "toughness": 2.0, "knockback_resistance": 0.05 },
+    "leggings": { "durability": 540, "defense": 6, "toughness": 2.0, "knockback_resistance": 0.05 },
+    "boots": {
+      "durability": 470, "defense": 3, "toughness": 2.0, "knockback_resistance": 0.0,
+      "damage_resistances": { "#minecraft:is_fall": 0.2 }
+    }
+  },
+  "damage_resistances": {
+    "#minecraft:is_fire": 0.1,
+    "#customgear:test_hazards": 0.25
+  },
+  "attacker_resistances": {
+    "#minecraft:undead": 0.05
+  },
+  "conditional_resistances": [
+    { "attacker": "minecraft:skeleton", "damage": "#minecraft:is_projectile", "amount": 0.15 }
+  ],
+  "enchantable": true,
+  "enchantability": 12,
+  "trimmable": true,
+  "piece_effects": {
+    "helmet": [ { "effect": "minecraft:night_vision", "amplifier": 0 } ],
+    "boots": [ { "effect": "minecraft:jump_boost", "amplifier": 0 } ]
+  },
+  "set_bonus": {
+    "required_pieces": 4,
+    "effects": [ { "effect": "minecraft:resistance", "amplifier": 0 } ]
+  },
+  "texture": {
+    "refs": {
+      "helmet": "minecraft:item/diamond_helmet",
+      "chestplate": "minecraft:item/diamond_chestplate",
+      "leggings": "minecraft:item/diamond_leggings",
+      "boots": "minecraft:item/diamond_boots"
+    },
+    "armor_layers": {
+      "layer_1": "minecraft:models/armor/diamond_layer_1",
+      "layer_2": "minecraft:models/armor/diamond_layer_2"
+    }
+  },
+  "recipes": {
+    "helmet": { "type": "shaped", "pattern": ["GGG", "G G"], "key": { "G": "customgear:test_gem" } },
+    "chestplate": { "type": "shaped", "pattern": ["G G", "GGG", "GGG"], "key": { "G": "customgear:test_gem" } },
+    "leggings": { "type": "shaped", "pattern": ["GGG", "G G", "G G"], "key": { "G": "customgear:test_gem" } },
+    "boots": { "type": "shaped", "pattern": ["G G", "G G"], "key": { "G": "customgear:test_gem" } }
+  }
+}

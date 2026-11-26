@@ -1,0 +1,35 @@
+{
+  "type": "recipe_patch",
+  "comment": "One of each mode: add (with a passthrough that only loads with Create), remove by id, remove by output, replace.",
+  "add": {
+    "minecraft:saddle": {
+      "type": "shaped",
+      "pattern": ["LLL", "L L"],
+      "key": { "L": "minecraft:leather" }
+    },
+    "minecraft:name_tag": [
+      {
+        "type": "shapeless",
+        "ingredients": ["minecraft:paper", "minecraft:string", "customgear:test_gem"]
+      },
+      {
+        "type": "passthrough",
+        "json": {
+          "type": "create:mixing",
+          "ingredients": [{ "item": "minecraft:paper" }, { "item": "minecraft:string" }],
+          "results": [{ "id": "minecraft:name_tag" }]
+        }
+      }
+    ]
+  },
+  "remove": ["minecraft:gold_ingot_from_nuggets"],
+  "remove_output": ["minecraft:golden_apple"],
+  "recipe_types": ["minecraft:crafting"],
+  "replace": {
+    "minecraft:hopper": {
+      "type": "shaped",
+      "pattern": ["I I", "IGI", " I "],
+      "key": { "I": "minecraft:iron_ingot", "G": "customgear:test_gem" }
+    }
+  }
+}

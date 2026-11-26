@@ -1,0 +1,23 @@
+{
+  "id": "test_sand",
+  "type": "block",
+  "gravity": true,
+  "names": {
+    "en_us": "Test Sand",
+    "es_es": "Arena de Prueba",
+    "es_mx": "Arena de Prueba"
+  },
+  "destroy_time": 0.5,
+  "explosion_resistance": 0.5,
+  "required_tool": "shovel",
+  "sound": "sand",
+  "map_color": "sand",
+  "texture": {
+    "refs": { "all": "minecraft:block/red_sand" }
+  },
+  "recipe": {
+    "type": "stonecutting",
+    "ingredient": "minecraft:sandstone",
+    "result_count": 4
+  }
+}

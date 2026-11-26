@@ -1,0 +1,25 @@
+{
+  "id": "test_dagger",
+  "type": "sword",
+  "names": {
+    "en_us": "Test Dagger",
+    "es_es": "Daga de Prueba",
+    "es_mx": "Daga de Prueba"
+  },
+  "durability": 400,
+  "attack_damage": 4.0,
+  "attack_damage_bonus": 1.0,
+  "attack_speed": 2.4,
+  "damage_multiplier": 1.5,
+  "enchantable": true,
+  "enchantability": 20,
+  "held_effects": [ { "effect": "minecraft:speed", "amplifier": 1 } ],
+  "texture": {
+    "refs": { "sword": "minecraft:item/iron_sword" }
+  },
+  "recipe": {
+    "type": "shaped",
+    "pattern": ["G", "S"],
+    "key": { "G": "customgear:test_gem", "S": "minecraft:stick" }
+  }
+}

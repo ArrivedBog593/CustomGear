@@ -1,0 +1,11 @@
+# Text is stored with LF in the repository and checked out however the
+# platform prefers (CRLF on Windows with core.autocrlf).
+* text=auto
+
+# Shell scripts break with CRLF: the wrapper script stays LF everywhere, and
+# the Windows one stays CRLF.
+gradlew text eol=lf
+*.bat text eol=crlf
+
+*.jar binary
+*.png binary

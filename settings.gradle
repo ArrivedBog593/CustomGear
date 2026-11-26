@@ -1,0 +1,45 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+        exclusiveContent {
+            forRepository {
+                maven {
+                    name = 'Fabric'
+                    url = 'https://maven.fabricmc.net'
+                }
+            }
+            filter {
+                // Loom pulls subgroups too (net.fabricmc.unpick...), and the
+                // unobfuscated Loom's plugin marker lives in one
+                // (net.fabricmc.fabric-loom). The obfuscated Loom's marker is
+                // the fabric-loom group.
+                includeGroupAndSubgroups('net.fabricmc')
+                includeGroup('fabric-loom')
+            }
+        }
+    }
+}
+
+plugins {
+    // 1.0.0 or newer: 0.8.0 reads JvmVendorSpec.IBM_SEMERU, which Gradle 9
+    // removed, so downloading a missing JDK failed with NoSuchFieldError.
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+}
+
+// Must match the folder's name: IntelliJ names the root module after this,
+// and one that differs from the folder is shown with the name in brackets
+// (IDEA-317606). Rename both together.
+rootProject.name = 'CustomGear'
+
+// The multiloader-common and multiloader-loader convention plugins. An
+// included build rather than buildSrc: Gradle builds and caches it like any
+// other build, instead of putting it on the classpath of every build script.
+includeBuild('build-logic')
+
+// One module per loader, plus the code they share. common/ should hold
+// nearly everything; each loader module adds only its entry point and the
+// glue to that loader's events.
+include('common')
+include('fabric')
+include('neoforge')

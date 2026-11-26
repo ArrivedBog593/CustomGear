@@ -1,0 +1,22 @@
+{
+  "id": "test_shulker",
+  "type": "container",
+  "names": {
+    "en_us": "Test Shulker",
+    "es_es": "Shulker de Prueba",
+    "es_mx": "Shulker de Prueba"
+  },
+  "container": {
+    "type": "shulker",
+    "slots": 36,
+    "columns": 9
+  },
+  "texture": {
+    "refs": { "single": "minecraft:entity/shulker/shulker_lime" }
+  },
+  "recipe": {
+    "type": "shaped",
+    "pattern": ["S", "C", "S"],
+    "key": { "S": "minecraft:shulker_shell", "C": "customgear:test_chest" }
+  }
+}

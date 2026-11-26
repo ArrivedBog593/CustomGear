@@ -1,0 +1,226 @@
+// Shared by every module: common/ and each loader.
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'idea'
+}
+
+// The Minecraft version rides in the version, Sodium-style
+// (customgear-neoforge-1.0.0+mc1.21.1.jar): every branch builds for a
+// different one, and jars from two branches must never share a name.
+version = "${mod_version}+mc${minecraft_version}"
+group = mod_group_id
+
+base {
+    archivesName = "${mod_id}-${project.name}"
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(java_version)
+    // Published next to the jar (see publishing below). The loader modules
+    // put common/'s sources in theirs too (multiloader-loader.gradle).
+    withSourcesJar()
+    withJavadocJar()
+}
+
+// What Loom (fabric/) generates locally: the Minecraft jar
+// (net.minecraft:minecraft-merged-<hash>) and, on the obfuscated versions,
+// the layered mappings (loom:mappings) and the remapped mods (remapped.*).
+// Gradle asks the remote repositories for them before Loom's local ones; a
+// 404 lets it move on, but a 429 (Maven Central's rate limit, seen in GitHub
+// Actions) fails the build. None of them is on Central or on Mojang's
+// libraries server.
+def skipLoomGenerated = { content ->
+    content.excludeGroup('net.minecraft')
+    content.excludeGroup('loom')
+    content.excludeGroupAndSubgroups('remapped')
+}
+
+// Each repository is exclusive to its groups: Gradle never asks it for
+// anything else, and nothing else is asked for its groups. Add the ones your
+// dependencies need in the same way.
+repositories {
+    mavenCentral {
+        content(skipLoomGenerated)
+    }
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'Fabric'
+                url = 'https://maven.fabricmc.net'
+            }
+        }
+        // Subgroups too: Fabric API lives in net.fabricmc.fabric-api.
+        filter { includeGroupAndSubgroups('net.fabricmc') }
+    }
+    // Only where Parchment is used (up to 1.21.11). ModDevGradle adds this
+    // one by itself; Loom (fabric/) needs it declared.
+    if (project.hasProperty('parchment_mappings_version')) {
+        exclusiveContent {
+            forRepository {
+                maven {
+                    name = 'ParchmentMC'
+                    url = 'https://maven.parchmentmc.org'
+                }
+            }
+            filter { includeGroup('org.parchmentmc.data') }
+        }
+    }
+    // Any mod published on Modrinth, as maven.modrinth:<slug>:<version>.
+    // Nothing is downloaded from it until a dependency asks for that group.
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'Modrinth'
+                url = 'https://api.modrinth.com/maven'
+            }
+        }
+        filter { includeGroup('maven.modrinth') }
+    }
+    // The mods this one integrates with, each only for its own group.
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'GeckoLib'
+                url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
+            }
+        }
+        filter { includeGroup('software.bernie.geckolib') }
+    }
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'Curios'
+                url = 'https://maven.theillusivec4.top/'
+            }
+        }
+        filter { includeGroup('top.theillusivec4.curios') }
+    }
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'BlameJared'
+                url = 'https://maven.blamejared.com'
+            }
+        }
+        filter {
+            includeGroup('mezz.jei')
+            // JEI's own config library (Fabric).
+            includeGroup('net.mezzdev.config')
+        }
+    }
+    // Trinkets (Fabric): the slots a backpack can be worn in.
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'TerraformersMC'
+                url = 'https://maven.terraformersmc.com/releases/'
+            }
+        }
+        filter { includeGroup('dev.emi') }
+    }
+    // Cardinal Components, which Trinkets is built on.
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'Ladysnake'
+                url = 'https://maven.ladysnake.org/releases'
+            }
+        }
+        filter { includeGroupAndSubgroups('org.ladysnake') }
+    }
+}
+
+// Loom adds its own "Mojang" repository (libraries.minecraft.net) after
+// this script runs; on the obfuscated versions it also looks for jars on
+// Maven Central. Lazy, so it also covers modules without one.
+repositories.matching { it.name == 'Mojang' }.configureEach { repository ->
+    repository.content(skipLoomGenerated)
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+// Development-only files that may sit among the resources, kept out of every
+// jar, sources jars included (as in the MDK): Blockbench projects and the
+// data generators' cache. On the tasks rather than the source set, since the
+// loaders copy common/'s resource folder as a whole.
+def devOnlyResources = ['**/*.bbmodel', '.cache/**', '**/.cache/**']
+tasks.withType(ProcessResources).configureEach {
+    exclude(devOnlyResources)
+}
+tasks.withType(Jar).configureEach {
+    exclude(devOnlyResources)
+}
+
+tasks.withType(Javadoc).configureEach {
+    options.encoding = 'UTF-8'
+    // Mixins and Minecraft's own classes are full of what doclint calls
+    // errors (missing @param, @Inject handlers...): a javadoc jar is
+    // published, never a reason to fail the build.
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
+// Captured now: with the configuration cache on, the rename closure runs
+// with no project to look mod_id up in.
+def licenseSuffix = "_${mod_id}"
+tasks.withType(Jar).configureEach {
+    from(rootProject.file('LICENSE')) {
+        rename { "${it}${licenseSuffix}" }
+    }
+}
+
+// Read by crash reports and by whoever opens the jar. Values only, no
+// project references, for the configuration cache.
+def manifestAttributes = [
+        'Specification-Title'   : mod_name,
+        'Specification-Vendor'  : mod_authors,
+        'Specification-Version' : mod_version,
+        'Implementation-Title'  : "${mod_name} (${project.name})".toString(),
+        'Implementation-Version': version.toString(),
+        'Implementation-Vendor' : mod_authors,
+        'Built-On-Minecraft'    : minecraft_version,
+        'Built-On-Java'         : java_version
+]
+tasks.named('jar', Jar) {
+    manifest.attributes(manifestAttributes)
+}
+
+// ./gradlew publishToMavenLocal puts every module in ~/.m2. For a remote
+// repository, set modMavenUrl, plus modMavenUsername and modMavenPassword if
+// it needs them, as Gradle properties: in ~/.gradle/gradle.properties, or as
+// ORG_GRADLE_PROJECT_modMavenUrl (and so on) environment variables in CI.
+// Never in this repository's gradle.properties.
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            artifactId = base.archivesName.get()
+            from components.java
+        }
+    }
+    repositories {
+        // Blank counts as unset: in GitHub Actions a secret or variable that
+        // does not exist arrives as an empty string.
+        def modMavenUrl = providers.gradleProperty('modMavenUrl').filter { !it.isBlank() }
+        if (modMavenUrl.isPresent()) {
+            maven {
+                name = 'modMaven'
+                url = modMavenUrl.get()
+                if (providers.gradleProperty('modMavenUsername').filter { !it.isBlank() }.isPresent()) {
+                    // Reads modMavenUsername and modMavenPassword lazily, so
+                    // the secrets stay out of the configuration cache.
+                    credentials(PasswordCredentials)
+                }
+            }
+        }
+    }
+}
+
+// IDEA no longer downloads sources/javadoc jars for dependencies on its own.
+idea {
+    module {
+        downloadSources = true
+        downloadJavadoc = true
+    }
+}

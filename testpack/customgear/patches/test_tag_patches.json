@@ -1,0 +1,7 @@
+{
+  "type": "tag_patch",
+  "comment": "Cactus and berry bush damage, so test_armor can resist both through #customgear:test_hazards.",
+  "registry": "damage_type",
+  "tag": "customgear:test_hazards",
+  "values": ["minecraft:cactus", "minecraft:sweet_berry_bush"]
+}

@@ -1,0 +1,18 @@
+{
+  "id": "test_coin",
+  "type": "item",
+  "names": {
+    "en_us": "Test Coin (from a zip)",
+    "es_es": "Moneda de Prueba (desde un zip)",
+    "es_mx": "Moneda de Prueba (desde un zip)"
+  },
+  "tags": ["c:nuggets"],
+  "texture": {
+    "refs": { "item": "textures/test_coin.png" }
+  },
+  "recipe": {
+    "type": "shapeless",
+    "ingredients": ["customgear:test_gem"],
+    "result_count": 9
+  }
+}

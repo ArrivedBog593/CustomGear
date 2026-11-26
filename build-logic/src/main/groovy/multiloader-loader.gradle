@@ -1,0 +1,92 @@
+// Applied by each loader module. Compiles common/'s sources and resources
+// into the loader's own jar: a mod ships as one jar per loader, with the
+// shared code inside it rather than beside it.
+plugins {
+    id 'multiloader-common'
+}
+
+configurations {
+    commonJava {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+    commonResources {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+}
+
+dependencies {
+    // Lets the IDE see common/'s classes from the loader module. The build
+    // itself compiles the sources below, not this jar.
+    compileOnly(project(':common')) {
+        attributes {
+            attribute(Attribute.of('io.github.mcgradleconventions.loader', String), 'common')
+        }
+    }
+    commonJava project(path: ':common', configuration: 'commonJava')
+    commonResources project(path: ':common', configuration: 'commonResources')
+}
+
+tasks.named('compileJava', JavaCompile) {
+    dependsOn(configurations.commonJava)
+    source(configurations.commonJava)
+}
+
+tasks.named('processResources', ProcessResources) {
+    dependsOn(configurations.commonResources)
+    from(configurations.commonResources)
+}
+
+tasks.named('javadoc', Javadoc) {
+    dependsOn(configurations.commonJava)
+    source(configurations.commonJava)
+}
+
+tasks.named('sourcesJar', Jar) {
+    dependsOn(configurations.commonJava)
+    from(configurations.commonJava)
+    dependsOn(configurations.commonResources)
+    from(configurations.commonResources)
+}
+
+// Fills ${...} in the loader's metadata files (src/main/templates) into a
+// generated resources folder. A task of its own rather than a filter on
+// processResources: IntelliJ cannot model resource filtering, and warns
+// about it, but sees a generated folder as plain resources.
+//
+// Offered: every mod_* key in gradle.properties, plus the versions below
+// that this branch defines. Nothing else, so a typo in a template fails the
+// build instead of silently expanding to nothing.
+def versionKeys = ['minecraft_version', 'minecraft_version_range', 'java_version',
+                   'neo_version', 'neo_version_range', 'loader_version_range',
+                   'fabric_loader_requirement', 'fabric_api_version',
+                   'geckolib_version', 'curios_version', 'trinkets_version', 'jei_version']
+def metadataProps = new TreeMap<String, String>(providers.gradlePropertiesPrefixedBy('mod_').get())
+versionKeys.each { key ->
+    def value = providers.gradleProperty(key).orNull
+    if (value != null) {
+        metadataProps[key] = value
+    }
+}
+
+// Every value goes inside a double-quoted string, in fabric.mod.json and in
+// neoforge.mods.toml alike, and both formats escape the same way: so a quote,
+// a backslash or a line break (\n in gradle.properties) in a description
+// cannot break the file and leave a jar that will not load.
+def metadataEscaped = metadataProps.collectEntries { key, value ->
+    [(key): value.replace('\\', '\\\\')
+            .replace('"', '\\"')
+            .replace('\r', '')
+            .replace('\n', '\\n')
+            .replace('\t', '\\t')]
+}
+
+def generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
+    inputs.properties(metadataEscaped)
+    expand metadataEscaped
+    from 'src/main/templates'
+    into layout.buildDirectory.dir('generated/sources/modMetadata')
+}
+
+sourceSets.main.resources.srcDir(generateModMetadata)

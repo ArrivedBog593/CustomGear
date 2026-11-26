@@ -1,0 +1,80 @@
+// The code every loader shares. Compiled against plain Minecraft (NeoForm),
+// with no loader API on the classpath: using one by mistake here fails to
+// compile instead of failing on the other loader at runtime.
+plugins {
+    id 'multiloader-common'
+    id 'net.neoforged.moddev'
+}
+
+neoForge {
+    neoFormVersion = neo_form_version
+
+    // Applied automatically if the file exists. NeoForge reads it from
+    // META-INF/accesstransformer.cfg; Fabric needs the same changes as an
+    // access widener (see fabric/build.gradle).
+    def at = file('src/main/resources/META-INF/accesstransformer.cfg')
+    if (at.exists()) {
+        accessTransformers.from(at.absolutePath)
+    }
+
+    if (project.hasProperty('parchment_mappings_version')) {
+        parchment {
+            mappingsVersion = parchment_mappings_version
+            minecraftVersion = parchment_minecraft_version
+        }
+    }
+}
+
+dependencies {
+    // Each loader brings its own Mixin and MixinExtras at runtime; common/
+    // only needs their annotations to compile (see gradle.properties for why
+    // these versions).
+    compileOnly "net.fabricmc:sponge-mixin:${mixin_version}"
+    compileOnly "io.github.llamalad7:mixinextras-common:${mixin_extras_version}"
+
+    // A mod with an API for both loaders can be compiled against here. Use
+    // the NeoForge variant (same Mojang names as common/), not transitive,
+    // so NeoForge itself stays off common/'s classpath:
+    // compileOnly("maven.modrinth:some-mod:1.0.0-neoforge") { transitive = false }
+
+    // GeckoLib has the same API on both loaders: 3D armor (GeckoArmorItem).
+    compileOnly("software.bernie.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}") { transitive = false }
+}
+
+// What the loader modules pull in (see multiloader-loader.gradle).
+configurations {
+    commonJava {
+        canBeResolved = false
+        canBeConsumed = true
+    }
+    commonResources {
+        canBeResolved = false
+        canBeConsumed = true
+    }
+}
+
+artifacts {
+    commonJava sourceSets.main.java.sourceDirectories.singleFile
+    commonResources sourceSets.main.resources.sourceDirectories.singleFile
+}
+
+// The mcgradleconventions loader attribute: tells which loader each variant
+// and classpath is for, so Gradle never picks another loader's variant of a
+// dependency, and a mod depending on this one gets the right jar.
+def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
+['apiElements', 'runtimeElements', 'sourcesElements', 'javadocElements'].each { variant ->
+    configurations.named(variant) {
+        attributes {
+            attribute(loaderAttribute, 'common')
+        }
+    }
+}
+sourceSets.configureEach {
+    [it.compileClasspathConfigurationName, it.runtimeClasspathConfigurationName].each { variant ->
+        configurations.named(variant) {
+            attributes {
+                attribute(loaderAttribute, 'common')
+            }
+        }
+    }
+}

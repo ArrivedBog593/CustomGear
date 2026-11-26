@@ -1,0 +1,72 @@
+{
+  "id": "test_tools",
+  "type": "tool_set",
+  "tool_names": {
+    "en_us": {
+      "pickaxe": "Test Pickaxe",
+      "axe": "Test Axe",
+      "shovel": "Test Shovel",
+      "hoe": "Test Hoe"
+    },
+    "es_es": {
+      "pickaxe": "Pico de Prueba",
+      "axe": "Hacha de Prueba",
+      "shovel": "Pala de Prueba",
+      "hoe": "Azada de Prueba"
+    },
+    "es_mx": {
+      "pickaxe": "Pico de Prueba",
+      "axe": "Hacha de Prueba",
+      "shovel": "Pala de Prueba",
+      "hoe": "Azada de Prueba"
+    }
+  },
+  "tools": {
+    "pickaxe": {
+      "durability": 1200,
+      "attack_damage": 4.0,
+      "attack_speed": 1.2,
+      "mining_speed": 10.0,
+      "harvest_level": 3,
+      "held_effects": [ { "effect": "minecraft:haste", "amplifier": 1 } ]
+    },
+    "axe": {
+      "durability": 1200,
+      "attack_damage": 8.0,
+      "attack_speed": 0.9,
+      "mining_speed": 10.0,
+      "harvest_level": 3
+    },
+    "shovel": {
+      "durability": 1200,
+      "attack_damage": 4.5,
+      "attack_speed": 1.0,
+      "mining_speed": 10.0,
+      "harvest_level": 3
+    },
+    "hoe": {
+      "durability": 1200,
+      "attack_damage": 1.0,
+      "attack_speed": 3.0,
+      "mining_speed": 10.0,
+      "harvest_level": 3,
+      "till_radius": 1
+    }
+  },
+  "enchantable": true,
+  "enchantability": 14,
+  "texture": {
+    "refs": {
+      "pickaxe": "minecraft:item/diamond_pickaxe",
+      "axe": "minecraft:item/diamond_axe",
+      "shovel": "minecraft:item/diamond_shovel",
+      "hoe": "minecraft:item/diamond_hoe"
+    }
+  },
+  "recipes": {
+    "pickaxe": { "type": "shaped", "pattern": ["GGG", " S ", " S "], "key": { "G": "customgear:test_gem", "S": "minecraft:stick" } },
+    "axe": { "type": "shaped", "pattern": ["GG", "GS", " S"], "key": { "G": "customgear:test_gem", "S": "minecraft:stick" } },
+    "shovel": { "type": "shaped", "pattern": ["G", "S", "S"], "key": { "G": "customgear:test_gem", "S": "minecraft:stick" } },
+    "hoe": { "type": "shaped", "pattern": ["GG", " S", " S"], "key": { "G": "customgear:test_gem", "S": "minecraft:stick" } }
+  }
+}

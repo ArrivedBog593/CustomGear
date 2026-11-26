@@ -1,0 +1,69 @@
+# Every placeholder comes from gradle.properties, already escaped for a
+# double-quoted string (see multiloader-loader.gradle): keep them inside "".
+modLoader="javafml"
+loaderVersion="${loader_version_range}"
+license="${mod_license}"
+issueTrackerURL="${mod_issues_url}"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+displayURL="${mod_homepage_url}"
+logoFile="assets/${mod_id}/icon.png"
+# Pixel-art icon: keep it crisp when NeoForge scales it. Remove for a
+# painted icon.
+logoBlur=false
+credits="${mod_credits}"
+authors="${mod_authors}"
+description="${mod_description}"
+
+[[mixins]]
+config="${mod_id}.mixins.json"
+
+[[mixins]]
+config="${mod_id}.neoforge.mixins.json"
+
+[[dependencies.${mod_id}]]
+modId="neoforge"
+type="required"
+versionRange="${neo_version_range}"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="minecraft"
+type="required"
+versionRange="${minecraft_version_range}"
+ordering="NONE"
+side="BOTH"
+
+# An optional integration: loads after it when present, and refuses to load
+# with a version outside the range.
+#[[dependencies.${mod_id}]]
+#modId="sodium"
+#type="optional"
+#versionRange="[0.8.0,)"
+#ordering="AFTER"
+#side="CLIENT"
+
+[[dependencies.${mod_id}]]
+modId="geckolib"
+type="optional"
+versionRange="[${geckolib_version},)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="curios"
+type="optional"
+versionRange="[${curios_version},)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="jei"
+type="optional"
+versionRange="[${jei_version},)"
+ordering="AFTER"
+side="BOTH"

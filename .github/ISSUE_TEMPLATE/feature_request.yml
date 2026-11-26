@@ -1,0 +1,31 @@
+name: Feature suggestion
+description: Something you'd like the mod to have or do.
+title: "[Suggestion] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea!
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like?
+      description: The problem it solves or what you'd use it for, and how you picture it working.
+    validations:
+      required: true
+
+  - type: textarea
+    id: references
+    attributes:
+      label: Other mods that do something similar
+      description: If another mod already has it, its name helps to understand what you mean.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched the existing issues and this hasn't been suggested yet.
+          required: true

@@ -1,0 +1,207 @@
+name: Release
+
+# Push a tag named v<mod_version>+mc<minecraft_version> (v1.0.0+mc1.21.1) from
+# the branch of that Minecraft version: this builds it, creates a GitHub
+# Release with the jars and changelogs/changelog-<mod_version>.md as its text
+# and, if the MAVEN_URL variable is set, publishes every module to that Maven
+# repository.
+on:
+  push:
+    tags:
+      - "v*"
+
+# Read-only by default. Only the job that creates the release can write, so
+# the build -- Gradle, its plugins and every dependency it downloads -- never
+# runs with a token that can change the repository. Actions are pinned by
+# commit SHA (see build.yml).
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      mod_name: ${{ steps.verify.outputs.mod_name }}
+      mod_version: ${{ steps.verify.outputs.mod_version }}
+      mc_version: ${{ steps.verify.outputs.mc_version }}
+      java_version: ${{ steps.verify.outputs.java_version }}
+      daemon_java_version: ${{ steps.verify.outputs.daemon_java_version }}
+      prerelease: ${{ steps.verify.outputs.prerelease }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Both pre-flight checks run BEFORE the build: a wrong version or a
+      # missing changelog should fail in twenty seconds, not in four minutes.
+
+      # The tag carries both numbers. The mod version is what ends up inside
+      # the jars, and the Minecraft version is what tells the branches apart:
+      # tagging from the wrong branch is otherwise invisible until someone
+      # downloads it.
+      - name: Verify tag matches this branch
+        id: verify
+        run: |
+          set -euo pipefail
+          REF="${GITHUB_REF_NAME#v}"
+
+          case "$REF" in
+            *+mc*) ;;
+            *) echo "::error::The tag must look like v<mod_version>+mc<minecraft_version>, e.g. v1.0.0+mc1.21.1."; exit 1 ;;
+          esac
+
+          TAG_MOD="${REF%%+*}"
+          TAG_MC="${REF#*+mc}"
+
+          prop() { grep -E "^$1=" gradle.properties | head -n1 | cut -d= -f2- | tr -d '[:space:]'; }
+          MOD_ID=$(prop mod_id)
+          MOD_VERSION=$(prop mod_version)
+          MC_VERSION=$(prop minecraft_version)
+          JAVA_VERSION=$(prop java_version)
+          # The Java Gradle itself runs on (see build.yml).
+          DAEMON_JAVA_VERSION=$(grep -E "^toolchainVersion=" gradle/gradle-daemon-jvm.properties | cut -d= -f2 | tr -d "[:space:]")
+          MOD_NAME=$(grep -E "^mod_name=" gradle.properties | head -n1 | cut -d= -f2- | sed 's/[[:space:]]*$//')
+
+          echo "tag: $TAG_MOD / mc $TAG_MC | gradle.properties: $MOD_VERSION / mc $MC_VERSION"
+
+          if [ "$TAG_MOD" != "$MOD_VERSION" ]; then
+            echo "::error::The tag says mod $TAG_MOD but gradle.properties says $MOD_VERSION."
+            exit 1
+          fi
+          if [ "$TAG_MC" != "$MC_VERSION" ]; then
+            echo "::error::The tag says Minecraft $TAG_MC but this branch builds for $MC_VERSION. Wrong branch?"
+            exit 1
+          fi
+
+          # A hyphen in the MOD version marks a prerelease (1.0.0-beta.1). The
+          # '+mc' suffix must not be read as one.
+          case "$TAG_MOD" in
+            *-*) PRERELEASE=true ;;
+            *)   PRERELEASE=false ;;
+          esac
+
+          {
+            echo "mod_name=$MOD_NAME"
+            echo "mod_version=$TAG_MOD"
+            echo "mc_version=$TAG_MC"
+            echo "java_version=$JAVA_VERSION"
+            echo "daemon_java_version=${DAEMON_JAVA_VERSION:-$JAVA_VERSION}"
+            echo "prerelease=$PRERELEASE"
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo "MOD_ID=$MOD_ID"
+            echo "MOD_VERSION=$TAG_MOD"
+            echo "MC_VERSION=$TAG_MC"
+          } >> "$GITHUB_ENV"
+
+      # One changelog file per version: the whole file is the release text.
+      - name: Locate this version's changelog
+        run: |
+          set -euo pipefail
+          NOTES="changelogs/changelog-${MOD_VERSION}.md"
+          if [ ! -s "$NOTES" ]; then
+            echo "::error::$NOTES is missing or empty. Write the changelog for this version before tagging it."
+            exit 1
+          fi
+          echo "NOTES_PATH=$NOTES" >> "$GITHUB_ENV"
+
+      - name: Set up JDK
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          java-version: |
+            ${{ steps.verify.outputs.java_version }}
+            ${{ steps.verify.outputs.daemon_java_version }}
+          distribution: "temurin"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Build
+        env:
+          JAVA: ${{ steps.verify.outputs.java_version }}
+        # See build.yml: points Gradle at the JDK the mod is compiled for.
+        run: ./gradlew build "-Porg.gradle.java.installations.fromEnv=JAVA_HOME_${JAVA}_X64"
+
+      # One jar per loader module this branch has, named exactly: a glob such
+      # as */build/libs/*.jar would also pick up common/'s jar and the
+      # sources and javadoc jars. The release notes travel with them, so the
+      # release job needs no checkout.
+      - name: Collect jars and notes
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          found=0
+          for loader in fabric neoforge; do
+            [ -f "$loader/build.gradle" ] || continue
+            cp "$loader/build/libs/$MOD_ID-$loader-$MOD_VERSION+mc$MC_VERSION.jar" dist/
+            found=1
+          done
+          [ "$found" = 1 ] || { echo "::error::No loader module found."; exit 1; }
+          cp "$NOTES_PATH" dist/release-notes.md
+          ls -l dist
+
+      - name: Upload jars and notes
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release
+          path: dist/
+          retention-days: 1
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # needed to create the release
+    steps:
+      - name: Download jars and notes
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release
+          path: dist
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
+        with:
+          name: ${{ needs.build.outputs.mod_name }} ${{ needs.build.outputs.mod_version }} for Minecraft ${{ needs.build.outputs.mc_version }}
+          body_path: dist/release-notes.md
+          prerelease: ${{ needs.build.outputs.prerelease }}
+          files: dist/*.jar
+
+  # Every module (common, fabric, neoforge) with its sources and javadoc jars,
+  # to the repository in the MAVEN_URL variable. MAVEN_USERNAME and
+  # MAVEN_PASSWORD are secrets, only for a repository that needs them. Runs
+  # after the build job's checks, so a wrong tag never reaches Maven.
+  maven:
+    needs: build
+    if: ${{ vars.MAVEN_URL != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up JDK
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          java-version: |
+            ${{ needs.build.outputs.java_version }}
+            ${{ needs.build.outputs.daemon_java_version }}
+          distribution: "temurin"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      # Gradle reads ORG_GRADLE_PROJECT_<name> as the property <name> (see
+      # publishing in build-logic/.../multiloader-common.gradle).
+      - name: Publish
+        env:
+          ORG_GRADLE_PROJECT_modMavenUrl: ${{ vars.MAVEN_URL }}
+          ORG_GRADLE_PROJECT_modMavenUsername: ${{ secrets.MAVEN_USERNAME }}
+          ORG_GRADLE_PROJECT_modMavenPassword: ${{ secrets.MAVEN_PASSWORD }}
+          JAVA: ${{ needs.build.outputs.java_version }}
+        run: ./gradlew publish "-Porg.gradle.java.installations.fromEnv=JAVA_HOME_${JAVA}_X64"

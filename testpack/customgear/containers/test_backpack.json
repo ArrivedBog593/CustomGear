@@ -1,0 +1,22 @@
+{
+  "id": "test_backpack",
+  "type": "container",
+  "names": {
+    "en_us": "Test Backpack",
+    "es_es": "Mochila de Prueba",
+    "es_mx": "Mochila de Prueba"
+  },
+  "container": {
+    "type": "backpack",
+    "slots": 27,
+    "accessory_slots": ["back", "chest/necklace", "charm"]
+  },
+  "texture": {
+    "refs": { "item": "minecraft:item/bundle" }
+  },
+  "recipe": {
+    "type": "shaped",
+    "pattern": ["LSL", "LGL", "LLL"],
+    "key": { "L": "minecraft:leather", "S": "minecraft:string", "G": "customgear:test_gem" }
+  }
+}

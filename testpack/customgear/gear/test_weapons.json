@@ -1,0 +1,65 @@
+{
+  "id": "test_weapons",
+  "type": "weapon_set",
+  "weapon_names": {
+    "en_us": {
+      "sword": "Test Sword",
+      "bow": "Test Bow",
+      "crossbow": "Test Crossbow",
+      "shield": "Test Shield"
+    },
+    "es_es": {
+      "sword": "Espada de Prueba",
+      "bow": "Arco de Prueba",
+      "crossbow": "Ballesta de Prueba",
+      "shield": "Escudo de Prueba"
+    },
+    "es_mx": {
+      "sword": "Espada de Prueba",
+      "bow": "Arco de Prueba",
+      "crossbow": "Ballesta de Prueba",
+      "shield": "Escudo de Prueba"
+    }
+  },
+  "weapons": {
+    "sword": {
+      "durability": 1500,
+      "attack_damage": 7.0,
+      "attack_speed": 1.6,
+      "held_effects": [ { "effect": "minecraft:strength", "amplifier": 0 } ]
+    },
+    "bow": {
+      "durability": 500,
+      "arrow_damage": 8.0,
+      "arrow_damage_bonus": 2.0,
+      "arrow_damage_multiplier": 1.2
+    },
+    "crossbow": {
+      "durability": 600,
+      "arrow_damage": 11.0,
+      "arrow_damage_multiplier": 1.5
+    },
+    "shield": { "durability": 500 }
+  },
+  "enchantable": true,
+  "enchantability": 14,
+  "texture": {
+    "refs": {
+      "sword": "minecraft:item/diamond_sword",
+      "bow": "minecraft:item/bow",
+      "crossbow": "minecraft:item/crossbow",
+      "shield": "minecraft:item/shield"
+    }
+  },
+  "recipes": {
+    "sword": {
+      "type": "smithing_transform",
+      "template": "minecraft:netherite_upgrade_smithing_template",
+      "base": "minecraft:diamond_sword",
+      "addition": "customgear:test_gem"
+    },
+    "bow": { "type": "shaped", "pattern": [" GT", "G T", " GT"], "key": { "G": "customgear:test_gem", "T": "minecraft:string" } },
+    "crossbow": { "type": "shaped", "pattern": ["GTG", "SHS", " G "], "key": { "G": "customgear:test_gem", "T": "minecraft:string", "S": "minecraft:stick", "H": "minecraft:tripwire_hook" } },
+    "shield": { "type": "shaped", "pattern": ["GPG", "PPP", " P "], "key": { "G": "customgear:test_gem", "P": "#minecraft:planks" } }
+  }
+}

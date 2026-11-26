@@ -1,0 +1,28 @@
+{
+  "id": "test_chest",
+  "type": "container",
+  "names": {
+    "en_us": "Test Chest",
+    "es_es": "Cofre de Prueba",
+    "es_mx": "Cofre de Prueba"
+  },
+  "container": {
+    "type": "chest",
+    "slots": 54
+  },
+  "required_tool": "axe",
+  "sound": "wood",
+  "map_color": "wood",
+  "texture": {
+    "refs": {
+      "single": "minecraft:entity/chest/christmas",
+      "left": "minecraft:entity/chest/christmas_left",
+      "right": "minecraft:entity/chest/christmas_right"
+    }
+  },
+  "recipe": {
+    "type": "shaped",
+    "pattern": ["PPP", "PGP", "PPP"],
+    "key": { "P": "#minecraft:planks", "G": "customgear:test_gem" }
+  }
+}

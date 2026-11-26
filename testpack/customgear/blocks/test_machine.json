@@ -1,0 +1,27 @@
+{
+  "id": "test_machine",
+  "type": "block",
+  "directional": true,
+  "names": {
+    "en_us": "Test Machine",
+    "es_es": "Máquina de Prueba",
+    "es_mx": "Máquina de Prueba"
+  },
+  "destroy_time": 2.0,
+  "required_tool": "pickaxe",
+  "sound": "metal",
+  "map_color": "metal",
+  "texture": {
+    "refs": {
+      "top": "minecraft:block/blast_furnace_top",
+      "bottom": "minecraft:block/smooth_stone",
+      "side": "minecraft:block/blast_furnace_side",
+      "north": "minecraft:block/blast_furnace_front_on"
+    }
+  },
+  "recipe": {
+    "type": "shaped",
+    "pattern": ["III", "IGI", "III"],
+    "key": { "I": "#c:ingots/iron", "G": "#c:gems/test" }
+  }
+}

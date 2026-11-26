@@ -1,0 +1,69 @@
+package arrivedbog593.customgear.items.tools;
+
+import arrivedbog593.customgear.items.DynamicDurability;
+import arrivedbog593.customgear.data.GearData;
+import arrivedbog593.customgear.items.gear.CustomTier;
+import arrivedbog593.customgear.items.weapons.CustomSwordItem;
+import arrivedbog593.customgear.util.GearLookup;
+import arrivedbog593.customgear.util.TooltipHelper;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.PickaxeItem;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
+
+public class CustomPickaxeItem extends PickaxeItem implements DynamicDurability {
+
+    private final GearData initialGearData;
+
+    public CustomPickaxeItem(GearData data) {
+        this(data, new CustomTier(data));
+    }
+
+    private CustomPickaxeItem(GearData data, CustomTier tier) {
+        super(tier, buildProps(data, tier));
+        this.initialGearData = data;
+    }
+
+    private static Properties buildProps(GearData data, CustomTier tier) {
+        Properties p = new Properties()
+                .durability(data.durability)
+                .attributes(PickaxeItem.createAttributes(
+                        tier,
+                        data.attackDamage - 1,
+                        data.attackSpeed - 4
+                ));
+        return data.fireResistant ? p.fireResistant() : p;
+    }
+
+    private GearData getGearData() {
+        return GearLookup.getGearData(this, initialGearData);
+    }
+
+    @Override
+    public int dynamicMaxDamage(@NotNull ItemStack stack) {
+        GearData data = getGearData();
+        return data.durability > 0 ? data.durability : 0;
+    }
+
+    @Override
+    public @NotNull Component getName(@NotNull ItemStack stack) {
+        return Component.literal(
+                CustomSwordItem.buildName(getGearData(), GearLookup.getCurrentLang(), "pickaxe"));
+    }
+
+    @Override
+    public void appendHoverText(@NotNull ItemStack stack,
+                                @NotNull Item.TooltipContext context,
+                                @NotNull List<Component> tooltipComponents,
+                                @NotNull net.minecraft.world.item.TooltipFlag tooltipFlag) {
+        super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
+        TooltipHelper.addToolStatsTooltip(tooltipComponents, getGearData());
+        TooltipHelper.addHeldEffectsTooltip(tooltipComponents, getGearData());
+        if (!TooltipHelper.detailsShown() && TooltipHelper.hasDetails(getGearData())) {
+            TooltipHelper.addDetailsHint(tooltipComponents);
+        }
+    }
+}

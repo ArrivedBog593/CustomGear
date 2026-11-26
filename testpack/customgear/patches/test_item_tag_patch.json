@@ -1,0 +1,7 @@
+{
+  "type": "tag_patch",
+  "comment": "Amethyst counts as a test gem, so test_machine (which asks for #c:gems/test) also takes it.",
+  "registry": "item",
+  "tag": "c:gems/test",
+  "values": ["minecraft:amethyst_shard"]
+}
