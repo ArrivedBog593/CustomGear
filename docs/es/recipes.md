@@ -365,10 +365,9 @@ que usan tipos de receta de Create, Mekanism y Botania.
 | `requires`     | String[]     | (passthrough) IDs de mods extra además del deducido del tipo interno                                                |
 | `result_count` | Int          | Cantidad de ítems producidos. Por defecto: 1. Aplica a shaped, shapeless y stonecutting                             |
 
-> 💥 **`cooking_time` cambió en la 1.6.0.** Antes estaba en ticks. Divide tus
-> valores actuales entre 20 — una receta escrita como `200` significaba 10
-> segundos y ahora significa 200 segundos. No falla nada, la receta simplemente
-> va 20 veces más lenta.
+> 💥 **`cooking_time` está en segundos, no en ticks** como en los datapacks de
+> vanilla. El `200` de vanilla es `10` aquí — `200` significa 200 segundos. No
+> falla nada, la receta simplemente va 20 veces más lenta.
 
 Declarar un campo que el tipo ignora (como `experience` en una receta de
 stonecutting) genera un aviso en el log nombrándolo. La receta sigue

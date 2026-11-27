@@ -67,8 +67,8 @@ public class RecipeData {
     /**
      * Time to cook, in SECONDS. Decimals allowed (2.5 works).
      * <p>
-     * CHANGED IN 1.6.0: this used to be in ticks. A recipe written for an older
-     * version reads 20x too slow now — divide the old value by 20.
+     * NOT ticks, unlike vanilla's datapacks: a vanilla value copied as-is
+     * reads 20x too slow — divide it by 20.
      * <p>
      * Default: -1, meaning "use the type default": 10s smelting, 5s blasting,
      * 5s smoking, 30s campfire. Ignored by stonecutting, which is instant.

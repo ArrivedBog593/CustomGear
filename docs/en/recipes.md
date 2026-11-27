@@ -361,9 +361,9 @@ Create, Mekanism and Botania recipe types.
 | `requires`     | String[]     | (passthrough) Extra mod IDs beyond the one deduced from the inner type                                        |
 | `result_count` | Int          | Number of items produced. Default: 1. Applies to shaped, shapeless and stonecutting                           |
 
-> 💥 **`cooking_time` changed in 1.6.0.** It used to be in ticks. Divide your
-> existing values by 20 — a recipe written as `200` meant 10 seconds and now
-> means 200 seconds. Nothing errors, the recipe is just 20x slower.
+> 💥 **`cooking_time` is in seconds, not ticks** as in vanilla's datapacks.
+> Vanilla's `200` is `10` here — `200` means 200 seconds. Nothing errors, the
+> recipe is just 20x slower.
 
 Declaring a field the type ignores (like `experience` on a stonecutting
 recipe) logs a warning naming it. The recipe still works; the value just does

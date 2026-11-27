@@ -120,13 +120,13 @@ public class ItemData {
         /**
          * Whether a player must be involved in the kill. Boxed on purpose:
          * null means "not declared", which is what lets the parser warn that
-         * the default flipped to false in 1.6.0.
+         * the default is false.
          * NEVER read this field directly — use isPlayerKillRequired().
          */
         @SerializedName("requires_player_kill")
         public Boolean requiresPlayerKill;
 
-        /** Resolved value. Undeclared = false since 1.6.0 (vanilla parity). */
+        /** Resolved value. Undeclared = false (vanilla parity). */
         public boolean isPlayerKillRequired() {
             return requiresPlayerKill != null && requiresPlayerKill;
         }

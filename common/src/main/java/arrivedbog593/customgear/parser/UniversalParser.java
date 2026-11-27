@@ -374,8 +374,8 @@ public class UniversalParser {
             }
             if (data.mobDrops.requiresPlayerKill == null) {
                 LOGGER.warn("[CustomGear] Item '{}': mob_drops.requires_player_kill is not "
-                                + "declared. The default CHANGED to false in 1.6.0 for vanilla parity — "
-                                + "mobs killed by the environment now drop this item, so automated farms "
+                                + "declared. It defaults to false for vanilla parity — "
+                                + "mobs killed by the environment drop this item, so automated farms "
                                 + "can produce it. Declare it explicitly to silence this warning.",
                         data.id);
             }

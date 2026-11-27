@@ -9,8 +9,7 @@ public final class Constants {
     /**
      * Must match mod_id in gradle.properties. Also the registry namespace of
      * every item, block and fluid, and the name of the content folder in the
-     * game directory. Ultimate Custom Gear registered under this same
-     * namespace, so worlds and content files made with it keep working.
+     * game directory.
      */
     public static final String MOD_ID = "customgear";
     public static final String MOD_NAME = "Custom Gear";

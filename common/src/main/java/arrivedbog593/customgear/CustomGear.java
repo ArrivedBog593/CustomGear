@@ -25,12 +25,7 @@ import net.minecraft.server.packs.repository.PackSource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -45,9 +40,6 @@ public final class CustomGear {
     /** The pack holding every generated texture, model, lang, recipe, tag and loot table. */
     public static DynamicResourcePack DYNAMIC_PACK;
 
-    /** Where Ultimate Custom Gear kept its content, read once to migrate it. */
-    private static final String LEGACY_FOLDER = "ultimatecustomgear";
-
     private CustomGear() {}
 
     /**
@@ -60,7 +52,6 @@ public final class CustomGear {
 
     public static void init() {
         CustomGearConfig.load();
-        migrateLegacyFolder();
 
         List<GearData> gearList;
         UniversalParser.LoadResult universalResult;
@@ -179,42 +170,5 @@ public final class CustomGear {
                 type,
                 new PackSelectionConfig(true, Pack.Position.TOP, false)
         );
-    }
-
-    /**
-     * Copies Ultimate Custom Gear's content folder into this mod's the first
-     * time it runs, so a world switched over from that mod keeps its items.
-     * The old folder is left as it was; nothing happens once customgear/
-     * exists.
-     */
-    private static void migrateLegacyFolder() {
-        Path target = configFolder();
-        Path legacy = Services.PLATFORM.getGameDir().resolve(LEGACY_FOLDER);
-        if (Files.exists(target) || !Files.isDirectory(legacy)) return;
-
-        try {
-            Files.walkFileTree(legacy, new SimpleFileVisitor<>() {
-                @Override
-                public @NotNull FileVisitResult preVisitDirectory(@NotNull Path dir,
-                                                                  @NotNull BasicFileAttributes attrs)
-                        throws IOException {
-                    Files.createDirectories(target.resolve(legacy.relativize(dir).toString()));
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public @NotNull FileVisitResult visitFile(@NotNull Path file,
-                                                          @NotNull BasicFileAttributes attrs)
-                        throws IOException {
-                    Files.copy(file, target.resolve(legacy.relativize(file).toString()));
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-            Constants.LOG.info("[CustomGear] Copied the content of {}/ into {}/. The old folder "
-                    + "was left untouched and can be deleted.", LEGACY_FOLDER, Constants.MOD_ID);
-        } catch (IOException e) {
-            Constants.LOG.error("[CustomGear] Could not copy {}/ into {}/: copy it by hand.",
-                    LEGACY_FOLDER, Constants.MOD_ID, e);
-        }
     }
 }

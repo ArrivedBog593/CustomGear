@@ -75,8 +75,7 @@ public class ContainerData {
      * Trinkets on Fabric. Written the Curios way ({@code "back"}, {@code "ring"})
      * or the Trinkets way ({@code "chest/back"}); the slots both mods ship are
      * translated for the other one (see AccessorySlots), so the same JSON works
-     * on both loaders. Read from {@code "curios_slots"} too, its name before the
-     * Fabric port.
+     * on both loaders.
      * <p>
      * BACKPACK ONLY, and empty by default: without it the container never
      * appears in an accessory slot at all. Curios' {@code "curio"} is the
@@ -87,7 +86,7 @@ public class ContainerData {
      * the player has installed, so a name this mod does not recognise may still
      * be perfectly correct.
      */
-    @SerializedName(value = "accessory_slots", alternate = "curios_slots")
+    @SerializedName("accessory_slots")
     public List<String> accessorySlots;
 
     public List<String> accessorySlots() {

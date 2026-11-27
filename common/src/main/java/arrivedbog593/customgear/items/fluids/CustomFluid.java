@@ -27,8 +27,8 @@ import java.util.function.Supplier;
  * The source and flowing pair generated from one FluidData.
  * <p>
  * Built on vanilla's FlowingFluid, so it runs on every loader. It behaves as
- * NeoForge's BaseFlowingFluid did in Ultimate Custom Gear: the same tick rate,
- * spread and drop-off, no infinite sources. NeoForge additionally needs each
+ * NeoForge's BaseFlowingFluid: the same tick rate, spread and drop-off, no
+ * infinite sources. NeoForge additionally needs each
  * fluid to report a FluidType, which its loader module adds by subclassing
  * {@link Source} and {@link Flowing} (see IFluidHelper).
  */

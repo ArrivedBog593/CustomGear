@@ -12,12 +12,8 @@ public class FluidData {
     /** Type: must be "fluid" */
     public String type;
 
-    /**
-     * Light emission of the fluid block (0-15). Read as "lightLevel" too:
-     * Ultimate Custom Gear only read it under that name, while its docs said
-     * light_level.
-     */
-    @SerializedName(value = "light_level", alternate = "lightLevel")
+    /** Light emission of the fluid block (0-15). */
+    @SerializedName("light_level")
     public int lightLevel = 0;
 
     /**
@@ -30,9 +26,8 @@ public class FluidData {
      * Translatable bucket names by language code.
      * Supports {fluid_name} placeholder.
      * e.g. {"en_us": "{fluid_name} Bucket", "es_mx": "Cubeta de {fluid_name}"}
-     * Read as "bucketNames" too, for the same reason as light_level.
      */
-    @SerializedName(value = "bucket_names", alternate = "bucketNames")
+    @SerializedName("bucket_names")
     public Map<String, String> bucketNames;
 
     /**

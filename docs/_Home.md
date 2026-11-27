@@ -11,14 +11,10 @@ Each jar is built for one Minecraft version and one loader, and says which in
 its name: `customgear-fabric-1.0.0+mc1.21.1.jar` is Custom Gear 1.0.0 for
 Fabric on Minecraft 1.21.1. They are not interchangeable.
 
-Coming from Ultimate Custom Gear? Your content works unchanged — see
-**Migration** in the documentation for your version.
-
 **Downloads:** [Releases](https://github.com/ArrivedBog593/CustomGear/releases)
 
 ---
 
 **Español** — Elige arriba la versión de Minecraft en la que juegas. Cada jar es
 para una versión de Minecraft y un loader, y lo indica en su nombre; no son
-intercambiables. ¿Vienes de Ultimate Custom Gear? Tu contenido funciona sin
-cambios: mira **Migración** en la documentación de tu versión.
+intercambiables.

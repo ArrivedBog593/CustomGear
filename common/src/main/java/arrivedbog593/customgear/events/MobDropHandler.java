@@ -37,12 +37,11 @@ import java.util.function.Consumer;
  *   <li>Server-side only: the server spawns drops; clients need no
  *       extra data beyond the shared JSONs they already have.</li>
  * </ul>
- * <b>Player kill (changed in 1.6.0):</b> requires_player_kill now defaults to
- * false, matching vanilla — most vanilla drops do not care who landed the blow.
+ * <b>Player kill:</b> requires_player_kill defaults to false, matching vanilla — most vanilla drops do not care who landed the blow.
  * Servers running an economy should set it to true explicitly, otherwise a fall
  * damage farm prints currency. The parser warns when it is left undeclared.
  * <p>
- * <b>Looting (new in 1.6.0):</b> mirrors vanilla's two mechanisms via
+ * <b>Looting:</b> mirrors vanilla's two mechanisms via
  * looting_mode. "count" adds 0..level to the rolled amount; "chance" raises the
  * drop probability and leaves the amount alone; "none" opts out. Vanilla never
  * applies both to the same drop, and neither does this.
@@ -64,7 +63,7 @@ public class MobDropHandler {
         if (entity instanceof Player) return; // players never drop economy items
         if (entity instanceof ArmorStand) return; // crafteable → drop exploit
 
-        // Two separate questions since 1.6.0:
+        // Two separate questions:
         //  1. Was a player involved at all? Vanilla asks for RECENT player
         //     damage, not the killing blow, so a mob you softened up and a
         //     creeper finished still counts as yours.

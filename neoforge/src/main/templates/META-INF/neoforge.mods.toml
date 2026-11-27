@@ -14,7 +14,6 @@ logoFile="assets/${mod_id}/icon.png"
 # Pixel-art icon: keep it crisp when NeoForge scales it. Remove for a
 # painted icon.
 logoBlur=false
-credits="${mod_credits}"
 authors="${mod_authors}"
 description="${mod_description}"
 

@@ -181,8 +181,6 @@ vacíos.
 > dispara este mod. El log avisa cuando el conjunto cambia.
 
 Ambos mods son opcionales: sin ellos `accessory_slots` simplemente no hace nada.
-`curios_slots`, el nombre que tenía este campo antes del port a Fabric, sigue
-funcionando.
 
 ## Anidamiento
 

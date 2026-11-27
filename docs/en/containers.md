@@ -178,7 +178,6 @@ slots.
 > triggers. The log warns you when the set changes.
 
 Both mods are optional: without them `accessory_slots` simply does nothing.
-`curios_slots`, the name this field had before the Fabric port, still works.
 
 ## Nesting
 

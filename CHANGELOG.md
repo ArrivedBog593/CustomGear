@@ -7,6 +7,4 @@ English and Spanish notes in the same document.
 |---------|-----------------------------------------------------|
 | 1.0.0   | [changelog-1.0.0.md](changelogs/changelog-1.0.0.md) |
 
-Custom Gear continues Ultimate Custom Gear 1.8.0. Breaking changes, including
-the move from Ultimate Custom Gear, are collected in
-[Migration](docs/en/migration.md).
+Breaking changes are collected in [Migration](docs/en/migration.md).

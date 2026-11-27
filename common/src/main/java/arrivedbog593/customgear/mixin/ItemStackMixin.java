@@ -8,9 +8,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Lets {@link DynamicDurability} items answer for their own max damage. On
- * NeoForge this replaces the IItemExtension#getMaxDamage(ItemStack) override
- * Ultimate Custom Gear used; it works the same on Fabric.
+ * Lets {@link DynamicDurability} items answer for their own max damage, the
+ * same way on every loader.
  */
 @Mixin(ItemStack.class)
 public abstract class ItemStackMixin {

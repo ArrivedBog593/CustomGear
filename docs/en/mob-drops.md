@@ -24,9 +24,9 @@ Items and food can drop from mobs on death via the `mob_drops` object:
 | `looting_chance_bonus` | Double  | 0.01      | Probability added per Looting level, in `"chance"` mode only                                                                                                                                                  |
 | `entities`             | List    | —         | **Required.** `["all"]` = every mob (vanilla and modded); exact IDs (`"minecraft:zombie"`); entity tags (`"#minecraft:undead"`); mod wildcards (`"mekanism:*"`). Omitted = drop disabled (with a log warning) |
 
-> 💥 **`requires_player_kill` changed in 1.6.0.** It used to default to `true`.
-> Declare it explicitly if you run an item economy — the parser warns on every
-> item that leaves it undeclared.
+> 💥 **`requires_player_kill` defaults to `false`.** Declare it explicitly if
+> you run an item economy — the parser warns on every item that leaves it
+> undeclared.
 
 **Looting modes.** Vanilla uses two separate mechanisms and never both at
 once, so you pick one:

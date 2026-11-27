@@ -4,8 +4,6 @@
 
 [**Documentation**](docs/en/index.md) · [Español](README_ES.md)
 
-> **Coming from Ultimate Custom Gear?** Custom Gear continues it, by the same author. Content files work unchanged and worlds keep their items. See [Migration](docs/en/migration.md).
-
 ---
 
 ## Install
@@ -85,4 +83,4 @@ The code lives in `common/`, shared by both loaders; `neoforge/` and `fabric/` o
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
+All Rights Reserved — see [LICENSE](LICENSE) for details.

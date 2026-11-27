@@ -357,10 +357,10 @@ public class RecipeLoader {
     /**
      * Resolves cooking_time (seconds) to the ticks the datapack wants.
      * <p>
-     * Also catches the most likely upgrade mistake. cooking_time was in TICKS
-     * before 1.6.0, and a leftover tick value is still perfectly valid as a
-     * number — 200 means 10s under the old unit and 200s under the new one, and
-     * nothing in the file says which was meant. The recipe would just be
+     * Also catches the most likely mistake: a value in TICKS, as vanilla's
+     * datapacks write it, is still perfectly valid as a number — 200 means 10s
+     * in ticks and 200s in seconds, and nothing in the file says which was
+     * meant. The recipe would just be
      * mysteriously slow. So anything over a minute gets flagged: no real recipe
      * cooks that long, and every unconverted tick value from a normal recipe
      * lands well above the line.

@@ -24,9 +24,9 @@ Los ítems y la comida pueden caer de los mobs al morir mediante el objeto `mob_
 | `looting_chance_bonus` | Double  | 0.01        | Probabilidad que suma cada nivel de Saqueo, solo en modo `"chance"`                                                                                                                                                               |
 | `entities`             | Lista   | —           | **Obligatorio.** `["all"]` = todos los mobs (vanilla y de mods); IDs exactos (`"minecraft:zombie"`); tags de entidad (`"#minecraft:undead"`); comodines de mod (`"mekanism:*"`). Omitido = drop desactivado (con aviso en el log) |
 
-> 💥 **`requires_player_kill` cambió en la 1.6.0.** Antes valía `true` por
-> defecto. Decláralo explícitamente si llevas una economía de ítems — el parser
-> avisa por cada ítem que lo deje sin declarar.
+> 💥 **`requires_player_kill` vale `false` por defecto.** Decláralo
+> explícitamente si llevas una economía de ítems — el parser avisa por cada ítem
+> que lo deje sin declarar.
 
 **Modos de saqueo.** Vanilla usa dos mecanismos separados y nunca ambos a la
 vez, así que eliges uno:

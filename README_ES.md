@@ -4,8 +4,6 @@
 
 [**Documentación**](docs/es/index.md) · [English](README.md)
 
-> **¿Vienes de Ultimate Custom Gear?** Custom Gear lo continúa, del mismo autor. Los archivos de contenido funcionan sin cambios y los mundos conservan sus ítems. Ver [Migración](docs/es/migration.md).
-
 ---
 
 ## Instalación
@@ -85,4 +83,4 @@ El código está en `common/`, compartido por los dos loaders; `neoforge/` y `fa
 
 ## Licencia
 
-Licencia MIT — ver [LICENSE](LICENSE) para más detalles.
+Todos los derechos reservados — ver [LICENSE](LICENSE) para más detalles.
