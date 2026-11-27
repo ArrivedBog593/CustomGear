@@ -309,7 +309,7 @@ public final class GearModelGenerator {
      */
     private static void loadBow(PackSink pack, GearData data, String itemId) {
         Resolved base = resolveGearValue(pack, owner(data), "bow",
-                data.texture.refs.get("bow"), itemId, false);
+                data.texture.refs.get("bow"), itemId, true);
         if (base.kind() == TextureRef.Kind.INVALID) {
             generateParentOnlyModel(pack, itemId, DEFAULT_BOW);
             return;
@@ -325,15 +325,14 @@ public final class GearModelGenerator {
 
         String json = """
         {
-          "parent": "%s",
-          "textures": { "layer0": "%s" },
+          %s
           "overrides": [
             { "predicate": { "pulling": 1 },               "model": "%s" },
             { "predicate": { "pulling": 1, "pull": 0.65 }, "model": "%s" },
             { "predicate": { "pulling": 1, "pull": 0.9 },  "model": "%s" }
           ]
         }
-        """.formatted(DEFAULT_BOW, base.value(), p0, p1, p2);
+        """.formatted(rangedBase(base, DEFAULT_BOW), p0, p1, p2);
 
         pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
     }
@@ -345,7 +344,7 @@ public final class GearModelGenerator {
      */
     private static void loadCrossbow(PackSink pack, GearData data, String itemId) {
         Resolved base = resolveGearValue(pack, owner(data), "crossbow",
-                data.texture.refs.get("crossbow"), itemId, false);
+                data.texture.refs.get("crossbow"), itemId, true);
         if (base.kind() == TextureRef.Kind.INVALID) {
             generateParentOnlyModel(pack, itemId, DEFAULT_CROSSBOW);
             return;
@@ -365,8 +364,7 @@ public final class GearModelGenerator {
 
         String json = """
         {
-          "parent": "%s",
-          "textures": { "layer0": "%s" },
+          %s
           "overrides": [
             { "predicate": { "pulling": 1 },                "model": "%s" },
             { "predicate": { "pulling": 1, "pull": 0.58 },  "model": "%s" },
@@ -375,9 +373,25 @@ public final class GearModelGenerator {
             { "predicate": { "charged": 1, "firework": 1 }, "model": "%s" }
           ]
         }
-        """.formatted(DEFAULT_CROSSBOW, base.value(), p0, p1, p2, arrow, firework);
+        """.formatted(rangedBase(base, DEFAULT_CROSSBOW), p0, p1, p2, arrow, firework);
 
         pack.addRaw(itemModelLoc(itemId), json.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * The head of a bow or crossbow model, before its overrides.
+     * <p>
+     * A REFERENCE names a model, as for every weapon and tool, and becomes the
+     * parent: the item looks and sits in the hand like the one referenced.
+     * Reading it as a texture only worked for the bow by coincidence —
+     * item/bow is both a model and a texture — while the crossbow's texture is
+     * item/crossbow_standby, so its base showed the missing texture. A FILE is
+     * a texture, laid on vanilla's model so the display transforms stay right.
+     */
+    private static String rangedBase(Resolved base, String vanillaModel) {
+        return base.kind() == TextureRef.Kind.REFERENCE
+                ? "\"parent\": \"" + base.value() + "\","
+                : "\"parent\": \"" + vanillaModel + "\",\n  \"textures\": { \"layer0\": \"" + base.value() + "\" },";
     }
 
     /**

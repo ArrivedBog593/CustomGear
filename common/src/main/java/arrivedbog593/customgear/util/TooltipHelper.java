@@ -155,7 +155,12 @@ public class TooltipHelper {
             String duration   = ed.duration >= 60
                     ? (ed.duration / 60) + "m " + (ed.duration % 60) + "s"
                     : ed.duration + "s";
-            tooltipComponents.add(Component.literal("• " + effectName + level + " (" + duration + ")")
+            // A chance below 100% is shown, or an effect that only sometimes
+            // applies reads exactly like one that always does.
+            String chance = ed.probability < 1.0f
+                    ? ", " + Math.round(Math.max(0f, ed.probability) * 100) + "%"
+                    : "";
+            tooltipComponents.add(Component.literal("• " + effectName + level + " (" + duration + chance + ")")
                     .withStyle(ChatFormatting.BLUE));
         }
     }

@@ -20,6 +20,7 @@
 
 - **Fluids ignored `light_level` and `bucket_names`.** They were only read as `lightLevel` and `bucketNames`, which the docs never mentioned. Both spellings work now
 - A recipe that needs another mod is now skipped cleanly on Fabric too, instead of logging a parsing error
+- **A crossbow referencing vanilla's (`minecraft:item/crossbow`) showed the missing texture when unloaded.** The reference was read as a texture, but for weapons it names a model, as the docs say; bows and crossbows now inherit the referenced model
 
 ---
 
@@ -48,5 +49,6 @@
 
 - **Los fluidos ignoraban `light_level` y `bucket_names`.** Solo se leían como `lightLevel` y `bucketNames`, que la documentación nunca mencionó. Ahora funcionan las dos formas
 - Una receta que necesita otro mod ahora también se omite limpiamente en Fabric, en vez de registrar un error de lectura
+- **Una ballesta que referenciaba la vanilla (`minecraft:item/crossbow`) mostraba la textura faltante sin cargar.** La referencia se leía como textura, pero en las armas nombra un modelo, como dice la documentación; arcos y ballestas ahora heredan el modelo referenciado
 
 </details>
