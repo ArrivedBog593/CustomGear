@@ -2,7 +2,7 @@
 
 ## Installation
 
-1. Install [NeoForge](https://neoforged.net/) or [Fabric](https://fabricmc.net/) (with [Fabric API](https://modrinth.com/mod/fabric-api)) for Minecraft 1.21.1
+1. Install [NeoForge](https://neoforged.net/) or [Fabric](https://fabricmc.net/) (with [Fabric API](https://www.curseforge.com/minecraft/mc-mods/fabric-api)) for Minecraft 1.21.1
 2. Place the jar for your loader, `customgear-neoforge-1.x.x+mc1.21.1.jar` or `customgear-fabric-1.x.x+mc1.21.1.jar`, in your `mods/` folder
 3. Launch the game once to generate the `customgear/` folder inside `.minecraft/`
 4. Add your JSON files to `.minecraft/customgear/` — or drop a content `.zip` into `.minecraft/customgear/packs/` (see [Content Packs](content-packs.md))
